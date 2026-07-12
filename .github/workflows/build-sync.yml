@@ -1,0 +1,39 @@
+# DRIFT · auto build-sync
+# Place this file at:  .github/workflows/build-sync.yml
+# It runs sync-builds.js on a schedule, refreshing currentBuild in status.json
+# from api.steamcmd.net, and commits any changes back. 100% free (GitHub Actions).
+
+name: build-sync
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"   # every 6 hours
+  workflow_dispatch:          # ...or run it manually from the Actions tab
+
+permissions:
+  contents: write             # allow the action to commit updated status.json
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Refresh latest build ids
+        run: node sync-builds.js
+
+      - name: Commit if changed
+        run: |
+          if [[ -n "$(git status --porcelain status.json)" ]]; then
+            git config user.name  "drift-bot"
+            git config user.email "drift-bot@users.noreply.github.com"
+            git add status.json
+            git commit -m "build-sync: refresh latest build ids"
+            git push
+          else
+            echo "No changes to commit."
+          fi
