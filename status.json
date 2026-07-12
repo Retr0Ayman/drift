@@ -11,10 +11,22 @@
     "currentBuild": 19402210,
     "crackedBuild": 19402210,
     "survivalHrs": -36,
-    "tags": ["Denuvo", "Action-Adventure", "Ubisoft"],
+    "tags": [
+      "Denuvo",
+      "Action-Adventure",
+      "Ubisoft"
+    ],
     "desc": "Resynced remake of the pirate-era classic. Leaked from an internal production build ~1.5 days before launch.",
-    "dlc": [{ "n": "Season Pass", "p": "-" }],
-    "source": { "name": "Tom's Hardware", "url": "https://www.tomshardware.com/video-games/pc-gaming/cracked-version-of-assassins-creed-black-flag-resynced-leaked-days-prior-to-official-release-despite-denuvo-drm-protection-denuvo-unable-to-stop-crackers-with-some-finding-ways-to-completely-remove-it-from-other-titles" }
+    "dlc": [
+      {
+        "n": "Season Pass",
+        "p": "-"
+      }
+    ],
+    "source": {
+      "name": "Tom's Hardware",
+      "url": "https://www.tomshardware.com/video-games/pc-gaming/cracked-version-of-assassins-creed-black-flag-resynced-leaked-days-prior-to-official-release-despite-denuvo-drm-protection-denuvo-unable-to-stop-crackers-with-some-finding-ways-to-completely-remove-it-from-other-titles"
+    }
   },
   {
     "id": "black-myth-wukong",
@@ -25,12 +37,24 @@
     "method": "Hypervisor bypass",
     "group": "0xZe0n",
     "released": "Aug 2024",
-    "currentBuild": 15990120,
+    "currentBuild": 21393610,
     "crackedBuild": 15400870,
     "survivalHrs": 6,
-    "tags": ["Denuvo", "Action-RPG", "Game Science"],
+    "tags": [
+      "Denuvo",
+      "Action-RPG",
+      "Game Science"
+    ],
     "desc": "Soulslike based on Journey to the West. v3 hypervisor bypass; crack build now behind live.",
-    "dlc": [{ "n": "Deluxe Edition", "p": "-" }],
-    "source": { "name": "GameGPU", "url": "https://en.gamegpu.com/news/igry/khakery-vypustili-3-versiyu-vzloma-denuvo-dlya-black-myth-wukong" }
+    "dlc": [
+      {
+        "n": "Deluxe Edition",
+        "p": "-"
+      }
+    ],
+    "source": {
+      "name": "GameGPU",
+      "url": "https://en.gamegpu.com/news/igry/khakery-vypustili-3-versiyu-vzloma-denuvo-dlya-black-myth-wukong"
+    }
   }
 ]
