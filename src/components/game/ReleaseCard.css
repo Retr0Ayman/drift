@@ -22,6 +22,10 @@
   background: var(--trad);
 }
 
+.release-card--neutral::before {
+  background: var(--ink-4);
+}
+
 .release-top {
   display: flex;
   align-items: center;
@@ -45,6 +49,51 @@
   border-radius: var(--pill);
   background: var(--glass-bg-strong);
   color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.release-updated {
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  padding: 4px 9px;
+  border-radius: var(--pill);
+  background: var(--accent-dim);
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.release-credit {
+  margin-top: 6px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--ink-2);
+}
+
+.release-credit-link {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.release-credit-link:hover {
+  text-decoration: underline;
+}
+
+.release-tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 5px;
+}
+
+.release-tag-chip {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--ink-2);
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--pill);
+  padding: 3px 9px;
   white-space: nowrap;
 }
 

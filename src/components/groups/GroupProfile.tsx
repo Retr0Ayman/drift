@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { useCatalog } from "../../hooks/useCatalog";
 import { allReleases } from "../../lib/groups";
 import { colorForName, dPlusNLabel, fmtDateMs, relOutdated, releaseTs, slugify } from "../../lib/format";
-import { STARRED_GROUPS, methodForGroup } from "../../lib/constants";
+import { STARRED_GROUPS, methodForGroup, isRepackGroup } from "../../lib/constants";
 import { useGroupReleases } from "../../hooks/useGroupReleases";
 import GlassPanel from "../ui/GlassPanel";
 import Pill from "../ui/Pill";
@@ -14,6 +14,7 @@ interface DisplayRow {
   key: string;
   title: string;
   method: "hv" | "trad";
+  isRepack: boolean;
   ts: number;
   dateLabel: string;
   timingLabel: string | null;
@@ -75,6 +76,7 @@ export default function GroupProfile() {
     key: g.id + "-" + (r.xrelId || r.date),
     title: g.title,
     method: r.method,
+    isRepack: !!r.isRepack,
     ts: releaseTs(r) || 0,
     dateLabel: r.date || "—",
     timingLabel: dPlusNLabel(g, r),
@@ -93,6 +95,7 @@ export default function GroupProfile() {
       key: row.id,
       title: row.ext_info?.title || row.dirname,
       method: methodForGroup(row.group_name || displayName),
+      isRepack: isRepackGroup(row.group_name || displayName),
       ts: (row.time || 0) * 1000,
       dateLabel: row.time ? fmtDateMs(row.time * 1000) : "—",
       timingLabel: null,
@@ -123,10 +126,13 @@ export default function GroupProfile() {
   }
 
   const name = seedMatches[0]?.r.group || liveRows[0]?.group_name || displayName;
-  const hv = rows.filter((x) => x.method === "hv").length;
-  const trad = rows.length - hv;
+  const repackCount = rows.filter((x) => x.isRepack).length;
+  const isRepackGroupProfile = rows.length > 0 && repackCount === rows.length;
+  const crackRows = rows.filter((x) => !x.isRepack);
+  const hv = crackRows.filter((x) => x.method === "hv").length;
+  const trad = crackRows.length - hv;
   const out = seedMatches.filter(({ g, r }) => relOutdated(g, r)).length;
-  const leaning = hv >= trad ? "Hypervisor" : "Traditional";
+  const leaning = isRepackGroupProfile ? "Repack" : hv >= trad ? "Hypervisor" : "Traditional";
   const lastTs = rows.reduce((mx, r) => (r.ts > mx ? r.ts : mx), 0);
   const daysSince = lastTs ? Math.max(0, Math.floor((Date.now() - lastTs) / 86400000)) : null;
 
@@ -147,9 +153,17 @@ export default function GroupProfile() {
             </div>
             <h1>{name}</h1>
             <div className="grouphead-meta">
-              {leaning}-leaning{out ? ` · ${out} release${out === 1 ? "" : "s"} currently outdated` : ""}
+              {isRepackGroupProfile ? "Repack group" : `${leaning}-leaning`}
+              {out ? ` · ${out} release${out === 1 ? "" : "s"} currently outdated` : ""}
               {loading ? " · syncing live releases…" : ""}
             </div>
+            {STARRED_GROUPS.includes(key || "") ? (
+              <div className="grouphead-caveat">
+                P2P group — xREL has no browsable feed for these, only a search lookup that hard-caps at
+                30 results regardless of query. This list may not reflect the group's complete recent
+                output, only what xREL's search currently returns.
+              </div>
+            ) : null}
           </div>
         </div>
       </Reveal>
@@ -193,13 +207,17 @@ export default function GroupProfile() {
                       row.external ? (
                         <a className="group-rel-row" key={row.key} href={row.href} target="_blank" rel="noopener noreferrer">
                           <span className="group-rel-title">{row.title}</span>
-                          <Pill tone={row.method}>{row.method === "hv" ? "HV" : "TRAD"}</Pill>
+                          <Pill tone={row.isRepack ? "neutral" : row.method}>
+                            {row.isRepack ? "REPACK" : row.method === "hv" ? "HV" : "TRAD"}
+                          </Pill>
                           <span className="group-rel-dn">xREL ↗</span>
                         </a>
                       ) : (
                         <Link className="group-rel-row" key={row.key} to={row.href}>
                           <span className="group-rel-title">{row.title}</span>
-                          <Pill tone={row.method}>{row.method === "hv" ? "HV" : "TRAD"}</Pill>
+                          <Pill tone={row.isRepack ? "neutral" : row.method}>
+                            {row.isRepack ? "REPACK" : row.method === "hv" ? "HV" : "TRAD"}
+                          </Pill>
                           {row.timingLabel ? <span className="group-rel-dn">{row.timingLabel}</span> : null}
                         </Link>
                       ),

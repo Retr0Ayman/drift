@@ -16,11 +16,23 @@ interface StoreSearchResponse {
    touched underscores, so norm("Watch_Dogs™") -> "watch_dogs" never matched
    norm("Watch Dogs") -> "watch dogs", and /resolve?title=Watch+Dogs always
    returned appid:null. Verified fix: both now normalize to "watch dogs" /
-   "watch dogs 2" and match appid 243470 / 447040. */
+   "watch dogs 2" and match appid 243470 / 447040.
+
+   SECOND FIX (confirmed live): Steam lists EA's sports titles with a brand
+   prefix Steam itself adds -- "EA SPORTS™ Madden NFL 26" (appid 3230400) --
+   but xREL's own ext_info.title for the same release is just "Madden NFL
+   26", no prefix. Exact-match-after-normalization then never matched, so
+   /resolve?title=Madden+NFL+26 always returned appid:null even though the
+   Steam listing genuinely exists. Stripping a leading "EA SPORTS " is safe
+   on both sides: for titles where xREL *does* include the brand (confirmed
+   live for "EA Sports FC 26", which matches Steam's "EA SPORTS FC™ 26"
+   verbatim) stripping it from both leaves the same shorter string equal on
+   both sides, so it doesn't break that case either. */
 function norm(s?: string | null): string {
   return (s || "")
     .replace(/[™®©]/g, "")
     .replace(/_/g, " ")
+    .replace(/^ea sports\s+/i, "")
     .replace(
       /\b(game of the year|goty|definitive|deluxe|ultimate|enhanced|complete|remastered|remake|director'?s cut|gold|standard|digital)\s*(edition)?\b/gi,
       "",

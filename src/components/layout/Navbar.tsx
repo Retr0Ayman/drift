@@ -23,8 +23,12 @@ interface NavbarProps {
    directly), instead of a flat fixed bar. */
 export default function Navbar({ games, status, onLiveGameResolved }: NavbarProps) {
   const { scrollY } = useScroll();
-  const blur = useTransform(scrollY, [0, 140], [0, 22]);
-  const bgAlpha = useTransform(scrollY, [0, 140], [0, 0.78]);
+  // Peak alpha lowered from 0.78 -- even scrolled, the navbar should stay
+  // genuinely translucent (the moving ambient background visible through
+  // its blur), not read as a solid bar with blur applied to nothing. Blur
+  // raised slightly to compensate, same tradeoff as the glass tokens.
+  const blur = useTransform(scrollY, [0, 140], [0, 26]);
+  const bgAlpha = useTransform(scrollY, [0, 140], [0, 0.5]);
   const borderAlpha = useTransform(scrollY, [0, 140], [0, 0.22]);
   const backdropFilter = useTransform(blur, (b) => `blur(${b}px) saturate(160%)`);
   // rgb(244, 236, 224) is --bg-0 (the warm cream page base); the border
@@ -44,11 +48,11 @@ export default function Navbar({ games, status, onLiveGameResolved }: NavbarProp
         <Link to="/" className="navbar-logo" onClick={() => setMenuOpen(false)}>
           <span className="navbar-mark">
             <svg viewBox="0 0 24 24" fill="none">
-              <path d="M8 18V6h4.5c3 0 4.5 2.2 4.5 6s-1.5 6-4.5 6H8Z" stroke="currentColor" strokeWidth="2.2" strokeLinejoin="round" />
+              <circle cx="12" cy="12" r="7" stroke="currentColor" strokeWidth="2.2" />
             </svg>
           </span>
           <span className="navbar-word">
-            <span className="navbar-title">DRIFT</span>
+            <span className="navbar-title">Orvyn</span>
             <span className="navbar-sub">BY DAREALAYMAN</span>
           </span>
         </Link>

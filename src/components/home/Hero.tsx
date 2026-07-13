@@ -23,7 +23,7 @@ export default function Hero() {
           <DriftMark />
         </motion.div>
         <motion.h1 className="hero-word" {...fadeUp(0.35)}>
-          DRIFT
+          Orvyn
         </motion.h1>
         <motion.p className="hero-tag" {...fadeUp(0.55)}>
           Crack · build · drift tracker

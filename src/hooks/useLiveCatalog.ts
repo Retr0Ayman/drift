@@ -3,6 +3,15 @@ import { SEED_GAMES } from "../data/seedGames";
 import type { Game } from "../types/game";
 import { parseReleaseRows, resolveAndEnrich, type PartialGame } from "../lib/catalog";
 
+/* Starred P2P groups whose releases never appear in the browse/archive feeds
+   (confirmed live: those endpoints have no p2p_results field at all) get
+   merged in explicitly via the dedicated group route instead, once per
+   session. This is the real fix for "Hypervisor filter always returns 0
+   results" -- structurally, no game could ever reach the catalog with an
+   "hv" release before this, since DenuvOwO (the only hv-tagged group) never
+   showed up through the normal crawl. */
+const HV_SEED_GROUPS = ["DenuvOwO"];
+
 const PER_PAGE = 60;
 
 /* Deep-history archive walk (widens catalog depth beyond the ~5000-most-
@@ -142,6 +151,38 @@ export function useLiveCatalog(): LiveCatalog {
     [commit],
   );
 
+  /* Runs once per session, shortly after the initial catalog load. Pulls
+     every real release for each starred P2P group via the dedicated group
+     route (search/releases.json?p2p=1, hard-filtered to an exact group-name
+     match server-side), groups by title, resolves Steam appids the same way
+     the browse/archive path does, and merges in whatever actually resolved.
+     Titles the browse crawl already picked up just get their DenuvOwO
+     release folded in via id match (Game.id is a deterministic slug of the
+     title), so this adds real hv-tagged releases without duplicating rows. */
+  const mergeHvSeedGroups = useCallback(async () => {
+    for (const name of HV_SEED_GROUPS) {
+      try {
+        const r = await fetch(`/api/xrel/group?name=${encodeURIComponent(name)}`);
+        const data = (await r.json()) as { list?: unknown[] };
+        const list = (data.list || []) as Parameters<typeof parseReleaseRows>[0];
+        if (!list.length) continue;
+        const byGame = parseReleaseRows(list);
+        const resolved = await resolveNewCandidates(byGame);
+        if (!resolved.length) continue;
+        const byId = new Map(resolved.map((g) => [g.id, g]));
+        const merged = gamesRef.current.map((g) => {
+          const hit = byId.get(g.id);
+          if (!hit) return g;
+          byId.delete(g.id);
+          return { ...g, releases: [...g.releases, ...hit.releases] };
+        });
+        commit([...merged, ...byId.values()]);
+      } catch {
+        // one starred group failing to fetch shouldn't block the others or the rest of the catalog
+      }
+    }
+  }, [commit, resolveNewCandidates]);
+
   /* One month per tick, oldest-first from "now" -- a genuine trickle, not a
      crawl, so it never competes with foreground pagination/search for rate
      limit. Guarded against overlap (archiveTickingRef) the same way the
@@ -201,12 +242,13 @@ export function useLiveCatalog(): LiveCatalog {
         loadingRef.current = false;
         setLoading(false);
       }
+      mergeHvSeedGroups();
       intervalId = setInterval(archiveTick, ARCHIVE_TICK_MS);
     })();
     return () => {
       if (intervalId) clearInterval(intervalId);
     };
-  }, [mergePage, archiveTick]);
+  }, [mergePage, archiveTick, mergeHvSeedGroups]);
 
   return { games, status, loading, hasMore, totalPages, loadMore, mergeOne, archiveMonth, archiveDepthMonths };
 }

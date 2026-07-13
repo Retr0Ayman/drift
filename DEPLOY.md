@@ -1,4 +1,10 @@
-# DRIFT — deploy (one Cloudflare Worker, static assets + API together)
+# Orvyn — deploy (one Cloudflare Worker, static assets + API together)
+
+The app is branded "Orvyn"; the underlying Cloudflare Worker project, its
+`wrangler.jsonc` `name`, and the `drift.aymanestifanos9.workers.dev` URL are
+unchanged on purpose (deployment identifiers, not visible branding) — every
+`drift`/`drift-api` reference below is that literal project/URL, not the
+product name.
 
 One deployable unit: a Cloudflare **Worker with static assets** (`wrangler.jsonc`,
 `main: worker/index.ts`, `assets.directory: ./dist`). The Worker's `fetch` handler

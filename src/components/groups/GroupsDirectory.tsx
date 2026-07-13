@@ -22,7 +22,7 @@ export default function GroupsDirectory() {
       <Reveal>
         <div className="groups-head">
           <span className="groups-eyebrow">Scene groups</span>
-          <h1>Every group DRIFT is tracking</h1>
+          <h1>Every group Orvyn is tracking</h1>
           <p className="groups-lede">
             Cracking groups seen across tracked titles, hypervisor and traditional alike. Starred groups are
             tracked directly since xREL has no way to browse their releases by category.

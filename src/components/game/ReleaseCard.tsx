@@ -14,13 +14,37 @@ export default function ReleaseCard({ game, release }: { game: Game; release: Re
   const delta = st === "out" && release.build && game.currentBuild ? game.currentBuild - release.build : 0;
   const timing = crackTimingLabel(game, release);
   const groupKey = slugify(release.group || "unknown");
+  const cardVariant = release.isRepack || release.isAnonymous ? "neutral" : release.method;
 
   return (
-    <GlassPanel className={`release-card release-card--${release.method}`}>
+    <GlassPanel className={`release-card release-card--${cardVariant}`}>
       <div className="release-top">
-        <span className="release-method">{release.label}</span>
+        <span className="release-method">{release.isRepack ? "Repack" : release.isAnonymous ? "Anonymous" : release.label}</span>
         <Pill tone={FLAG_TONE[st]}>{FLAG_LABEL[st]}</Pill>
+        {release.updateCount && release.updateCount > 1 ? (
+          <span className="release-updated">Updated {release.updateCount}×</span>
+        ) : null}
         {timing ? <span className="release-timing">{timing}</span> : null}
+      </div>
+
+      {/* Inspired by the clean per-release info-card layout on sites like
+          AllHypervisor.com -- explicitly NOT their download-linking feature,
+          this project never links to or hosts release files. A repack group
+          rebundled someone else's DRM bypass, it didn't perform it, and
+          xREL's own "P2P" group_name is a placeholder for an unattributed
+          upload, not a real group -- both are worded so neither reads as
+          crack credit. */}
+      <div className="release-credit">
+        {release.isAnonymous ? (
+          "Anonymous P2P upload"
+        ) : (
+          <>
+            {release.isRepack ? "Repack by " : `${release.label} release by `}
+            <Link to={`/group/${groupKey}`} className="release-credit-link">
+              {release.group}
+            </Link>
+          </>
+        )}
       </div>
 
       <div className="release-infogrid">
@@ -30,13 +54,15 @@ export default function ReleaseCard({ game, release }: { game: Game; release: Re
         </div>
         <div className="release-info">
           <span className="k">Protection</span>
-          <span className="v">{(game.tags || []).join(", ") || "—"}</span>
-        </div>
-        <div className="release-info">
-          <span className="k">Group</span>
-          <Link to={`/group/${groupKey}`} className="v release-group-link">
-            {release.group}
-          </Link>
+          <div className="release-tag-row">
+            {(game.tags || []).length
+              ? (game.tags || []).map((t) => (
+                  <span className="release-tag-chip" key={t}>
+                    {t}
+                  </span>
+                ))
+              : <span className="v">—</span>}
+          </div>
         </div>
         <div className="release-info">
           <span className="k">Crack Date</span>

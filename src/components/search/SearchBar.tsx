@@ -2,7 +2,7 @@ import { useState, type KeyboardEvent } from "react";
 import * as Popover from "@radix-ui/react-popover";
 import { useNavigate } from "react-router-dom";
 import { useAutocomplete, type Suggestion } from "../../hooks/useAutocomplete";
-import { buildLiveGame } from "../../lib/catalog";
+import { buildLiveGameFromRows } from "../../lib/catalog";
 import type { Game } from "../../types/game";
 import "./SearchBar.css";
 
@@ -33,7 +33,7 @@ export default function SearchBar({ games, onLiveGameResolved }: SearchBarProps)
       return;
     }
     setResolving(true);
-    const game = await buildLiveGame(s.raw);
+    const game = await buildLiveGameFromRows(s.title);
     setResolving(false);
     // A live match that never resolves a Steam appid is skipped, not shown
     // with placeholder art -- a wrong/missing match is worse than nothing.

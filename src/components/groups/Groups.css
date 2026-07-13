@@ -156,6 +156,15 @@
   font-weight: 500;
 }
 
+.grouphead-caveat {
+  font-size: 0.74rem;
+  color: var(--ink-3);
+  margin-top: 8px;
+  font-weight: 450;
+  line-height: 1.5;
+  max-width: 56ch;
+}
+
 .group-stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));

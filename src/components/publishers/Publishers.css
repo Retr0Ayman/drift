@@ -83,13 +83,55 @@
 
 .publishers-map-head {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.publishers-map-headline {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
   font-size: 0.78rem;
   color: var(--ink-3);
   font-weight: 600;
+}
+
+.publishers-map-sub {
+  font-size: 0.68rem;
+  color: var(--ink-4);
+  font-weight: 500;
+}
+
+.publishers-map-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+
+.publishers-aaa-toggle {
+  border: 1px solid var(--glass-border-strong);
+  background: var(--glass-bg);
+  color: var(--ink-2);
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: var(--pill);
+  cursor: pointer;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+
+.publishers-aaa-toggle:hover {
+  color: var(--ink);
+}
+
+.publishers-aaa-toggle--on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
 }
 
 .publishers-map-clear {
@@ -107,11 +149,24 @@
   color: var(--ink);
 }
 
+.publishers-grid-head {
+  margin-top: 22px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--ink-3);
+  letter-spacing: 0.2px;
+}
+
 .publisher-count {
   font-size: 0.72rem;
   color: var(--ink-3);
   margin-top: 3px;
   font-weight: 600;
+}
+
+.publisher-region-unknown {
+  color: var(--ink-4);
+  font-style: italic;
 }
 
 /* publisher profile */

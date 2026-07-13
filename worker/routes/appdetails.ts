@@ -17,7 +17,7 @@ interface SteamAppData {
   metacritic?: { score?: number };
   pc_requirements?: { minimum?: string; recommended?: string } | unknown[];
   is_free?: boolean;
-  price_overview?: { final_formatted?: string };
+  price_overview?: { final_formatted?: string; final?: number; currency?: string };
 }
 interface SteamAppDetailsResponse {
   [appid: string]: { success: boolean; data: SteamAppData };
@@ -58,6 +58,9 @@ export const handleAppdetails: Handler = async ({ request }) => {
     // restricted/unlisted apps, and is_free is its own separate flag; null
     // means genuinely unknown, never fabricated as "Free".
     price: d.is_free ? "Free" : (d.price_overview?.final_formatted ?? null),
+    // Raw USD amount (cc=us above pins the region, so this is always USD when
+    // present) for real currency conversion -- final is in whole cents.
+    priceUsd: d.is_free ? 0 : d.price_overview?.final != null ? d.price_overview.final / 100 : null,
     currentBuild: await buildId(appid as string),
     pcReq: pcr ? { minimum: reqLines(pcr.minimum), recommended: reqLines(pcr.recommended) } : null,
   };

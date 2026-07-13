@@ -1,5 +1,5 @@
 /* ==========================================================================
-   DRIFT design tokens — Linear x Apple x Liquid Glass
+   Orvyn design tokens — Linear x Apple x Liquid Glass
    Warm coffee-cream light theme, one accent (deepened signal teal for AA
    contrast on a light ground). The four functional status colors
    (green/orange/purple/red) are reserved for crack-status meaning only --
@@ -41,16 +41,22 @@
   --unc: #c43a2b; /* uncracked */
   --unv: #8a7a68; /* unverified / unreleased -- warm-tinted grey, not cool */
 
-  /* -------- liquid glass -------- */
-  --glass-bg: rgba(255, 250, 240, 0.6);
-  --glass-bg-strong: rgba(255, 250, 240, 0.86);
-  --glass-border: rgba(150, 115, 80, 0.24);
-  --glass-border-strong: rgba(130, 95, 60, 0.34);
-  --glass-highlight: rgba(255, 255, 250, 0.92);
-  --glass-blur: 22px;
-  --glass-blur-strong: 34px;
-  --glass-shadow: 0 20px 50px -12px rgba(110, 75, 35, 0.16), inset 0 1px 0 rgba(255, 255, 250, 0.9);
-  --glass-shadow-lg: 0 28px 70px -14px rgba(110, 75, 35, 0.2), inset 0 1px 0 rgba(255, 255, 250, 0.95);
+  /* -------- liquid glass --------
+     Alpha deliberately kept low (was 0.6/0.86 -- read as solid cards with a
+     slight blur, not genuinely see-through glass) so the moving ambient
+     background is clearly visible through every panel and the navbar, not
+     just subtly tinting them. Blur is raised to compensate: lower alpha
+     alone would let sharp blob edges show through undiffused, blur is what
+     turns that into a smooth frosted wash instead of a see-through window. */
+  --glass-bg: rgba(255, 250, 240, 0.34);
+  --glass-bg-strong: rgba(255, 250, 240, 0.54);
+  --glass-border: rgba(150, 115, 80, 0.22);
+  --glass-border-strong: rgba(130, 95, 60, 0.32);
+  --glass-highlight: rgba(255, 255, 250, 0.85);
+  --glass-blur: 28px;
+  --glass-blur-strong: 42px;
+  --glass-shadow: 0 20px 50px -12px rgba(110, 75, 35, 0.16), inset 0 1px 0 rgba(255, 255, 250, 0.75);
+  --glass-shadow-lg: 0 28px 70px -14px rgba(110, 75, 35, 0.2), inset 0 1px 0 rgba(255, 255, 250, 0.8);
 
   /* -------- type -------- */
   --font: -apple-system, "SF Pro Display", "SF Pro Text", system-ui, Inter, "Segoe UI", sans-serif;

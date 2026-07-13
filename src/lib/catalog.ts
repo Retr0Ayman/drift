@@ -1,6 +1,6 @@
 import type { Game, Release } from "../types/game";
 import { slugify } from "./format";
-import { methodForGroup } from "./constants";
+import { methodForGroup, isRepackGroup, isAnonymousUpload, isWindowsRelease } from "./constants";
 
 interface RawRelease {
   id: string;
@@ -30,14 +30,63 @@ function parseVersionFromDirname(dn?: string): string {
   return m ? m[0].replace(/\./g, " ").replace(/^\w/, (c) => c.toUpperCase()) : "";
 }
 
+/* Builds one Release from a raw xREL row -- shared by every path that turns
+   search/browse/archive rows into display data, so platform filtering,
+   repack/anonymous tagging, and version parsing only live in one place. */
+function releaseFromRow(rel: RawRelease): Release {
+  const group = rel.group_name || "scene";
+  const m = methodForGroup(group);
+  return {
+    method: m,
+    label: m === "hv" ? "Hypervisor" : "Traditional",
+    group,
+    build: null,
+    version: parseVersionFromDirname(rel.dirname) || rel.dirname || "",
+    date: dateFromTs(rel.time),
+    ts: rel.time || 0,
+    note: rel.dirname || "",
+    xrelId: rel.id,
+    link_href: rel.link_href,
+    isRepack: isRepackGroup(group),
+    isAnonymous: isAnonymousUpload(group),
+  };
+}
+
+/* Collapses repeat releases from the same group (e.g. a group's "Update
+   v1.4", "Update v1.4.1", "Update v1.4.1.1" all showing up as separate raw
+   xREL rows for the same game) down to one entry -- the latest by
+   timestamp -- carrying updateCount so the UI can still say "updated Nx"
+   instead of silently dropping the history. Confirmed live need: Sid
+   Meier's Civilization VII alone had 3 separate DenuvOwO rows and 3
+   separate ElAmigos rows for what a user experiences as one ongoing crack
+   per group, not six unrelated releases. */
+function dedupeReleasesByGroup(releases: Release[]): Release[] {
+  const byGroup = new Map<string, Release[]>();
+  for (const r of releases) {
+    const key = r.group.toLowerCase();
+    (byGroup.get(key) || byGroup.set(key, []).get(key)!).push(r);
+  }
+  const out: Release[] = [];
+  for (const group of byGroup.values()) {
+    group.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+    out.push({ ...group[0], updateCount: group.length });
+  }
+  return out.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+}
+
 /* Turns a page of raw xREL release rows into {xrelKey: gamePartial}. Games-
    only: ext_info.type for a real game is "master_game" (confirmed live),
-   not "game". */
+   not "game". Non-Windows releases (NSW/PS4/PS5/Linux/MacOS -- confirmed
+   live need: a VENOM Nintendo Switch update was the only release showing
+   for Civilization VII, credited as if it were a Windows crack) are
+   dropped before grouping, and repeat releases from the same group are
+   collapsed to their latest via dedupeReleasesByGroup. */
 export function parseReleaseRows(list: RawRelease[]): Record<string, PartialGame> {
   const byGame: Record<string, PartialGame> = {};
   for (const rel of list) {
     const ext = rel.ext_info || {};
     if (ext.type && ext.type !== "master_game") continue;
+    if (!isWindowsRelease(rel.dirname || "")) continue;
     const title = ext.title;
     if (!title) continue;
     const key = ext.id || title;
@@ -63,21 +112,11 @@ export function parseReleaseRows(list: RawRelease[]): Record<string, PartialGame
         source: { name: "xREL", url: "https://www.xrel.to/" },
       };
     }
-    const m = methodForGroup(rel.group_name || "");
-    const ver = parseVersionFromDirname(rel.dirname) || rel.dirname || "";
-    byGame[key].releases.push({
-      method: m,
-      label: m === "hv" ? "Hypervisor" : "Traditional",
-      group: rel.group_name || "scene",
-      build: null,
-      version: ver,
-      date: dateFromTs(rel.time),
-      ts: rel.time || 0,
-      note: rel.dirname || "",
-      xrelId: rel.id,
-      link_href: rel.link_href,
-    });
+    byGame[key].releases.push(releaseFromRow(rel));
     byGame[key].xrelTime = Math.max(byGame[key].xrelTime || 0, rel.time || 0);
+  }
+  for (const game of Object.values(byGame)) {
+    game.releases = dedupeReleasesByGroup(game.releases);
   }
   return byGame;
 }
@@ -142,33 +181,48 @@ export async function resolveAndEnrich(game: PartialGame): Promise<void> {
   await enrichFromSteam(game);
 }
 
-/* Builds a full, appid-resolved Game from a single raw search-result row --
-   used by the search autocomplete's live fallback so picking an unresolved
-   suggestion still lands on a real, working detail page. */
-export async function buildLiveGame(row: RawRelease): Promise<Game | null> {
-  const title = row.ext_info?.title;
+interface XrelSearchResponse {
+  list?: RawRelease[];
+}
+
+/* Builds a full, appid-resolved Game from EVERY real release xREL has for
+   this exact title, not just the one row the user happened to click in the
+   autocomplete dropdown. The old single-row version was the direct cause of
+   a real bug: clicking a search result only ever attached whatever one row
+   xREL's search ranked first, which for Civilization VII was a Nintendo
+   Switch update from VENOM -- the real Windows releases (DenuvOwO,
+   ElAmigos) existed in xREL's data the whole time but the client never
+   asked for them. This re-queries the same search the dropdown already used
+   (cached at the edge, so cheap) and pulls every row whose title matches
+   exactly, reusing the same platform-filter + repack/anonymous-tagging +
+   per-group dedupe as the browse/archive path so a searched-up game gets
+   the same data quality as one that arrived via the catalog crawl. */
+export async function buildLiveGameFromRows(title: string): Promise<Game | null> {
   if (!title) return null;
   const appid = await resolveTitle(title);
   if (appid == null) return null;
-  const m = methodForGroup(row.group_name || "");
-  const release: Release = {
-    method: m,
-    label: m === "hv" ? "Hypervisor" : "Traditional",
-    group: row.group_name || "scene",
-    build: null,
-    version: parseVersionFromDirname(row.dirname) || row.dirname || "",
-    date: dateFromTs(row.time),
-    ts: row.time || 0,
-    note: row.dirname || "",
-    xrelId: row.id,
-    link_href: row.link_href,
-  };
+
+  let rows: RawRelease[] = [];
+  try {
+    const r = await fetch(`/api/xrel?q=${encodeURIComponent(title)}`);
+    const data = (await r.json()) as XrelSearchResponse;
+    const target = title.toLowerCase();
+    rows = (data.list || []).filter(
+      (row) => (row.ext_info?.title || "").toLowerCase() === target && isWindowsRelease(row.dirname || ""),
+    );
+  } catch {
+    rows = [];
+  }
+
+  const releases = dedupeReleasesByGroup(rows.map(releaseFromRow));
+  const newestTs = releases.reduce((mx, r) => Math.max(mx, r.ts || 0), 0);
+
   const game: PartialGame = {
     id: slugify(title),
-    xrelKey: row.ext_info?.id || title,
+    xrelKey: title,
     title,
     appid,
-    year: yearFromTs(row.time),
+    year: yearFromTs(newestTs),
     released: "",
     developer: "",
     publisher: "",
@@ -176,11 +230,11 @@ export async function buildLiveGame(row: RawRelease): Promise<Game | null> {
     tags: ["Denuvo"],
     currentBuild: 0,
     survivalHrs: null,
-    releases: [release],
+    releases,
     desc: "",
     fact: "",
     dlc: [],
-    xrelTime: row.time || 0,
+    xrelTime: newestTs,
     source: { name: "xREL", url: "https://www.xrel.to/" },
   };
   await enrichFromSteam(game);

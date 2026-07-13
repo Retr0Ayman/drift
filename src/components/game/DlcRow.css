@@ -70,6 +70,30 @@
   margin-bottom: 10px;
 }
 
+.dlc-row-fx {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.dlc-row-fx-chip {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--ink-2);
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--pill);
+  padding: 3px 9px;
+}
+
+.dlc-row-fx-status {
+  font-size: 0.72rem;
+  color: var(--ink-3);
+  font-weight: 600;
+}
+
 .dlc-row-link {
   font-size: 0.78rem;
   font-weight: 700;
