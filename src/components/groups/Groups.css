@@ -198,6 +198,53 @@
   margin-bottom: 12px;
 }
 
+.group-month {
+  margin-bottom: 14px;
+}
+
+.group-month-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 4px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+.group-month-label {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.group-month-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.group-month-count {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--ink-3);
+  background: var(--glass-bg-strong);
+  padding: 3px 9px;
+  border-radius: var(--pill);
+}
+
+.group-month-chev {
+  font-size: 0.8rem;
+  color: var(--ink-3);
+  transition: transform var(--dur) var(--ease);
+}
+
+.group-month-chev--open {
+  transform: rotate(90deg);
+}
+
 .group-rel-list {
   padding: 0 !important;
   display: flex;

@@ -19,6 +19,8 @@ function Layout() {
     hasMore: catalog.hasMore,
     loadMore: catalog.loadMore,
     mergeOne: catalog.mergeOne,
+    archiveMonth: catalog.archiveMonth,
+    archiveDepthMonths: catalog.archiveDepthMonths,
   };
 
   return (

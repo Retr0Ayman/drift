@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useCatalog } from "../../hooks/useCatalog";
 import { allReleases } from "../../lib/groups";
@@ -20,6 +20,42 @@ interface DisplayRow {
   href: string;
   external: boolean;
 }
+
+interface MonthGroup {
+  key: string; // "2026-07", or "unknown"
+  label: string; // "July 2026"
+  rows: DisplayRow[];
+}
+
+function monthKey(ts: number): string {
+  if (!ts) return "unknown";
+  const d = new Date(ts);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function monthLabel(key: string): string {
+  if (key === "unknown") return "Undated";
+  const [y, m] = key.split("-").map(Number);
+  return new Date(y, m - 1, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" });
+}
+
+function groupByMonth(rows: DisplayRow[]): MonthGroup[] {
+  const map = new Map<string, DisplayRow[]>();
+  for (const row of rows) {
+    const key = monthKey(row.ts);
+    if (!map.has(key)) map.set(key, []);
+    map.get(key)!.push(row);
+  }
+  return [...map.entries()]
+    .sort(([a], [b]) => {
+      if (a === "unknown") return 1;
+      if (b === "unknown") return -1;
+      return a < b ? 1 : -1;
+    })
+    .map(([key, rows]) => ({ key, label: monthLabel(key), rows }));
+}
+
+const CURRENT_MONTH_KEY = monthKey(Date.now());
 
 export default function GroupProfile() {
   const { key } = useParams();
@@ -65,6 +101,17 @@ export default function GroupProfile() {
     }));
 
   const rows = [...seedRows, ...liveExtraRows].sort((a, b) => b.ts - a.ts);
+  const months = useMemo(() => groupByMonth(rows), [rows]);
+
+  const [openMonths, setOpenMonths] = useState<Set<string>>(() => new Set([CURRENT_MONTH_KEY]));
+  function toggleMonth(k: string) {
+    setOpenMonths((prev) => {
+      const next = new Set(prev);
+      if (next.has(k)) next.delete(k);
+      else next.add(k);
+      return next;
+    });
+  }
 
   if (!rows.length && !loading) {
     return (
@@ -129,23 +176,39 @@ export default function GroupProfile() {
       <Reveal delay={0.1}>
         <div className="group-releases">
           <h4>Releases by {name}</h4>
-          <GlassPanel className="group-rel-list">
-            {rows.map((row) =>
-              row.external ? (
-                <a className="group-rel-row" key={row.key} href={row.href} target="_blank" rel="noopener noreferrer">
-                  <span className="group-rel-title">{row.title}</span>
-                  <Pill tone={row.method}>{row.method === "hv" ? "HV" : "TRAD"}</Pill>
-                  <span className="group-rel-dn">xREL ↗</span>
-                </a>
-              ) : (
-                <Link className="group-rel-row" key={row.key} to={row.href}>
-                  <span className="group-rel-title">{row.title}</span>
-                  <Pill tone={row.method}>{row.method === "hv" ? "HV" : "TRAD"}</Pill>
-                  {row.timingLabel ? <span className="group-rel-dn">{row.timingLabel}</span> : null}
-                </Link>
-              ),
-            )}
-          </GlassPanel>
+          {months.map((month) => {
+            const isOpen = openMonths.has(month.key);
+            return (
+              <div className="group-month" key={month.key}>
+                <button className="group-month-head" onClick={() => toggleMonth(month.key)} aria-expanded={isOpen}>
+                  <span className="group-month-label">{month.label}</span>
+                  <span className="group-month-right">
+                    <span className="group-month-count">{month.rows.length}</span>
+                    <span className={`group-month-chev${isOpen ? " group-month-chev--open" : ""}`}>›</span>
+                  </span>
+                </button>
+                {isOpen ? (
+                  <GlassPanel className="group-rel-list">
+                    {month.rows.map((row) =>
+                      row.external ? (
+                        <a className="group-rel-row" key={row.key} href={row.href} target="_blank" rel="noopener noreferrer">
+                          <span className="group-rel-title">{row.title}</span>
+                          <Pill tone={row.method}>{row.method === "hv" ? "HV" : "TRAD"}</Pill>
+                          <span className="group-rel-dn">xREL ↗</span>
+                        </a>
+                      ) : (
+                        <Link className="group-rel-row" key={row.key} to={row.href}>
+                          <span className="group-rel-title">{row.title}</span>
+                          <Pill tone={row.method}>{row.method === "hv" ? "HV" : "TRAD"}</Pill>
+                          {row.timingLabel ? <span className="group-rel-dn">{row.timingLabel}</span> : null}
+                        </Link>
+                      ),
+                    )}
+                  </GlassPanel>
+                ) : null}
+              </div>
+            );
+          })}
         </div>
       </Reveal>
     </div>

@@ -9,6 +9,8 @@ export interface CatalogContextValue {
   hasMore: boolean;
   loadMore: () => Promise<void>;
   mergeOne: (game: Game) => void;
+  archiveMonth: string | null;
+  archiveDepthMonths: number;
 }
 
 export function useCatalog(): CatalogContextValue {
