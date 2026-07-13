@@ -1,0 +1,83 @@
+.intro-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--ink);
+  cursor: pointer;
+}
+
+.intro-mark {
+  width: 120px;
+  height: 120px;
+  border-radius: 34px;
+  display: grid;
+  place-items: center;
+  background: var(--bg-0);
+  color: var(--ink);
+  box-shadow: 0 40px 80px -30px rgba(0, 0, 0, 0.55);
+  will-change: transform;
+}
+
+.intro-mark svg {
+  width: 64px;
+  height: 64px;
+}
+
+.intro-word {
+  margin-top: 30px;
+  font-weight: 800;
+  font-size: 2.6rem;
+  letter-spacing: 3px;
+  color: var(--bg-0);
+}
+
+.intro-sub {
+  margin-top: 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: rgba(244, 236, 224, 0.55);
+}
+
+.intro-skip {
+  position: absolute;
+  bottom: 28px;
+  right: 28px;
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  color: rgba(244, 236, 224, 0.6);
+  background: rgba(244, 236, 224, 0.08);
+  border: 1px solid rgba(244, 236, 224, 0.2);
+  border-radius: var(--pill);
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.intro-skip:hover {
+  background: rgba(244, 236, 224, 0.16);
+  color: var(--bg-0);
+}
+
+@media (max-width: 520px) {
+  .intro-mark {
+    width: 92px;
+    height: 92px;
+    border-radius: 26px;
+  }
+
+  .intro-mark svg {
+    width: 48px;
+    height: 48px;
+  }
+
+  .intro-word {
+    font-size: 2rem;
+  }
+}

@@ -1,6 +1,7 @@
 import { Routes, Route, Outlet } from "react-router-dom";
 import Navbar from "./components/layout/Navbar";
 import Footer from "./components/layout/Footer";
+import IntroAnimation from "./components/layout/IntroAnimation";
 import Home from "./components/home/Home";
 import GameDetail from "./components/game/GameDetail";
 import GroupsDirectory from "./components/groups/GroupsDirectory";
@@ -25,6 +26,7 @@ function Layout() {
 
   return (
     <>
+      <IntroAnimation />
       <Navbar games={catalog.games} status={catalog.status} onLiveGameResolved={catalog.mergeOne} />
       <Outlet context={context} />
       <Footer />
