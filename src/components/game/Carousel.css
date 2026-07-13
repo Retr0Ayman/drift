@@ -1,0 +1,129 @@
+.carousel {
+  position: relative;
+  padding: 0 !important;
+}
+
+.carousel-track {
+  display: flex;
+  transition: transform 0.55s var(--ease);
+}
+
+.carousel-slide {
+  min-width: 100%;
+  aspect-ratio: 16 / 9;
+  position: relative;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, var(--glass-bg-strong), var(--bg-2));
+}
+
+.carousel-slide img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.carousel-placeholder {
+  text-align: center;
+  color: var(--ink-3);
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 20px;
+}
+
+.carousel-placeholder span {
+  opacity: 0.7;
+  font-weight: 500;
+}
+
+.carousel-trailer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  color: #fff;
+  cursor: pointer;
+}
+
+.carousel-play {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  display: grid;
+  place-items: center;
+  backdrop-filter: blur(10px);
+  font-size: 1.1rem;
+  transition: transform var(--dur) var(--ease);
+}
+
+.carousel-trailer:hover .carousel-play {
+  transform: scale(1.08);
+}
+
+.carousel-trailer-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.carousel-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--glass-border-strong);
+  color: var(--ink);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  backdrop-filter: blur(14px);
+  font-size: 1.1rem;
+  z-index: 3;
+  transition: transform var(--dur) var(--ease);
+}
+
+.carousel-nav--prev {
+  left: 12px;
+}
+
+.carousel-nav--next {
+  right: 12px;
+}
+
+.carousel-nav:active {
+  transform: translateY(-50%) scale(0.9);
+}
+
+.carousel-dots {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  z-index: 3;
+}
+
+.carousel-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.35);
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: background var(--dur) var(--ease), width var(--dur) var(--ease);
+}
+
+.carousel-dot--on {
+  background: #fff;
+  width: 20px;
+  border-radius: 6px;
+}

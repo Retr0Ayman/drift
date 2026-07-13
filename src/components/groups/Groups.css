@@ -1,0 +1,242 @@
+.groups-page {
+  padding: 24px 24px 96px;
+}
+
+.groups-head {
+  margin-top: 12px;
+  max-width: 68ch;
+}
+
+.groups-eyebrow {
+  display: block;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+
+.groups-head h1 {
+  font-size: var(--fs-h1);
+  font-weight: 800;
+  letter-spacing: -1.5px;
+  margin: 10px 0 10px;
+  color: var(--ink);
+}
+
+.groups-lede {
+  color: var(--ink-2);
+  font-weight: 450;
+  font-size: 0.96rem;
+  line-height: 1.6;
+}
+
+.groups-scoped {
+  font-size: 0.78rem;
+  color: var(--ink-3);
+  font-weight: 600;
+  margin-top: 14px;
+}
+
+.groups-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 16px;
+  margin-top: 28px;
+}
+
+.group-card {
+  padding: 18px;
+  cursor: pointer;
+  transition: transform var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+
+.group-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--glass-border-strong);
+}
+
+.group-card--starred {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--glass-border-strong));
+  box-shadow: var(--glass-shadow), 0 0 0 1px var(--accent-dim);
+}
+
+.group-card-top {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.group-badge {
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 0.76rem;
+  color: #0a0a0c;
+  flex: none;
+}
+
+.group-name {
+  font-weight: 800;
+  font-size: 1.02rem;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.group-star {
+  color: var(--accent);
+  font-size: 0.86rem;
+}
+
+.group-count {
+  font-size: 0.74rem;
+  color: var(--ink-2);
+  margin-top: 12px;
+  font-weight: 600;
+}
+
+.group-last {
+  font-size: 0.68rem;
+  color: var(--ink-3);
+  margin-top: 5px;
+  font-weight: 500;
+}
+
+/* group profile */
+.grouphead {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.grouphead-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--r-md);
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 1.3rem;
+  color: #0a0a0c;
+  flex: none;
+}
+
+.grouphead-tag {
+  display: inline-block;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  background: var(--glass-bg-strong);
+  padding: 4px 10px;
+  border-radius: var(--pill);
+  margin-bottom: 6px;
+}
+
+.grouphead h1 {
+  font-size: 1.9rem;
+  line-height: 1.1;
+  font-weight: 800;
+  letter-spacing: -1px;
+  color: var(--ink);
+}
+
+.grouphead-meta {
+  font-size: 0.82rem;
+  color: var(--ink-2);
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+.group-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-top: 26px;
+}
+
+.group-stat {
+  padding: 16px 18px;
+}
+
+.group-stat-n {
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: var(--ink);
+}
+
+.group-stat-n--sm {
+  font-size: 1.1rem;
+}
+
+.group-stat-l {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--ink-2);
+  margin-top: 4px;
+}
+
+.group-releases {
+  margin-top: 32px;
+}
+
+.group-releases h4 {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--ink-3);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.group-rel-list {
+  padding: 0 !important;
+  display: flex;
+  flex-direction: column;
+}
+
+.group-rel-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--glass-border);
+  transition: background var(--dur) var(--ease);
+}
+
+.group-rel-row:last-child {
+  border-bottom: none;
+}
+
+.group-rel-row:hover {
+  background: var(--glass-bg);
+}
+
+.group-rel-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--ink);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.group-rel-dn {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--ink-3);
+  font-family: var(--mono);
+  white-space: nowrap;
+}

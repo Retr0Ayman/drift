@@ -70,3 +70,48 @@ export const slugify = (s: string): string =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "")
     .slice(0, 60);
+
+/* Deterministic name -> hue, so a group's initials badge stays the same
+   color everywhere it appears without a lookup table. */
+export function colorForName(name: string): string {
+  let h = 0;
+  for (let i = 0; i < (name || "").length; i++) h = (h * 31 + name.charCodeAt(i)) | 0;
+  return `hsl(${Math.abs(h) % 360}, 60%, 55%)`;
+}
+
+export function fmtDateMs(ms: number | null | undefined): string {
+  return ms ? new Date(ms).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "—";
+}
+
+/* Prefers the release's raw xREL timestamp (r.ts, seconds); seed data has no
+   raw timestamp, so falls back to parsing its display date string. Returns
+   null (never a fabricated guess) if either side is unparseable. */
+export function releaseTs(r: Release): number | null {
+  if (r.ts) return r.ts * 1000;
+  const t = Date.parse(r.date || "");
+  return isNaN(t) ? null : t;
+}
+
+/* "Cracked in N day(s)" / "Leaked N day(s) early" -- a release's own timing
+   relative to the game's Steam release date, distinct from relStatus (which
+   compares crack BUILD number to current build, not release DATE to release
+   date). */
+export function crackTimingLabel(g: Game, r: Release): string | null {
+  const releaseTsVal = g.released ? Date.parse(g.released) : NaN;
+  const crackTsVal = releaseTs(r);
+  if (isNaN(releaseTsVal) || crackTsVal == null) return null;
+  const days = Math.round((crackTsVal - releaseTsVal) / 86400000);
+  if (days === 0) return "Cracked on release day";
+  if (days > 0) return `Cracked in ${days} day${days === 1 ? "" : "s"}`;
+  return `Leaked ${Math.abs(days)} day${Math.abs(days) === 1 ? "" : "s"} early`;
+}
+
+/* Same underlying comparison as crackTimingLabel, terser "D+N"/"D-N" form for
+   the group release list where every row needs to stay scannable. */
+export function dPlusNLabel(g: Game, r: Release): string | null {
+  const releaseTsVal = g.released ? Date.parse(g.released) : NaN;
+  const crackTsVal = releaseTs(r);
+  if (isNaN(releaseTsVal) || crackTsVal == null) return null;
+  const days = Math.round((crackTsVal - releaseTsVal) / 86400000);
+  return (days >= 0 ? "D+" : "D") + days;
+}
