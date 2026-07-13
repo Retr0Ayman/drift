@@ -27,7 +27,13 @@ export function allReleases(games: Game[]): GameRelease[] {
   return list;
 }
 
-export function groupsIndex(games: Game[]): GroupEntry[] {
+/* `extra` covers groups with zero presence in `games` right now -- notably
+   the starred P2P groups (DenuvOwO/voices38), which never appear in the
+   main Windows browse feed at all, so once live data replaces the seed
+   catalog there's nothing here to derive a card from without it. Entries
+   already derived from `games` take precedence (they have a real computed
+   `out` count); `extra` only fills gaps. */
+export function groupsIndex(games: Game[], extra: GroupEntry[] = []): GroupEntry[] {
   const map: Record<string, GroupEntry> = {};
   allReleases(games).forEach(({ g, r }) => {
     const name = r.group || "unknown";
@@ -40,6 +46,9 @@ export function groupsIndex(games: Game[]): GroupEntry[] {
     if (relOutdated(g, r)) map[key].out++;
     const ts = releaseTs(r);
     if (ts && ts > map[key].lastTs) map[key].lastTs = ts;
+  });
+  extra.forEach((e) => {
+    if (!map[e.key]) map[e.key] = e;
   });
   return Object.values(map).sort((a, b) => {
     if (a.starred !== b.starred) return a.starred ? -1 : 1;

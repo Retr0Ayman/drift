@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useCatalog } from "../../hooks/useCatalog";
+import { useStarredGroupSummaries } from "../../hooks/useStarredGroupSummaries";
 import { groupsIndex } from "../../lib/groups";
 import { colorForName, fmtDateMs } from "../../lib/format";
 import GlassPanel from "../ui/GlassPanel";
@@ -9,7 +10,8 @@ import "./Groups.css";
 export default function GroupsDirectory() {
   const navigate = useNavigate();
   const { games } = useCatalog();
-  const idx = groupsIndex(games);
+  const { summaries } = useStarredGroupSummaries();
+  const idx = groupsIndex(games, summaries);
   const totalCracks = idx.reduce((s, e) => s + e.count, 0);
 
   return (
