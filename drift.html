@@ -267,6 +267,14 @@ nav .search svg{position:absolute;left:11px;width:15px;height:15px;color:var(--i
 .relcard .rdata{display:flex;gap:26px;margin-top:14px;flex-wrap:wrap}
 .relcard .rdata .d .k{font-size:.56rem;font-weight:700;color:var(--ink3);letter-spacing:.5px;text-transform:uppercase}
 .relcard .rdata .d .v{font-size:.92rem;font-weight:700;color:var(--ink);margin-top:6px;font-family:var(--mono)}
+.rinfogrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-top:12px;
+  padding:12px 14px;border-radius:var(--r-xs);background:var(--fill)}
+.rinfogrid .ri .rik{font-size:.56rem;font-weight:700;color:var(--ink3);letter-spacing:.5px;text-transform:uppercase}
+.rinfogrid .ri .riv{font-size:.82rem;font-weight:600;color:var(--ink);margin-top:5px}
+.rinfogrid .ri .riv.rgroup-link{color:var(--blue);cursor:pointer}
+.rinfogrid .ri .riv.rgroup-link:hover{text-decoration:underline}
+.rtiming{font-size:.62rem;font-weight:700;letter-spacing:.3px;padding:5px 10px;border-radius:20px;
+  background:var(--fill);color:var(--ink2);white-space:nowrap}
 .relcard .rnote{font-size:.82rem;color:var(--ink2);margin-top:12px;line-height:1.5;font-weight:450}
 .relcard.empty{color:var(--ink3);font-size:.88rem;text-align:center;padding:22px;font-weight:500}
 .rlegend{display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;font-size:.72rem;color:var(--ink3);font-weight:500}
@@ -307,12 +315,23 @@ nav .search svg{position:absolute;left:11px;width:15px;height:15px;color:var(--i
 .gstat{border-radius:var(--r-sm);padding:15px 17px}
 .gstat .n{font-size:1.6rem;font-weight:800;letter-spacing:-.5px}
 .gstat .l{font-size:.68rem;font-weight:600;color:var(--ink2);margin-top:3px}
+.gscoped{font-size:.78rem;color:var(--ink3);font-weight:600;margin-top:12px}
+.gtag{display:inline-block;font-size:.6rem;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--ink2);background:var(--fill);padding:4px 10px;border-radius:20px;margin-bottom:6px}
 .gindex-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
 .gcard{border-radius:var(--r-sm);padding:18px;cursor:pointer;background:var(--glass);border:.5px solid var(--hair);box-shadow:var(--shadow);transition:transform .3s,box-shadow .3s}
 .gcard:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg)}
 .gcard:active{transform:scale(.97);transition-duration:.12s}
+.gcard-top{display:flex;align-items:center;gap:10px}
+.gbadge{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;font-weight:800;font-size:.76rem;color:#fff;flex:none}
 .gcard .gn{font-weight:800;font-size:1.02rem}
-.gcard .gc{font-size:.72rem;color:var(--ink2);margin-top:7px;font-weight:600}
+.gcard .gc{font-size:.72rem;color:var(--ink2);margin-top:9px;font-weight:600}
+.gcard .glast{font-size:.68rem;color:var(--ink3);margin-top:4px;font-weight:500}
+.grellist{display:flex;flex-direction:column;gap:0;border-radius:var(--r-sm);overflow:hidden;background:var(--glass);border:.5px solid var(--hair)}
+.grelrow{display:flex;align-items:center;gap:12px;padding:13px 16px;cursor:pointer;border-bottom:.5px solid var(--hair2);transition:background .15s}
+.grelrow:last-child{border-bottom:none}
+.grelrow:hover{background:var(--fill)}
+.grel-title{font-size:.88rem;font-weight:600;color:var(--ink);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gdn{font-size:.68rem;font-weight:700;color:var(--ink3);font-family:var(--mono);white-space:nowrap}
 
 /* side */
 .side{position:sticky;top:78px;display:flex;flex-direction:column;gap:14px}
@@ -569,6 +588,43 @@ function relStatus(g,r){
 }
 function relOutdated(g,r){return relStatus(g,r)==='out';}
 function anyOutdated(g){return g.releases&&g.releases.some(r=>relOutdated(g,r));}
+/* "Cracked in N day(s)" / "Leaked N day(s) early" — a release's own timing
+   relative to the game's Steam release date, distinct from relStatus (which
+   compares crack BUILD number to current build, not release DATE to release
+   date). Prefers the release's raw xREL timestamp (r.ts, seconds); seed data
+   has no raw timestamp, so falls back to parsing its display date string.
+   Returns null (never a fabricated guess) if either side is missing/unparseable
+   — callers fall back to the plain rflag badge in that case, per spec. */
+function releaseTs(r){
+  if(r.ts)return r.ts*1000;
+  const t=Date.parse(r.date||'');
+  return isNaN(t)?null:t;
+}
+function crackTimingLabel(g,r){
+  const releaseTsVal=g.released?Date.parse(g.released):NaN;
+  const crackTsVal=releaseTs(r);
+  if(isNaN(releaseTsVal)||crackTsVal==null)return null;
+  const days=Math.round((crackTsVal-releaseTsVal)/86400000);
+  if(days===0)return 'Cracked on release day';
+  if(days>0)return `Cracked in ${days} day${days===1?'':'s'}`;
+  return `Leaked ${Math.abs(days)} day${Math.abs(days)===1?'':'s'} early`;
+}
+/* Same underlying comparison as crackTimingLabel, terser "D+N"/"D-N" form for
+   the group release list where every row needs to stay scannable. */
+function dPlusNLabel(g,r){
+  const releaseTsVal=g.released?Date.parse(g.released):NaN;
+  const crackTsVal=releaseTs(r);
+  if(isNaN(releaseTsVal)||crackTsVal==null)return null;
+  const days=Math.round((crackTsVal-releaseTsVal)/86400000);
+  return (days>=0?'D+':'D')+days;
+}
+/* Deterministic name -> hue, so a group's initials badge stays the same
+   color everywhere it appears without a lookup table. */
+function colorForName(name){
+  let h=0;for(let i=0;i<(name||'').length;i++)h=(h*31+name.charCodeAt(i))|0;
+  return `hsl(${Math.abs(h)%360},60%,50%)`;
+}
+function fmtDateMs(ms){return ms?new Date(ms).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'—';}
 const REL_BUILD_COLOR={out:'var(--orange)',unv:'var(--unv)',cur:'var(--blue)'};
 const REL_FLAG_LABEL={out:'Outdated',unv:'Unverified',cur:'Current'};
 function driftDelta(g){const b=bestBuild(g);return (b&&g.currentBuild&&b<g.currentBuild)?(g.currentBuild-b):-1;}
@@ -619,17 +675,17 @@ async function liveSearchFallback(term){
     const byGame=parseReleaseRows(list);
     const first=Object.values(byGame)[0];   // xREL ranks results server-side; first = top match
     if(!first)return;
-    const existing=GAMES.find(g=>g.xrelKey===first.xrelKey);
-    let target=existing;
+    const key=first.xrelKey;
+    let target=GAMES.find(g=>g.xrelKey===key);
     if(!target){
-      await resolveAndEnrich(first);
-      if(term!==curSearch)return;         // user moved on while we were waiting
-      if(first.appid==null)return;        // no Windows/Steam release -> nothing to jump to
-      GAMES.push(first);
-      target=first;
-    }else if(target.appid==null){
-      return;
+      // Routes through the same serialized merge path as scroll/archive
+      // paging, so this can't race a concurrent merge into a duplicate entry.
+      await mergeGamesIntoCatalog({[key]:first});
+      target=GAMES.find(g=>g.xrelKey===key);
+      if(!target)return;   // no Windows/Steam release -> nothing to jump to
+      renderHome();
     }
+    if(term!==curSearch)return;   // user moved on while we were waiting
     go('game',target.id);
   }catch(e){}
 }
@@ -839,12 +895,18 @@ function renderGame(id){
   const sm=statusMeta(g),bd=bestBuild(g),out=driftDelta(g);
   const relHtml=(g.releases&&g.releases.length)?g.releases.map((r,ri)=>{
     const st=relStatus(g,r),delta=st==='out'?(g.currentBuild-r.build):0,nid='nfo-'+g.id+'-'+ri,gkey=slugify(r.group||'unknown');
+    const timing=crackTimingLabel(g,r);
     return `<div class="relcard ${r.method}">
-      <div class="rtop"><span class="rmethod">${esc(r.label)}</span><span class="rgroup" onclick="go('group','${gkey}')">${esc(r.group)}</span><span class="rflag ${st}">${REL_FLAG_LABEL[st]}</span></div>
+      <div class="rtop"><span class="rmethod">${esc(r.label)}</span><span class="rflag ${st}">${REL_FLAG_LABEL[st]}</span>${timing?`<span class="rtiming">${esc(timing)}</span>`:''}</div>
+      <div class="rinfogrid">
+        <div class="ri"><div class="rik">Date Release</div><div class="riv">${esc(g.released||'—')}</div></div>
+        <div class="ri"><div class="rik">Protection</div><div class="riv">${esc((g.tags||[]).join(', ')||'—')}</div></div>
+        <div class="ri"><div class="rik">Group</div><div class="riv rgroup-link" onclick="go('group','${gkey}')">${esc(r.group)}</div></div>
+        <div class="ri"><div class="rik">Crack Date</div><div class="riv">${esc(r.date||'—')}</div></div>
+      </div>
       <div class="rdata">
         <div class="d"><div class="k">Crack build</div><div class="v" style="color:${REL_BUILD_COLOR[st]}">${fmtBuild(r.build)}</div></div>
         <div class="d"><div class="k">Version</div><div class="v">${esc(r.version||'—')}</div></div>
-        <div class="d"><div class="k">Released</div><div class="v">${esc(r.date||'—')}</div></div>
         ${st==='out'?`<div class="d"><div class="k">Drift</div><div class="v" style="color:var(--orange)">−${delta.toLocaleString('en-US')}</div></div>`:''}
       </div>${r.note?`<div class="rnote">${esc(r.note)}</div>`:''}
       <button class="nfo-btn" data-xrel="${r.xrelId||''}" onclick="toggleNfo('${nid}',this)">▸ View .NFO</button>
@@ -927,61 +989,94 @@ function groupsIndex(){
   const map={};
   allReleases().forEach(({g,r})=>{
     const name=r.group||'unknown',key=slugify(name);
-    if(!map[key])map[key]={key,name,count:0,hv:0,trad:0,out:0};
+    if(!map[key])map[key]={key,name,count:0,hv:0,trad:0,out:0,lastTs:0};
     map[key].count++;map[key][r.method]=(map[key][r.method]||0)+1;
     if(relOutdated(g,r))map[key].out++;
+    const ts=releaseTs(r);if(ts&&ts>map[key].lastTs)map[key].lastTs=ts;
   });
   return Object.values(map).sort((a,b)=>b.count-a.count||a.name.localeCompare(b.name));
 }
 function renderGroups(){
   const idx=groupsIndex();
+  const totalCracks=idx.reduce((s,e)=>s+e.count,0);
   $('#groups').innerHTML=`
     <button class="back" onclick="go('home')">‹ All titles</button>
     <div class="dhead"><div class="code">Scene groups</div><h1>Every group DRIFT is tracking</h1>
-      <p style="color:var(--ink2);font-weight:450;margin-top:8px;max-width:60ch;font-size:.96rem">Cracking groups seen across tracked titles, hypervisor and traditional alike. Open a group to see its releases and NFOs.</p></div>
+      <p style="color:var(--ink2);font-weight:450;margin-top:8px;max-width:60ch;font-size:.96rem">Cracking groups seen across tracked titles, hypervisor and traditional alike. Open a group to see its releases and NFOs.</p>
+      <div class="gscoped">${idx.length} group${idx.length===1?'':'s'} synced · ${totalCracks} crack${totalCracks===1?'':'s'} synced</div>
+    </div>
     <div class="gindex-grid" style="margin-top:24px">
-      ${idx.map(e=>{const m=(e.hv||0)>=(e.trad||0)?'hv':'trad';
-        return `<div class="gcard" onclick="go('group','${e.key}')">
-          <div class="gn" style="color:${m==='hv'?'var(--purple)':'var(--blue)'}">${esc(e.name)}</div>
-          <div class="gc">${e.count} release${e.count===1?'':'s'}${e.hv?' · '+e.hv+' HV':''}${e.trad?' · '+e.trad+' trad':''}${e.out?' · '+e.out+' outdated':''}</div>
-        </div>`;}).join('')}
+      ${idx.map(e=>`<div class="gcard" onclick="go('group','${e.key}')">
+          <div class="gcard-top">
+            <div class="gbadge" style="background:${colorForName(e.name)}">${esc(e.name.slice(0,2).toUpperCase())}</div>
+            <div class="gn">${esc(e.name)}</div>
+          </div>
+          <div class="gc">${e.count} crack${e.count===1?'':'s'}${e.out?' · '+e.out+' outdated':''}</div>
+          <div class="glast">Last active ${fmtDateMs(e.lastTs)}</div>
+        </div>`).join('')}
     </div>`;
   window.scrollTo({top:0,behavior:'smooth'});
 }
+let CUR_GROUP_KEY=null, GROUP_PAGE=1;
+const GROUP_PAGE_SIZE=20;
+function setGroupPage(n){GROUP_PAGE=n;renderGroup(CUR_GROUP_KEY);}
+/* Bounded page-number window, same shape as the home pager (renderPager) —
+   reuses its .pager/.pagebtn/.pagegap styling for a consistent look. */
+function groupPagerHtml(totalPages,cur){
+  if(totalPages<=1)return '';
+  const nums=new Set([1,2,totalPages-1,totalPages,cur-1,cur,cur+1].filter(n=>n>=1&&n<=totalPages));
+  const sorted=[...nums].sort((a,b)=>a-b);
+  let html=`<button class="pagebtn" ${cur<=1?'disabled':''} onclick="setGroupPage(${cur-1})">‹</button>`;
+  let prev=0;
+  for(const n of sorted){
+    if(prev&&n-prev>1)html+='<span class="pagegap">…</span>';
+    html+=`<button class="pagebtn${n===cur?' on':''}" onclick="setGroupPage(${n})">${n}</button>`;
+    prev=n;
+  }
+  html+=`<button class="pagebtn" ${cur>=totalPages?'disabled':''} onclick="setGroupPage(${cur+1})">›</button>`;
+  return html;
+}
 function renderGroup(key){
+  if(key!==CUR_GROUP_KEY){CUR_GROUP_KEY=key;GROUP_PAGE=1;}
   const matches=allReleases().filter(({r})=>slugify(r.group||'unknown')===key);
   if(!matches.length){go('groups');return;}
   const name=matches[0].r.group||'unknown';
   const hv=matches.filter(x=>x.r.method==='hv').length,trad=matches.length-hv;
   const out=matches.filter(({g,r})=>relOutdated(g,r)).length;
   const m=hv>=trad?'hv':'trad';
-  const relHtml=matches.map(({g,r},ri)=>{
-    const st=relStatus(g,r),delta=st==='out'?(g.currentBuild-r.build):0,nid='gnfo-'+key+'-'+ri;
-    return `<div class="relcard ${r.method}">
-      <div class="rgame" onclick="go('game','${g.id}')">${esc(g.title)}<span class="arrow">Open game ›</span></div>
-      <div class="rtop"><span class="rmethod">${esc(r.label)}</span><span class="rflag ${st}">${REL_FLAG_LABEL[st]}</span></div>
-      <div class="rdata">
-        <div class="d"><div class="k">Crack build</div><div class="v" style="color:${REL_BUILD_COLOR[st]}">${fmtBuild(r.build)}</div></div>
-        <div class="d"><div class="k">Version</div><div class="v">${esc(r.version||'—')}</div></div>
-        <div class="d"><div class="k">Released</div><div class="v">${esc(r.date||'—')}</div></div>
-        ${st==='out'?`<div class="d"><div class="k">Drift</div><div class="v" style="color:var(--orange)">−${delta.toLocaleString('en-US')}</div></div>`:''}
-      </div>${r.note?`<div class="rnote">${esc(r.note)}</div>`:''}
-      <button class="nfo-btn" data-xrel="${r.xrelId||''}" onclick="toggleNfo('${nid}',this)">▸ View .NFO</button>
-      <div class="nfo" id="${nid}"><pre class="nfo-ascii">${esc(nfoText(g,r))}</pre></div></div>`;
+  const lastTs=matches.reduce((mx,{r})=>{const t=releaseTs(r);return t&&t>mx?t:mx;},0);
+  const daysSince=lastTs?Math.floor((Date.now()-lastTs)/86400000):null;
+
+  const sorted=[...matches].sort((a,b)=>(releaseTs(b.r)||0)-(releaseTs(a.r)||0));
+  const totalPages=Math.max(1,Math.ceil(sorted.length/GROUP_PAGE_SIZE));
+  const cur=Math.min(GROUP_PAGE,totalPages);
+  const pageItems=sorted.slice((cur-1)*GROUP_PAGE_SIZE,cur*GROUP_PAGE_SIZE);
+  const rowsHtml=pageItems.map(({g,r})=>{
+    const dn=dPlusNLabel(g,r);
+    return `<div class="grelrow" onclick="go('game','${g.id}')">
+      <span class="grel-title">${esc(g.title)}</span>
+      <span class="mtag ${r.method}">${r.method==='hv'?'HV':'TRAD'}</span>
+      ${dn?`<span class="gdn">${esc(dn)}</span>`:''}
+    </div>`;
   }).join('');
+
   $('#group').innerHTML=`
     <button class="back" onclick="go('groups')">‹ Scene groups</button>
     <div class="grouphead">
-      <div class="avatar" style="background:${m==='hv'?'var(--purple)':'var(--blue)'}">${esc(name.slice(0,2).toUpperCase())}</div>
-      <div><h1>${esc(name)}</h1><div class="gmeta">${m==='hv'?'Hypervisor':'Traditional'} crack group${out?' · '+out+' release'+(out===1?'':'s')+' currently outdated':''}</div></div>
+      <div class="avatar" style="background:${colorForName(name)}">${esc(name.slice(0,2).toUpperCase())}</div>
+      <div><div class="gtag">Scene Group</div><h1>${esc(name)}</h1>
+        <div class="gmeta">${m==='hv'?'Hypervisor':'Traditional'}-leaning${out?' · '+out+' release'+(out===1?'':'s')+' currently outdated':''}</div></div>
     </div>
     <div class="gstats">
-      <div class="gstat glass"><div class="n">${matches.length}</div><div class="l">Releases tracked</div></div>
-      <div class="gstat glass"><div class="n" style="color:var(--purple)">${hv}</div><div class="l">Hypervisor</div></div>
-      <div class="gstat glass"><div class="n" style="color:var(--blue)">${trad}</div><div class="l">Traditional</div></div>
-      <div class="gstat glass"><div class="n" style="color:var(--orange)">${out}</div><div class="l">Currently outdated</div></div>
+      <div class="gstat glass"><div class="n">${matches.length}</div><div class="l">Cracks tracked</div></div>
+      <div class="gstat glass"><div class="n" style="font-size:1.1rem">${fmtDateMs(lastTs)}</div><div class="l">Last active</div></div>
+      <div class="gstat glass"><div class="n" style="color:var(--orange)">${daysSince==null?'—':daysSince}</div><div class="l">Days since last crack</div></div>
     </div>
-    <div class="rel" style="margin-top:26px"><h4>Releases</h4><div class="rgrid">${relHtml}</div></div>`;
+    <div class="rel" style="margin-top:26px">
+      <h4>Releases by ${esc(name)}</h4>
+      <div class="grellist">${rowsHtml}</div>
+      <div class="pager">${groupPagerHtml(totalPages,cur)}</div>
+    </div>`;
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
@@ -1121,7 +1216,7 @@ function parseReleaseRows(list){
     const m=methodForGroup(rel.group_name);
     const ver=parseVersionFromDirname(rel.dirname)||rel.dirname||'';
     byGame[key].releases.push({method:m,label:m==='hv'?'Hypervisor':'Traditional',group:rel.group_name||'scene',
-      build:null,version:ver,date:dateFromTs(rel.time),note:rel.dirname||'',xrelId:rel.id});
+      build:null,version:ver,date:dateFromTs(rel.time),ts:rel.time||0,note:rel.dirname||'',xrelId:rel.id});
     // real unix timestamp (seconds) of the most recent scene release seen for
     // this game — the sort comparator (gTimestamp) prefers this over the
     // coarse `year` field once a game has any live-tracked release.
@@ -1139,7 +1234,20 @@ function parseReleaseRows(list){
    are routinely wrong). A title that never resolves is dropped rather than
    shown with placeholder art; it'll simply be retried (via the memoized
    findAppid cache) the next time its xrelKey turns up on a later page/poll. */
-async function mergeGamesIntoCatalog(byGame){
+/* All four call sites (loadNextLivePage, refreshLiveFeed, archiveTick,
+   liveSearchFallback) can legitimately fire close together — a background
+   archive tick landing while the user scrolls, or searches, is normal, not
+   an edge case. Without serialization, two concurrent calls can each read
+   "not in GAMES yet" for the same game before either has pushed, and both
+   push their own duplicate entry (confirmed happening in testing). Queue
+   every call through one promise chain so merges always run one at a time. */
+let MERGE_QUEUE=Promise.resolve();
+function mergeGamesIntoCatalog(byGame){
+  const task=MERGE_QUEUE.then(()=>doMergeGamesIntoCatalog(byGame));
+  MERGE_QUEUE=task.catch(()=>{});
+  return task;
+}
+async function doMergeGamesIntoCatalog(byGame){
   const added=[],candidates=[];
   for(const key in byGame){
     const parsed=byGame[key];
@@ -1321,6 +1429,64 @@ async function refreshLiveFeed(){
   }catch(e){}
 }
 
+/* ================= DEEP-HISTORY ARCHIVE WALK =================
+   The WINDOWS-category feed above (goLive/loadNextLivePage/refreshLiveFeed)
+   only reaches back through browse_category's ~5000-most-recent-release
+   window. Real historical depth ("all games possible", sorting cleanly by
+   year) needs xREL's actual per-month archive, which goes back indefinitely
+   far (confirmed live to 2020, presumably further) — but archive mode is
+   all-categories (doesn't combine with category_name/ext_info_type, see
+   worker.js), so most items in any given month are movies/TV, and walking
+   every page of every month back to ~2016 would be tens of thousands of
+   requests. This walks one page (100 raw items) per month, oldest-first
+   from "now", on a slow interval — a genuine background trickle that
+   gradually deepens the catalog for browsing/search/sort without blocking
+   initial load or hammering the Worker/xREL. */
+let ARCHIVE_MONTH=null, ARCHIVE_STOPPED=false, ARCHIVE_EMPTY_STREAK=0, ARCHIVE_TICKING=false;
+const ARCHIVE_FLOOR='2016-01';      // don't walk earlier than this
+const ARCHIVE_TICK_MS=12000;        // one month per ~12s — a trickle, not a crawl
+const ARCHIVE_EMPTY_STREAK_STOP=12; // ~2 years of zero master_game hits -> give up
+function prevYearMonth(ym){
+  const [y,m]=ym.split('-').map(Number);
+  const d=new Date(y,m-2,1);   // m is 1-based; -2 lands one month back, 0-indexed
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+}
+async function archiveTick(){
+  // Guard against overlap: if one tick's fetch+resolve+enrich+merge ever runs
+  // longer than ARCHIVE_TICK_MS, setInterval fires the next tick anyway —
+  // without this, two concurrent ticks can both read ARCHIVE_MONTH/GAMES
+  // before either has written, each concluding a game is "new" and pushing
+  // its own duplicate entry (confirmed happening in testing before this guard).
+  if(!CONFIG.XREL_PROXY||ARCHIVE_STOPPED||ARCHIVE_TICKING)return;
+  ARCHIVE_TICKING=true;
+  try{
+    if(ARCHIVE_MONTH==null){
+      const now=new Date();
+      ARCHIVE_MONTH=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+    }
+    if(ARCHIVE_MONTH<ARCHIVE_FLOOR){ARCHIVE_STOPPED=true;return;}
+    try{
+      const r=await fetch(xrelBase()+'/archive?month='+ARCHIVE_MONTH+'&page=1&per_page=100');
+      const data=await r.json();
+      const list=data?.list||[];
+      const byGame=parseReleaseRows(list);   // already filters to ext_info.type==='master_game'
+      if(Object.keys(byGame).length){
+        ARCHIVE_EMPTY_STREAK=0;
+        const added=await mergeGamesIntoCatalog(byGame);
+        if(added.length)renderHome();
+      }else{
+        ARCHIVE_EMPTY_STREAK++;
+        if(ARCHIVE_EMPTY_STREAK>=ARCHIVE_EMPTY_STREAK_STOP)ARCHIVE_STOPPED=true;
+      }
+    }catch(e){return;}   // transient failure — retry this same month next tick
+    ARCHIVE_MONTH=prevYearMonth(ARCHIVE_MONTH);
+  }finally{ARCHIVE_TICKING=false;}
+}
+function startArchiveWalk(){
+  if(!CONFIG.XREL_PROXY)return;
+  setInterval(archiveTick,ARCHIVE_TICK_MS);
+}
+
 /* ================= DEPLOY NOTE ================= */
 $('#deploybox').innerHTML=`<b>Go fully live &amp; automatic (free — see DEPLOY.md):</b><br>
 1 · Host free on <b>GitHub Pages</b> (optional domain). 2 · <b>Steam API</b> via free Cloudflare Worker → dev/publisher/genres/media/DLC (<code>STEAM_PROXY</code>). 3 · <b>xREL API</b> → accurate groups, paginated as you scroll, re-synced every few minutes for new drops (<code>XREL_PROXY</code>). 4 · <b>status.json</b> → curated crack-build pairings (<code>STATUS_FEED</code>). 5 · <b>build-sync</b> GitHub Action pulls latest build ids from <code>api.steamcmd.net</code> automatically. Catalog scales to thousands — the grid lazy-loads as you scroll.`;
@@ -1338,7 +1504,7 @@ if(location.hash){
 // appid backfill only needs STEAM_PROXY, not xREL — runs regardless of
 // whether goLive()'s xREL path below is configured at all.
 backfillMissingAppids().then(renderHome);
-goLive();
+goLive().then(startArchiveWalk);
 </script>
 </body>
 </html>

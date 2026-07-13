@@ -15,8 +15,14 @@
      GET /xrel?q=black+myth     -> search xREL releases — no auth needed
      GET /xrel/info?dirname=..  -> single release info by dirname — no auth needed
      GET /xrel/browse?page=1&per_page=100
-                                 -> paginated release feed for catalog crawling
-                                    (client walks pages on scroll) — no auth needed
+                                 -> paginated Windows-games catalog (browse_category,
+                                    category_name=WINDOWS) for catalog crawling
+                                    (client walks pages on scroll + numbered pager)
+                                    — no auth needed
+     GET /xrel/archive?month=2020-06&page=1&per_page=100
+                                 -> deep-history crawl by calendar month
+                                    (release/latest.json?archive=), all-categories —
+                                    client filters to master_game itself — no auth needed
      GET /xrel/nfo?id=..        -> release NFO image (optional — needs
                                     XREL_CLIENT_ID/XREL_CLIENT_SECRET secrets)
 
@@ -59,7 +65,7 @@ export default {
 
     // ---------- xREL: releases, groups, NFOs — all but /nfo need no auth ----------
     if (p.includes("/xrel")) {
-      const sub = p.split("/xrel")[1].replace(/^\//, ""); // "", "browse", "info", "nfo"
+      const sub = p.split("/xrel")[1].replace(/^\//, ""); // "", "browse", "archive", "info", "nfo"
       let api, auth = false;
       if (sub === "nfo") {
         // Confirmed against xREL's official OpenAPI spec + wiki: the real path
@@ -70,11 +76,37 @@ export default {
       } else if (sub === "info") {
         api = "https://api.xrel.to/v2/release/info.json?dirname=" + enc(url.searchParams.get("dirname"));
       } else if (sub === "browse") {
-        // Paginated catalog crawl (client walks page=1,2,3... on scroll). Same
-        // unauthenticated release/latest.json endpoint as ?latest=1 below, just
-        // with an explicit page cursor forwarded through.
-        api = "https://api.xrel.to/v2/release/latest.json?page=" +
+        // Paginated catalog crawl (client walks page=1,2,3... on scroll, plus
+        // the numbered pager). release/browse_category.json?category_name=
+        // WINDOWS is xREL's actual Windows-games category — confirmed live
+        // against /release/categories.json (GAMES has a WINDOWS sub-category)
+        // and browse_category.json itself: every page comes back ~100% real
+        // Windows game releases with working pagination.total_pages. This
+        // replaced release/latest.json, an all-categories firehose (movies/
+        // TV/console dominate it) capped at ~1000 recent items total, where
+        // games were a tiny, constantly-shifting fraction — the actual cause
+        // of "only ever shows a few games". category_name scopes server-side;
+        // the client's ext_info.type==='master_game' check stays as a
+        // cheap defensive filter (e.g. xREL's generic "Indie-Spiele" catch-all
+        // entries still come through with type master_game but resolve to no
+        // real Steam appid, so the appid hard-filter drops them anyway).
+        api = "https://api.xrel.to/v2/release/browse_category.json?category_name=WINDOWS&page=" +
               enc(url.searchParams.get("page") || "1") + "&per_page=" +
+              enc(url.searchParams.get("per_page") || "100");
+      } else if (sub === "archive") {
+        // Deep-history crawl by calendar month, for catalog depth browse_category
+        // can't reach: browse_category's total_count caps around ~5000 most-
+        // recent releases regardless of page, while release/latest.json?archive=
+        // YYYY-MM walks xREL's actual archive indefinitely far back (confirmed
+        // live back to 2020). archive does NOT combine with category_name or
+        // ext_info_type on either endpoint (both confirmed empirically to be
+        // silently ignored together) — so this is all-categories per month;
+        // the client applies its own ext_info.type==='master_game' filter,
+        // same as everywhere else.
+        const month = url.searchParams.get("month");
+        if (!/^\d{4}-\d{2}$/.test(month || "")) return j({ error: "pass ?month=YYYY-MM" }, 60, 400);
+        api = "https://api.xrel.to/v2/release/latest.json?archive=" + enc(month) +
+              "&page=" + enc(url.searchParams.get("page") || "1") + "&per_page=" +
               enc(url.searchParams.get("per_page") || "100");
       } else if (url.searchParams.get("latest")) {
         api = "https://api.xrel.to/v2/release/latest.json?per_page=" +
