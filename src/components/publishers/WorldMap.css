@@ -1,0 +1,26 @@
+.worldmap {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.worldmap-country {
+  fill: var(--glass-bg-strong);
+  stroke: var(--glass-border);
+  stroke-width: 0.5;
+  transition: fill var(--dur) var(--ease);
+}
+
+.worldmap-country--tagged {
+  fill: color-mix(in srgb, var(--accent) 28%, var(--glass-bg-strong));
+  cursor: pointer;
+}
+
+.worldmap-country--tagged:hover {
+  fill: color-mix(in srgb, var(--accent) 55%, var(--glass-bg-strong));
+}
+
+.worldmap-country--selected {
+  fill: var(--accent);
+  stroke: var(--glass-border-strong);
+}

@@ -53,6 +53,69 @@ export function publisherDomain(publisher: string): string | null {
   return PUBLISHER_DOMAINS[normalize(publisher)] || null;
 }
 
+/* Curated AAA tier -- extendable, same honesty rule as everywhere else in
+   this file: only publishers we can confidently name as AAA go here,
+   everything else is "indie/other" rather than guessed. */
+const AAA_PUBLISHERS = new Set<string>([
+  "ubisoft",
+  "electronic arts",
+  "ea sports",
+  "capcom",
+  "bandai namco entertainment",
+  "bandai namco studios",
+  "warner bros. games",
+  "2k",
+  "take-two interactive",
+  "bethesda softworks",
+  "square enix",
+  "cd projekt red",
+  "krafton",
+  "sega",
+  "activision",
+  "rockstar games",
+]);
+
+export function isAaaPublisher(publisher: string): boolean {
+  return AAA_PUBLISHERS.has(normalize(publisher));
+}
+
+/* Curated publisher -> HQ country, matching the exact Natural Earth country
+   names used by the world-atlas TopoJSON (countries-110m.json's
+   properties.name) so the world map's click-to-filter can match directly.
+   No API gives us this -- same rule as the franchise map: only tag what's
+   actually known, everything else stays "unknown region" rather than a
+   guess. Extend as new publishers show up. */
+const PUBLISHER_COUNTRY: Record<string, string> = {
+  ubisoft: "France",
+  "electronic arts": "United States of America",
+  "ea sports": "United States of America",
+  capcom: "Japan",
+  "bandai namco entertainment": "Japan",
+  "bandai namco studios": "Japan",
+  "warner bros. games": "United States of America",
+  "2k": "United States of America",
+  "take-two interactive": "United States of America",
+  "bethesda softworks": "United States of America",
+  "square enix": "Japan",
+  "cd projekt red": "Poland",
+  krafton: "South Korea",
+  sega: "Japan",
+  activision: "United States of America",
+  "rockstar games": "United States of America",
+  "focus entertainment": "France",
+  "devolver digital": "United States of America",
+  team17: "United Kingdom",
+  "paradox interactive": "Sweden",
+  "annapurna interactive": "United States of America",
+  "private division": "United States of America",
+  "thq nordic": "Austria",
+  "koei tecmo": "Japan",
+};
+
+export function publisherCountry(publisher: string): string | null {
+  return PUBLISHER_COUNTRY[normalize(publisher)] || null;
+}
+
 export function companyIcon(domain: string): string {
   return `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
 }
@@ -106,6 +169,8 @@ export interface PublisherEntry {
   name: string;
   count: number;
   domain: string | null;
+  aaa: boolean;
+  country: string | null;
 }
 
 export function publishersIndex(games: Game[]): PublisherEntry[] {
@@ -114,10 +179,22 @@ export function publishersIndex(games: Game[]): PublisherEntry[] {
     const name = g.publisher?.trim();
     if (!name) return;
     const key = slugify(name);
-    if (!map[key]) map[key] = { key, name, count: 0, domain: publisherDomain(name) };
+    if (!map[key]) {
+      map[key] = {
+        key,
+        name,
+        count: 0,
+        domain: publisherDomain(name),
+        aaa: isAaaPublisher(name),
+        country: publisherCountry(name),
+      };
+    }
     map[key].count++;
   });
-  return Object.values(map).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+  return Object.values(map).sort((a, b) => {
+    if (a.aaa !== b.aaa) return a.aaa ? -1 : 1;
+    return b.count - a.count || a.name.localeCompare(b.name);
+  });
 }
 
 export interface FranchiseGroup {

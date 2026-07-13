@@ -52,9 +52,58 @@
   border-color: var(--glass-border-strong);
 }
 
+.publisher-card--aaa {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--glass-border-strong));
+  box-shadow: var(--glass-shadow), 0 0 0 1px var(--accent-dim);
+}
+
 .publisher-name {
+  display: flex;
+  align-items: center;
+  gap: 7px;
   font-weight: 700;
   font-size: 0.94rem;
+  color: var(--ink);
+}
+
+.publisher-aaa-badge {
+  font-size: 0.56rem;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  color: var(--accent-ink);
+  background: var(--accent);
+  padding: 2px 6px;
+  border-radius: var(--pill);
+}
+
+.publishers-map-panel {
+  padding: 18px 20px;
+  margin-top: 28px;
+}
+
+.publishers-map-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  font-size: 0.78rem;
+  color: var(--ink-3);
+  font-weight: 600;
+}
+
+.publishers-map-clear {
+  border: none;
+  background: var(--glass-bg-strong);
+  color: var(--ink-2);
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: var(--pill);
+  cursor: pointer;
+}
+
+.publishers-map-clear:hover {
   color: var(--ink);
 }
 
