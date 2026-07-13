@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import GlassPanel from "../ui/GlassPanel";
 import Pill from "../ui/Pill";
 import type { Game } from "../../types/game";
-import { coverImg, fmtBuild, gStatus, relStatus, statusMeta } from "../../lib/format";
+import { coverImg, fmtBuild, gStatus, relStatus, sortReleasesByPriority, statusMeta, versionLabel } from "../../lib/format";
 import "./GameCard.css";
 
 export default function GameCard({ game }: { game: Game }) {
@@ -10,6 +10,8 @@ export default function GameCard({ game }: { game: Game }) {
   const img = coverImg(game);
   const code = game.title.split(/[:\s]/)[0].slice(0, 10).toUpperCase();
   const status = gStatus(game);
+  const releases = sortReleasesByPriority(game.releases);
+  const topRelease = releases[0];
 
   return (
     <Link to={`/game/${game.id}`} className="game-card-link">
@@ -26,8 +28,8 @@ export default function GameCard({ game }: { game: Game }) {
         <div className="game-card-body">
           <h3 className="game-card-title">{game.title}</h3>
           <div className="game-card-methods">
-            {game.releases.length ? (
-              game.releases.map((r, i) => {
+            {releases.length ? (
+              releases.map((r, i) => {
                 const st = relStatus(game, r);
                 const marker = st === "out" ? " ◆" : st === "unv" ? " ?" : "";
                 return (
@@ -41,6 +43,12 @@ export default function GameCard({ game }: { game: Game }) {
               <Pill tone="neutral">{status === "unreleased" ? "Unreleased" : "Uncracked"}</Pill>
             )}
           </div>
+          {topRelease ? (
+            <div className="game-card-crack">
+              <span>{versionLabel(topRelease.version)}</span>
+              <span>{fmtBuild(topRelease.build)}</span>
+            </div>
+          ) : null}
           <div className="game-card-foot">
             <span>{game.developer || ""}</span>
             <span>

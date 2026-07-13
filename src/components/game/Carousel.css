@@ -36,40 +36,6 @@
   font-weight: 500;
 }
 
-.carousel-trailer {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  color: #fff;
-  cursor: pointer;
-}
-
-.carousel-play {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.14);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  display: grid;
-  place-items: center;
-  backdrop-filter: blur(10px);
-  font-size: 1.1rem;
-  transition: transform var(--dur) var(--ease);
-}
-
-.carousel-trailer:hover .carousel-play {
-  transform: scale(1.08);
-}
-
-.carousel-trailer-label {
-  font-size: 0.78rem;
-  font-weight: 700;
-}
-
 .carousel-nav {
   position: absolute;
   top: 50%;

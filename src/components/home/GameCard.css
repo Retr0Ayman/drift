@@ -89,6 +89,17 @@
   margin-top: 11px;
 }
 
+.game-card-crack {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  font-family: var(--mono);
+  color: var(--ink-3);
+}
+
 .game-card-foot {
   display: flex;
   justify-content: space-between;

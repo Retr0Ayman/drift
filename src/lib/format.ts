@@ -38,6 +38,34 @@ export function anyOutdated(g: Game): boolean {
   return !!g.releases && g.releases.some((r) => relOutdated(g, r));
 }
 
+/* Which crack to lead with when a game has more than one: higher build
+   (closer to/matching the current Steam build) wins outright regardless of
+   method -- a hypervisor bypass that's still current beats a traditional
+   crack that's drifted outdated, and vice versa. On an exact tie (same
+   build, including both unverified/build:null), traditional wins -- it
+   doesn't need a kernel-level driver, so it's the more usable option when
+   currency is equal. */
+export function sortReleasesByPriority(releases: Release[]): Release[] {
+  return [...releases].sort((a, b) => {
+    const ab = a.build ?? -Infinity;
+    const bb = b.build ?? -Infinity;
+    if (bb !== ab) return bb - ab;
+    if (a.method !== b.method) return a.method === "trad" ? -1 : 1;
+    return 0;
+  });
+}
+
+/* SteamDB/Cirno-style version label: bare numbers get a "v" prefix ("3" ->
+   "v3"); anything already starting with a version-like token ("v1.05",
+   "HVB v3") or free text ("BETA 5.0", "launch") is shown verbatim -- never
+   fabricate a version format the source dirname didn't actually have. */
+export function versionLabel(v?: string | null): string {
+  if (!v) return "—";
+  if (/^v\d/i.test(v)) return v;
+  if (/^\d/.test(v)) return "v" + v;
+  return v;
+}
+
 export function bestBuild(g: Game): number | null {
   if (!g.releases || !g.releases.length) return null;
   return Math.max(...g.releases.map((r) => r.build || 0));

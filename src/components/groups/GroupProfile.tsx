@@ -1,38 +1,86 @@
+import { useMemo } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { SEED_GAMES } from "../../data/seedGames";
 import { allReleases } from "../../lib/groups";
 import { colorForName, dPlusNLabel, fmtDateMs, relOutdated, releaseTs, slugify } from "../../lib/format";
-import { STARRED_GROUPS } from "../../lib/constants";
+import { STARRED_GROUPS, methodForGroup } from "../../lib/constants";
+import { useGroupReleases } from "../../hooks/useGroupReleases";
 import GlassPanel from "../ui/GlassPanel";
 import Pill from "../ui/Pill";
 import Reveal from "../ui/Reveal";
 import "./Groups.css";
 
+interface DisplayRow {
+  key: string;
+  title: string;
+  method: "hv" | "trad";
+  ts: number;
+  dateLabel: string;
+  timingLabel: string | null;
+  href: string;
+  external: boolean;
+}
+
 export default function GroupProfile() {
   const { key } = useParams();
   const navigate = useNavigate();
-  const matches = allReleases(SEED_GAMES).filter(({ r }) => slugify(r.group || "unknown") === key);
+  const seedMatches = allReleases(SEED_GAMES).filter(({ r }) => slugify(r.group || "unknown") === key);
 
-  if (!matches.length) {
+  // The exact display name (needed for the live query) only comes from a
+  // seed match; falling back to the URL key itself still works reasonably
+  // since xREL's search is case-insensitive substring matching.
+  const displayName = seedMatches[0]?.r.group || key || "";
+  const { rows: liveRows, loading } = useGroupReleases(displayName || null);
+
+  const seedTitles = useMemo(() => new Set(seedMatches.map(({ g }) => g.title.toLowerCase())), [seedMatches]);
+
+  const seedRows: DisplayRow[] = seedMatches.map(({ g, r }) => ({
+    key: g.id + "-" + (r.xrelId || r.date),
+    title: g.title,
+    method: r.method,
+    ts: releaseTs(r) || 0,
+    dateLabel: r.date || "—",
+    timingLabel: dPlusNLabel(g, r),
+    href: `/game/${g.id}`,
+    external: false,
+  }));
+
+  // Live rows fill in every real release the group has (per the P2P-lookup
+  // fix) that isn't already covered by a seed entry -- no reliable Steam
+  // release date to compare against for these, so no D+N timing label; link
+  // out to the release's own xREL page since there's no local detail page
+  // for a title that isn't in the seed catalog.
+  const liveExtraRows: DisplayRow[] = liveRows
+    .filter((row) => !seedTitles.has((row.ext_info?.title || "").toLowerCase()))
+    .map((row) => ({
+      key: row.id,
+      title: row.ext_info?.title || row.dirname,
+      method: methodForGroup(row.group_name || displayName),
+      ts: (row.time || 0) * 1000,
+      dateLabel: row.time ? fmtDateMs(row.time * 1000) : "—",
+      timingLabel: null,
+      href: row.link_href || "https://www.xrel.to/",
+      external: true,
+    }));
+
+  const rows = [...seedRows, ...liveExtraRows].sort((a, b) => b.ts - a.ts);
+
+  if (!rows.length && !loading) {
     return (
       <div className="wrap groups-page">
-        <p className="groups-lede">No releases tracked for this group{STARRED_GROUPS.includes(key || "") ? " in the seed catalog yet — live data lands next." : "."}</p>
+        <p className="groups-lede">No releases tracked for this group yet.</p>
         <Link to="/groups">‹ Scene groups</Link>
       </div>
     );
   }
 
-  const name = matches[0].r.group || "unknown";
-  const hv = matches.filter((x) => x.r.method === "hv").length;
-  const trad = matches.length - hv;
-  const out = matches.filter(({ g, r }) => relOutdated(g, r)).length;
+  const name = seedMatches[0]?.r.group || liveRows[0]?.group_name || displayName;
+  const hv = rows.filter((x) => x.method === "hv").length;
+  const trad = rows.length - hv;
+  const out = seedMatches.filter(({ g, r }) => relOutdated(g, r)).length;
   const leaning = hv >= trad ? "Hypervisor" : "Traditional";
-  const lastTs = matches.reduce((mx, { r }) => {
-    const t = releaseTs(r);
-    return t && t > mx ? t : mx;
-  }, 0);
+  const lastTs = rows.reduce((mx, r) => (r.ts > mx ? r.ts : mx), 0);
   const daysSince = lastTs ? Math.max(0, Math.floor((Date.now() - lastTs) / 86400000)) : null;
-  const sorted = [...matches].sort((a, b) => (releaseTs(b.r) || 0) - (releaseTs(a.r) || 0));
 
   return (
     <div className="wrap groups-page">
@@ -52,6 +100,7 @@ export default function GroupProfile() {
             <h1>{name}</h1>
             <div className="grouphead-meta">
               {leaning}-leaning{out ? ` · ${out} release${out === 1 ? "" : "s"} currently outdated` : ""}
+              {loading ? " · syncing live releases…" : ""}
             </div>
           </div>
         </div>
@@ -60,7 +109,7 @@ export default function GroupProfile() {
       <Reveal delay={0.05}>
         <div className="group-stats">
           <GlassPanel className="group-stat">
-            <div className="group-stat-n">{matches.length}</div>
+            <div className="group-stat-n">{rows.length}</div>
             <div className="group-stat-l">Cracks tracked</div>
           </GlassPanel>
           <GlassPanel className="group-stat">
@@ -80,16 +129,21 @@ export default function GroupProfile() {
         <div className="group-releases">
           <h4>Releases by {name}</h4>
           <GlassPanel className="group-rel-list">
-            {sorted.map(({ g, r }, i) => {
-              const dn = dPlusNLabel(g, r);
-              return (
-                <Link to={`/game/${g.id}`} className="group-rel-row" key={i}>
-                  <span className="group-rel-title">{g.title}</span>
-                  <Pill tone={r.method}>{r.method === "hv" ? "HV" : "TRAD"}</Pill>
-                  {dn ? <span className="group-rel-dn">{dn}</span> : null}
+            {rows.map((row) =>
+              row.external ? (
+                <a className="group-rel-row" key={row.key} href={row.href} target="_blank" rel="noopener noreferrer">
+                  <span className="group-rel-title">{row.title}</span>
+                  <Pill tone={row.method}>{row.method === "hv" ? "HV" : "TRAD"}</Pill>
+                  <span className="group-rel-dn">xREL ↗</span>
+                </a>
+              ) : (
+                <Link className="group-rel-row" key={row.key} to={row.href}>
+                  <span className="group-rel-title">{row.title}</span>
+                  <Pill tone={row.method}>{row.method === "hv" ? "HV" : "TRAD"}</Pill>
+                  {row.timingLabel ? <span className="group-rel-dn">{row.timingLabel}</span> : null}
                 </Link>
-              );
-            })}
+              ),
+            )}
           </GlassPanel>
         </div>
       </Reveal>

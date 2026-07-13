@@ -6,7 +6,7 @@ import ReleaseCard from "./ReleaseCard";
 import GlassPanel from "../ui/GlassPanel";
 import Pill from "../ui/Pill";
 import Reveal from "../ui/Reveal";
-import { bestBuild, driftDelta, fmtBuild, gStatus, statusMeta, steamImg, steamLink, steamdbLink } from "../../lib/format";
+import { bestBuild, driftDelta, fmtBuild, gStatus, sortReleasesByPriority, statusMeta, steamImg, steamLink, steamdbLink } from "../../lib/format";
 import "./GameDetail.css";
 
 const STATUS_RING: Record<string, { bg: string; label: string }> = {
@@ -39,29 +39,21 @@ export default function GameDetail() {
   const bd = bestBuild(game);
   const drift = driftDelta(game);
 
-  const slides = [
-    <a
-      key="trailer"
-      className="carousel-trailer"
-      href={`https://www.youtube.com/results?search_query=${encodeURIComponent(game.title + " trailer")}`}
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      <span className="carousel-play">▶</span>
-      <span className="carousel-trailer-label">Trailer</span>
-    </a>,
-    ...(game.appid
-      ? ["library_hero.jpg", "header.jpg", "capsule_616x353.jpg"].map((f) => (
-          <img key={f} src={steamImg(game.appid as number, f)} alt="" onError={(e) => (e.currentTarget.style.display = "none")} />
-        ))
-      : [0, 1, 2].map((i) => (
-          <div className="carousel-placeholder" key={i}>
-            Screenshot {i + 1}
-            <br />
-            <span>streams from Steam when live</span>
-          </div>
-        ))),
-  ];
+  // Images only -- no trailer slide (the YouTube-search trailer link was
+  // flaky enough in practice not to be worth keeping).
+  const slides = game.appid
+    ? ["library_hero.jpg", "header.jpg", "capsule_616x353.jpg"].map((f) => (
+        <img key={f} src={steamImg(game.appid as number, f)} alt="" onError={(e) => (e.currentTarget.style.display = "none")} />
+      ))
+    : [0, 1, 2].map((i) => (
+        <div className="carousel-placeholder" key={i}>
+          Screenshot {i + 1}
+          <br />
+          <span>streams from Steam when live</span>
+        </div>
+      ));
+
+  const releases = sortReleasesByPriority(game.releases);
 
   return (
     <div className="wrap detail">
@@ -149,15 +141,15 @@ export default function GameDetail() {
             <div className="detail-releases">
               <h4>Crack options — hypervisor vs traditional</h4>
               <div className="detail-release-list">
-                {game.releases.length ? (
-                  game.releases.map((r, i) => <ReleaseCard key={i} game={game} release={r} />)
+                {releases.length ? (
+                  releases.map((r, i) => <ReleaseCard key={i} game={game} release={r} />)
                 ) : (
                   <GlassPanel className="detail-release-empty">
                     {gStatus(game) === "unreleased" ? "Unreleased — no crack tracked yet." : "No crack tracked yet."}
                   </GlassPanel>
                 )}
               </div>
-              {game.releases.length ? (
+              {releases.length ? (
                 <div className="detail-legend">
                   <span>
                     <i className="legend-dot legend-dot--cur" />
