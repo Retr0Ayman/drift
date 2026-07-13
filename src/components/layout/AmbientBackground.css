@@ -1,0 +1,78 @@
+.ambient-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.ambient-blob {
+  position: absolute;
+  border-radius: 50%;
+  will-change: transform;
+}
+
+.ambient-blob--a {
+  top: -18%;
+  left: -12%;
+  width: 62vmax;
+  height: 62vmax;
+  background: radial-gradient(circle at 50% 50%, rgba(13, 156, 147, 0.22), rgba(13, 156, 147, 0) 70%);
+  animation: ambient-drift-a 38s ease-in-out infinite;
+}
+
+.ambient-blob--b {
+  bottom: -22%;
+  right: -14%;
+  width: 66vmax;
+  height: 66vmax;
+  background: radial-gradient(circle at 50% 50%, rgba(216, 168, 92, 0.2), rgba(216, 168, 92, 0) 72%);
+  animation: ambient-drift-b 44s ease-in-out infinite;
+  animation-delay: -14s;
+}
+
+.ambient-blob--c {
+  top: 28%;
+  left: 38%;
+  width: 48vmax;
+  height: 48vmax;
+  background: radial-gradient(circle at 50% 50%, rgba(196, 138, 130, 0.14), rgba(196, 138, 130, 0) 70%);
+  animation: ambient-drift-c 50s ease-in-out infinite;
+  animation-delay: -27s;
+}
+
+@keyframes ambient-drift-a {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(6vw, 8vh) scale(1.08);
+  }
+  66% {
+    transform: translate(-4vw, 4vh) scale(0.95);
+  }
+}
+
+@keyframes ambient-drift-b {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(-7vw, -6vh) scale(1.1);
+  }
+  66% {
+    transform: translate(4vw, -3vh) scale(0.94);
+  }
+}
+
+@keyframes ambient-drift-c {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(5vw, -7vh) scale(1.12);
+  }
+}
