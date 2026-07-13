@@ -75,6 +75,14 @@ select {
   opacity: 0.75;
 }
 
+.catalogue-loading {
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--ink-3);
+  font-weight: 600;
+  padding-bottom: 24px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

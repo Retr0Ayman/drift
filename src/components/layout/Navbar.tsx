@@ -1,12 +1,27 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, useScroll, useTransform } from "motion/react";
+import SearchBar from "../search/SearchBar";
+import type { Game } from "../../types/game";
+import type { CatalogStatus } from "../../hooks/useLiveCatalog";
 import "./Navbar.css";
+
+const STATUS_LABEL: Record<CatalogStatus, string> = {
+  seeded: "SEEDED",
+  syncing: "SYNCING",
+  live: "LIVE",
+};
+
+interface NavbarProps {
+  games: Game[];
+  status: CatalogStatus;
+  onLiveGameResolved: (game: Game) => void;
+}
 
 /* Blur radius + background alpha scale with scroll position via Motion values
    (no React re-render on scroll -- these update on the compositor/rAF
    directly), instead of a flat fixed bar. */
-export default function Navbar() {
+export default function Navbar({ games, status, onLiveGameResolved }: NavbarProps) {
   const { scrollY } = useScroll();
   const blur = useTransform(scrollY, [0, 140], [0, 22]);
   const bgAlpha = useTransform(scrollY, [0, 140], [0, 0.72]);
@@ -51,17 +66,13 @@ export default function Navbar() {
           <Link to="/groups" onClick={() => setMenuOpen(false)}>Groups</Link>
         </div>
 
-        <div className="navbar-search">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="11" cy="11" r="7" />
-            <path d="m20 20-3.5-3.5" />
-          </svg>
-          <input placeholder="Search" aria-label="Search titles" />
+        <div className="navbar-search-slot">
+          <SearchBar games={games} onLiveGameResolved={onLiveGameResolved} />
         </div>
 
         <div className="navbar-live">
           <span className="navbar-pip" />
-          <span>LIVE</span>
+          <span>{STATUS_LABEL[status]}</span>
         </div>
       </div>
     </motion.nav>

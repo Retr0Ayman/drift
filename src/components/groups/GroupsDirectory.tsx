@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { SEED_GAMES } from "../../data/seedGames";
+import { useCatalog } from "../../hooks/useCatalog";
 import { groupsIndex } from "../../lib/groups";
 import { colorForName, fmtDateMs } from "../../lib/format";
 import GlassPanel from "../ui/GlassPanel";
@@ -8,7 +8,8 @@ import "./Groups.css";
 
 export default function GroupsDirectory() {
   const navigate = useNavigate();
-  const idx = groupsIndex(SEED_GAMES);
+  const { games } = useCatalog();
+  const idx = groupsIndex(games);
   const totalCracks = idx.reduce((s, e) => s + e.count, 0);
 
   return (

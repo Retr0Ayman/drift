@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { SEED_GAMES } from "../../data/seedGames";
+import { useCatalog } from "../../hooks/useCatalog";
 import { allReleases } from "../../lib/groups";
 import { colorForName, dPlusNLabel, fmtDateMs, relOutdated, releaseTs, slugify } from "../../lib/format";
 import { STARRED_GROUPS, methodForGroup } from "../../lib/constants";
@@ -24,7 +24,8 @@ interface DisplayRow {
 export default function GroupProfile() {
   const { key } = useParams();
   const navigate = useNavigate();
-  const seedMatches = allReleases(SEED_GAMES).filter(({ r }) => slugify(r.group || "unknown") === key);
+  const { games } = useCatalog();
+  const seedMatches = allReleases(games).filter(({ r }) => slugify(r.group || "unknown") === key);
 
   // The exact display name (needed for the live query) only comes from a
   // seed match; falling back to the URL key itself still works reasonably

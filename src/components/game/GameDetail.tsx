@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { SEED_GAMES } from "../../data/seedGames";
+import { useCatalog } from "../../hooks/useCatalog";
 import Carousel from "./Carousel";
 import ReleaseCard from "./ReleaseCard";
 import GlassPanel from "../ui/GlassPanel";
@@ -19,7 +19,8 @@ const STATUS_RING: Record<string, { bg: string; label: string }> = {
 export default function GameDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const game = SEED_GAMES.find((g) => g.id === id);
+  const { games } = useCatalog();
+  const game = games.find((g) => g.id === id);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });

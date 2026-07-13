@@ -1,0 +1,105 @@
+.searchbar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  color: var(--ink-3);
+}
+
+.searchbar svg {
+  position: absolute;
+  left: 12px;
+  width: 15px;
+  height: 15px;
+  pointer-events: none;
+}
+
+.searchbar input {
+  height: 36px;
+  background: var(--glass-bg);
+  border: 1px solid transparent;
+  border-radius: var(--pill);
+  color: var(--ink);
+  font-size: 0.88rem;
+  padding: 0 14px 0 34px;
+  width: 200px;
+  outline: none;
+  transition: width var(--dur) var(--ease), border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+
+.searchbar input::placeholder {
+  color: var(--ink-3);
+}
+
+.searchbar input:focus {
+  width: 260px;
+  background: var(--glass-bg-strong);
+  border-color: var(--accent-dim-2);
+}
+
+.searchbar-popover {
+  width: min(320px, 90vw);
+  background: var(--bg-2);
+  background: linear-gradient(var(--glass-bg-strong), var(--glass-bg-strong)), var(--bg-2);
+  backdrop-filter: blur(var(--glass-blur-strong)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(180%);
+  border: 1px solid var(--glass-border-strong);
+  border-radius: var(--r-sm);
+  box-shadow: var(--glass-shadow-lg);
+  padding: 6px;
+  z-index: 90;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.searchbar-status {
+  padding: 12px 14px;
+  font-size: 0.82rem;
+  color: var(--ink-3);
+  font-weight: 500;
+}
+
+.searchbar-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  background: none;
+  border-radius: var(--r-sm);
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--ink-2);
+  cursor: pointer;
+  text-align: left;
+}
+
+.searchbar-item:hover,
+.searchbar-item--active {
+  background: var(--glass-bg-strong);
+  color: var(--ink);
+}
+
+.searchbar-item-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.searchbar-item-year {
+  font-size: 0.72rem;
+  color: var(--ink-3);
+  font-weight: 600;
+  flex: none;
+}
+
+@media (max-width: 720px) {
+  .searchbar input {
+    width: 130px;
+  }
+
+  .searchbar input:focus {
+    width: 150px;
+  }
+}

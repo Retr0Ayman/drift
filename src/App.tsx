@@ -1,33 +1,42 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Outlet } from "react-router-dom";
 import Navbar from "./components/layout/Navbar";
 import Footer from "./components/layout/Footer";
-import Hero from "./components/home/Hero";
-import GameGrid from "./components/home/GameGrid";
+import Home from "./components/home/Home";
 import GameDetail from "./components/game/GameDetail";
 import GroupsDirectory from "./components/groups/GroupsDirectory";
 import GroupProfile from "./components/groups/GroupProfile";
-import { SEED_GAMES } from "./data/seedGames";
+import { useLiveCatalog } from "./hooks/useLiveCatalog";
+import type { CatalogContextValue } from "./hooks/useCatalog";
 
-function Home() {
+function Layout() {
+  const catalog = useLiveCatalog();
+  const context: CatalogContextValue = {
+    games: catalog.games,
+    status: catalog.status,
+    loading: catalog.loading,
+    hasMore: catalog.hasMore,
+    loadMore: catalog.loadMore,
+    mergeOne: catalog.mergeOne,
+  };
+
   return (
     <>
-      <Hero />
-      <GameGrid games={SEED_GAMES} />
+      <Navbar games={catalog.games} status={catalog.status} onLiveGameResolved={catalog.mergeOne} />
+      <Outlet context={context} />
+      <Footer />
     </>
   );
 }
 
 export default function App() {
   return (
-    <>
-      <Navbar />
-      <Routes>
+    <Routes>
+      <Route element={<Layout />}>
         <Route path="/" element={<Home />} />
         <Route path="/game/:id" element={<GameDetail />} />
         <Route path="/groups" element={<GroupsDirectory />} />
         <Route path="/group/:key" element={<GroupProfile />} />
-      </Routes>
-      <Footer />
-    </>
+      </Route>
+    </Routes>
   );
 }
