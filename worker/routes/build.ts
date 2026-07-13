@@ -1,8 +1,8 @@
-import type { Env } from "../_shared/env";
-import { json } from "../_shared/http";
-import { buildId } from "../_shared/steam";
+import type { Handler } from "../shared/types";
+import { json } from "../shared/http";
+import { buildId } from "../shared/steam";
 
-export const onRequestGet: PagesFunction<Env> = async ({ request }) => {
+export const handleBuild: Handler = async ({ request }) => {
   const url = new URL(request.url);
   const appid = url.searchParams.get("appid");
   if (!/^\d+$/.test(appid || "")) return json({ error: "pass ?appid=" }, 60, 400);

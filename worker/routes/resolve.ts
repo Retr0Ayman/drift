@@ -1,5 +1,5 @@
-import type { Env } from "../_shared/env";
-import { json, enc } from "../_shared/http";
+import type { Handler } from "../shared/types";
+import { json, enc } from "../shared/http";
 
 interface StoreSearchItem {
   type: string;
@@ -31,7 +31,7 @@ function norm(s?: string | null): string {
     .toLowerCase();
 }
 
-export const onRequestGet: PagesFunction<Env> = async ({ request }) => {
+export const handleResolve: Handler = async ({ request }) => {
   const url = new URL(request.url);
   const title = url.searchParams.get("title");
   if (!title) return json({ error: "pass ?title=" }, 60, 400);

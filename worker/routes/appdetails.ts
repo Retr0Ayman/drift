@@ -1,6 +1,6 @@
-import type { Env } from "../_shared/env";
-import { json } from "../_shared/http";
-import { buildId, parseYear, reqLines } from "../_shared/steam";
+import type { Handler } from "../shared/types";
+import { json } from "../shared/http";
+import { buildId, parseYear, reqLines } from "../shared/steam";
 
 interface SteamAppData {
   name: string;
@@ -21,7 +21,7 @@ interface SteamAppDetailsResponse {
   [appid: string]: { success: boolean; data: SteamAppData };
 }
 
-export const onRequestGet: PagesFunction<Env> = async ({ request }) => {
+export const handleAppdetails: Handler = async ({ request }) => {
   const url = new URL(request.url);
   const appid = url.searchParams.get("appid");
   if (!/^\d+$/.test(appid || "")) return json({ error: "pass ?appid=" }, 60, 400);

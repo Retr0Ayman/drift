@@ -1,6 +1,6 @@
-import type { Env } from "../../_shared/env";
-import { json, relay, enc } from "../../_shared/http";
-import { normalizeP2P, type RawXrelRelease } from "../../_shared/xrel";
+import type { Handler } from "../../shared/types";
+import { json, relay, enc } from "../../shared/http";
+import { normalizeP2P, type RawXrelRelease } from "../../shared/xrel";
 
 interface SearchReleasesResponse {
   total?: number;
@@ -8,7 +8,7 @@ interface SearchReleasesResponse {
   p2p_results?: RawXrelRelease[];
 }
 
-export const onRequestGet: PagesFunction<Env> = async ({ request }) => {
+export const handleXrelSearch: Handler = async ({ request }) => {
   const url = new URL(request.url);
 
   if (url.searchParams.get("latest")) {

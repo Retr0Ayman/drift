@@ -1,6 +1,7 @@
-/* Frontend + functions share one origin on Cloudflare Pages, so CORS isn't load
-   bearing in production -- kept only so local dev (Vite on one port, wrangler
-   pages dev proxying on another) still works without extra config. */
+/* Frontend + API are the same Worker now (ASSETS binding + explicit /api/*
+   routing in worker/index.ts), so CORS isn't load bearing in production --
+   kept only so local dev (Vite on one port, `wrangler dev` on another) still
+   works without extra config. */
 export const CORS: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, OPTIONS",
