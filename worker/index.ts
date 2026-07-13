@@ -10,6 +10,7 @@ import { handleXrelArchive } from "./routes/xrel/archive";
 import { handleXrelInfo } from "./routes/xrel/info";
 import { handleXrelNfo } from "./routes/xrel/nfo";
 import { handleXrelGroup } from "./routes/xrel/group";
+import { handleFaq } from "./routes/faq";
 
 /* This is a Worker with static assets (wrangler.jsonc `main` + `assets`), not
    classic Cloudflare Pages -- confirmed live: the workers.dev domain and
@@ -27,6 +28,7 @@ const ROUTES: Record<string, Handler> = {
   "/api/xrel/info": handleXrelInfo,
   "/api/xrel/nfo": handleXrelNfo,
   "/api/xrel/group": handleXrelGroup,
+  "/api/faq": handleFaq,
 };
 
 export default {

@@ -4,6 +4,7 @@ import { useCatalog } from "../../hooks/useCatalog";
 import Carousel from "./Carousel";
 import ReleaseCard from "./ReleaseCard";
 import DlcRow from "./DlcRow";
+import FaqSection from "./FaqSection";
 import GlassPanel from "../ui/GlassPanel";
 import Pill from "../ui/Pill";
 import Reveal from "../ui/Reveal";
@@ -189,6 +190,10 @@ export default function GameDetail() {
               </div>
             </Reveal>
           ) : null}
+
+          <Reveal delay={0.25}>
+            <FaqSection game={game} />
+          </Reveal>
         </div>
 
         <aside className="detail-side">
