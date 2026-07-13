@@ -188,6 +188,14 @@ nav .search svg{position:absolute;left:11px;width:15px;height:15px;color:var(--i
 .loadmore button{border:none;background:var(--fill);color:var(--blue);font-family:var(--font);font-weight:700;font-size:.86rem;padding:12px 22px;border-radius:14px;cursor:pointer;transition:transform .12s}
 .loadmore button:active{transform:scale(.96)}
 .loadmore span{color:var(--ink3);font-size:.82rem;font-weight:600}
+.pager{display:flex;justify-content:center;align-items:center;gap:6px;flex-wrap:wrap;margin:22px 0 4px}
+.pagebtn{border:none;background:var(--fill);color:var(--ink2);font-family:var(--font);font-weight:700;font-size:.82rem;
+  min-width:34px;height:34px;padding:0 10px;border-radius:10px;cursor:pointer;transition:transform .12s,background .15s,color .15s}
+.pagebtn:hover:not(:disabled){background:var(--fill2);color:var(--ink)}
+.pagebtn:active:not(:disabled){transform:scale(.94)}
+.pagebtn.on{background:var(--blue);color:#fff}
+.pagebtn:disabled{opacity:.4;cursor:default}
+.pagegap{color:var(--ink3);font-size:.82rem;font-weight:600;padding:0 2px}
 
 /* detail */
 .back{display:inline-flex;align-items:center;gap:5px;font-weight:600;font-size:.92rem;color:var(--blue);cursor:pointer;margin:22px 0 18px;background:none;border:none;padding:6px 4px;transition:opacity .2s,transform .12s}
@@ -283,6 +291,12 @@ nav .search svg{position:absolute;left:11px;width:15px;height:15px;color:var(--i
 .sstat .sl{font-size:.6rem;font-weight:700;color:var(--ink3);letter-spacing:.4px;text-transform:uppercase}
 .sstat .sv{font-size:.86rem;font-weight:700;color:var(--ink);margin-top:2px}
 .sstat .sv.pos{color:var(--green)}.sstat .sv.mix{color:var(--orange)}
+.reqbox{margin-top:20px}
+.reqcols{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:12px}
+@media(max-width:560px){.reqcols{grid-template-columns:1fr}}
+.reqcol{border-radius:var(--r-sm);padding:14px 16px;background:var(--glass);border:.5px solid var(--hair);box-shadow:var(--shadow)}
+.reqhead{font-size:.62rem;font-weight:800;letter-spacing:.6px;color:var(--ink3);text-transform:uppercase;margin-bottom:8px}
+.reqline{font-size:.8rem;color:var(--ink2);line-height:1.6;font-weight:500}
 
 /* scene-group pages */
 .grouphead{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:22px}
@@ -389,6 +403,7 @@ footer .r{text-align:right}
     </div>
     <div class="grid" id="grid"></div>
     <div id="sentinel"></div>
+    <div class="pager" id="pager"></div>
     <div class="deploybox" id="deploybox"></div>
   </div>
 
@@ -572,9 +587,52 @@ const coverImg=g=>g.appid?steamImg(g.appid,'header.jpg'):null;
 let curFilter='all', curSearch='', curSort='year-desc', curGenre='all', curYear='all';
 let fullList=[], rendered=0; const PAGE=24;
 function onSort(v){curSort=v;renderHome();}
-function onSearch(v){curSearch=v.trim().toLowerCase();renderHome();}
+let SEARCH_DEBOUNCE=null;
+function onSearch(v){
+  curSearch=v.trim().toLowerCase();
+  renderHome();
+  clearTimeout(SEARCH_DEBOUNCE);
+  if(curSearch.length<2)return;
+  SEARCH_DEBOUNCE=setTimeout(()=>liveSearchFallback(curSearch),300);
+}
 function onGenre(v){curGenre=v;renderHome();}
 function onYear(v){curYear=v;renderHome();}
+/* Confirmed live: /xrel?q=<term> hits xREL's full historical search
+   (results go back to 2022), not just the recent browse window — this is
+   what lets search reach titles that haven't been paginated/merged into
+   GAMES locally yet. Only fires when nothing in the already-loaded catalog
+   matches, and only after a short debounce so it's not one request per
+   keystroke. Resolves the top match's appid and jumps straight to its game
+   page; per the Windows/Steam-only rule, a match that never resolves an
+   appid is silently skipped rather than surfaced with placeholder art. */
+async function liveSearchFallback(term){
+  if(term!==curSearch||!CONFIG.XREL_PROXY)return;
+  const hasLocalMatch=GAMES.some(g=>g.title.toLowerCase().includes(term));
+  if(hasLocalMatch)return;
+  try{
+    const r=await fetch(CONFIG.XREL_PROXY+'?q='+encodeURIComponent(term));
+    const data=await r.json();
+    // xREL's search/releases.json (unlike /browse's release/latest.json) replies
+    // {total, results:[...]} — a different shape from the browse/latest list.
+    const list=data?.results||data?.list||data?.releases||[];
+    if(!list.length||term!==curSearch)return;
+    const byGame=parseReleaseRows(list);
+    const first=Object.values(byGame)[0];   // xREL ranks results server-side; first = top match
+    if(!first)return;
+    const existing=GAMES.find(g=>g.xrelKey===first.xrelKey);
+    let target=existing;
+    if(!target){
+      await resolveAndEnrich(first);
+      if(term!==curSearch)return;         // user moved on while we were waiting
+      if(first.appid==null)return;        // no Windows/Steam release -> nothing to jump to
+      GAMES.push(first);
+      target=first;
+    }else if(target.appid==null){
+      return;
+    }
+    go('game',target.id);
+  }catch(e){}
+}
 function passes(g){
   if(curSearch && !g.title.toLowerCase().includes(curSearch))return false;
   if(curGenre!=='all' && !(g.genres||[]).includes(curGenre))return false;
@@ -609,9 +667,21 @@ function syncFilterOptions(){
     ySel.value=curYear;
   }
 }
+/* "Newest first" needs a real point in time, not just a bucket year — two
+   games released months apart in the same year used to tie-break
+   alphabetically, which silently hid actual recency once live pages merged
+   in games sharing a year. Prefer the Steam release date; fall back to the
+   xREL scene-release timestamp (see xrelTime below); fall back to Jan 1 of
+   the year so seed-only entries without either still sort sanely. */
+function gTimestamp(g){
+  if(g.released){const t=Date.parse(g.released);if(!isNaN(t))return t;}
+  if(g.xrelTime)return g.xrelTime*1000;
+  if(g.year)return new Date(g.year,0,1).getTime();
+  return 0;
+}
 function sortGames(list){const s=curSort;return list.sort((a,b)=>{
-  if(s==='year-desc')return (b.year||0)-(a.year||0)||a.title.localeCompare(b.title);
-  if(s==='year-asc') return (a.year||0)-(b.year||0)||a.title.localeCompare(b.title);
+  if(s==='year-desc')return gTimestamp(b)-gTimestamp(a)||a.title.localeCompare(b.title);
+  if(s==='year-asc') return gTimestamp(a)-gTimestamp(b)||a.title.localeCompare(b.title);
   if(s==='name')     return a.title.localeCompare(b.title);
   if(s==='drift')    return driftDelta(b)-driftDelta(a);
   if(s==='survival') return (a.survivalHrs??1e9)-(b.survivalHrs??1e9);
@@ -654,7 +724,7 @@ function updateKPIs(){
   setKpi('kp-hv',GAMES.filter(g=>g.releases&&g.releases.some(r=>r.method==='hv')).length);
   setKpi('kp-unc',GAMES.filter(g=>gStatus(g)==='uncracked').length);
 }
-function renderHome(){syncFilterOptions();fullList=sortGames(GAMES.filter(passes));$('#grid').innerHTML='';rendered=0;renderChunk();updateKPIs();}
+function renderHome(){syncFilterOptions();fullList=sortGames(GAMES.filter(passes));$('#grid').innerHTML='';rendered=0;renderChunk();updateKPIs();ensureSentinelObserved();renderPager();}
 function positionSegPill(seg){
   const pill=seg&&seg.querySelector('.segpill'),btn=seg&&seg.querySelector('button.on');
   if(!pill||!btn)return;
@@ -664,12 +734,25 @@ function positionSegPill(seg){
 $$('#filters button').forEach(b=>b.onclick=()=>{$$('#filters button').forEach(x=>x.classList.remove('on'));b.classList.add('on');curFilter=b.dataset.f;renderHome();positionSegPill($('#filters'));});
 window.addEventListener('resize',()=>positionSegPill($('#filters')));
 /* infinite scroll for thousands of titles — once the locally-loaded list runs
-   out, fall through to fetching the next page of the live xREL catalog. */
-new IntersectionObserver(es=>{es.forEach(e=>{
-  if(!e.isIntersecting)return;
-  if(rendered<fullList.length){renderChunk();return;}
-  loadNextLivePage();
-});},{rootMargin:'600px'}).observe($('#sentinel'));
+   out, fall through to fetching the next page of the live xREL catalog.
+   #sentinel is a static sibling of #grid (never recreated by renderChunk/
+   renderHome, which only touch #grid's innerHTML), so a single observer
+   instance keeps watching the same live node all session. re-observing it
+   from renderHome() below is defensive/idempotent (a no-op if already
+   watched) so this stays correct even if that ever changes. */
+let liveObserver=null;
+function ensureSentinelObserved(){
+  const sentinel=$('#sentinel');if(!sentinel)return;
+  if(!liveObserver){
+    liveObserver=new IntersectionObserver(es=>{es.forEach(e=>{
+      if(!e.isIntersecting)return;
+      if(rendered<fullList.length){renderChunk();return;}
+      loadNextLivePage();
+    });},{rootMargin:'600px'});
+  }
+  liveObserver.observe(sentinel);
+}
+ensureSentinelObserved();
 
 /* ================= DETAIL ================= */
 function mediaSlides(g){
@@ -776,6 +859,10 @@ function renderGame(id){
     ${g.metacritic?`<div class="sstat"><div class="meta-badge" style="background:${g.metacritic>=75?'var(--green)':g.metacritic>=50?'var(--orange)':'var(--red)'}">${g.metacritic}</div><div><div class="sl">Metascore</div><div class="sv">Critics</div></div></div>`:''}
     ${g.reviewPct?`<div class="sstat"><div><div class="sl">Steam reviews</div><div class="sv ${g.reviewPct>=70?'pos':'mix'}">${g.reviewPct}% positive</div></div></div>`:''}
   </div>`:'';
+  const pcReqCol=(label,lines)=>(lines&&lines.length)?`<div class="reqcol"><div class="reqhead">${label}</div>${lines.map(l=>`<div class="reqline">${esc(l)}</div>`).join('')}</div>`:'';
+  const pcReqHtml=(g.pcReq&&((g.pcReq.minimum||[]).length||(g.pcReq.recommended||[]).length))?`<div class="reqbox"><h4>System requirements</h4><div class="reqcols">
+      ${pcReqCol('Minimum',g.pcReq.minimum)}${pcReqCol('Recommended',g.pcReq.recommended)}
+    </div></div>`:'';
   $('#game').innerHTML=`
     <button class="back" onclick="go('home')">‹ All titles</button>
     <div class="detail">
@@ -794,6 +881,7 @@ function renderGame(id){
           ${steamStats}
         </div>
         <div class="about"><h4>About this game</h4>${esc(g.desc||'')}</div>
+        ${pcReqHtml}
         ${g.fact?`<div class="factbox"><div class="h">Did you know</div><p>${esc(g.fact)}</p></div>`:''}
         <div class="rel"><h4>Crack options — hypervisor vs traditional</h4><div class="rgrid">${relHtml}</div>
           ${relLegend}
@@ -996,6 +1084,7 @@ async function enrichSteam(game){
       game.year=d.year||game.year;game.released=d.released||game.released;
       game.currentBuild=d.currentBuild||game.currentBuild;
       game.metacritic=d.metacritic||game.metacritic;
+      if(d.pcReq)game.pcReq=d.pcReq;
       // real Steam DLC appids (confirmed live, e.g. Black Myth: Wukong -> [2672610,3288260]) —
       // toggleDlc() uses these directly instead of re-guessing an appid by name.
       if(Array.isArray(d.dlc)&&d.dlc.length)game.dlc=d.dlc.map(appid=>({n:'DLC',p:'—',appid}));
@@ -1028,36 +1117,72 @@ function parseReleaseRows(list){
     const key=ext.id||title;
     if(!byGame[key]){byGame[key]={id:slugify(title),xrelKey:key,title,appid:null,year:yearFromTs(rel.time),
       released:'',developer:'',publisher:'',genres:[],tags:['Denuvo'],currentBuild:0,survivalHrs:null,
-      releases:[],desc:'',fact:'',dlc:[],source:{name:'xREL',url:'https://www.xrel.to/'}};}
+      releases:[],desc:'',fact:'',dlc:[],xrelTime:0,source:{name:'xREL',url:'https://www.xrel.to/'}};}
     const m=methodForGroup(rel.group_name);
     const ver=parseVersionFromDirname(rel.dirname)||rel.dirname||'';
     byGame[key].releases.push({method:m,label:m==='hv'?'Hypervisor':'Traditional',group:rel.group_name||'scene',
       build:null,version:ver,date:dateFromTs(rel.time),note:rel.dirname||'',xrelId:rel.id});
+    // real unix timestamp (seconds) of the most recent scene release seen for
+    // this game — the sort comparator (gTimestamp) prefers this over the
+    // coarse `year` field once a game has any live-tracked release.
+    byGame[key].xrelTime=Math.max(byGame[key].xrelTime||0,rel.time||0);
   }
   return byGame;
 }
 /* Merges a parsed page into the live GAMES catalog: new releases on an
    already-known game (matched by its stable xrelKey) get appended, deduped by
    xrelId since refreshLiveFeed re-polls page 1 and will see releases it's
-   already seen; brand-new games get pushed and returned so the caller can
-   enrich just those, not the whole catalog again. */
-function mergeGamesIntoCatalog(byGame){
-  const added=[];
+   already seen. Brand-new games only ever enter GAMES if a Steam appid
+   actually resolves for them — that's the real signal a title has a
+   Windows/Steam release at all, not the xREL dirname text (e.g.
+   "ELDEN.RING.PS4-DUPLEX" is a genuine Windows release; dirname console tags
+   are routinely wrong). A title that never resolves is dropped rather than
+   shown with placeholder art; it'll simply be retried (via the memoized
+   findAppid cache) the next time its xrelKey turns up on a later page/poll. */
+async function mergeGamesIntoCatalog(byGame){
+  const added=[],candidates=[];
   for(const key in byGame){
     const parsed=byGame[key];
     const existing=GAMES.find(g=>g.xrelKey===key);
     if(existing){
       const seen=new Set(existing.releases.map(r=>r.xrelId));
       parsed.releases.forEach(r=>{if(!seen.has(r.xrelId))existing.releases.push(r);});
+      existing.xrelTime=Math.max(existing.xrelTime||0,parsed.xrelTime||0);
     }else{
-      GAMES.push(parsed);added.push(parsed);
+      candidates.push(parsed);
     }
+  }
+  if(candidates.length)await Promise.all(candidates.map(resolveAndEnrich));
+  for(const g of candidates){
+    if(g.appid!=null){GAMES.push(g);added.push(g);}
   }
   return added;
 }
 
 let LIVE_PAGE=1, LIVE_PERPAGE=60, LIVE_HASMORE=false, LIVE_LOADING=false, LIVE_LASTSYNC=null, LIVE_REFRESH_TIMER=null;
+let LIVE_TOTAL_PAGES=null;
 const LIVE_REFRESH_MS=5*60*1000;   // re-poll page 1 for freshly-dropped cracks every 5 minutes
+
+/* xREL's /browse relay returns {total_count, pagination:{...}, list:[...]}.
+   pagination.total_pages is the authoritative page count for the numbered
+   pager below. LIVE_HASMORE used to be inferred from list.length>=LIVE_PERPAGE
+   (i.e. "did this page come back full?") — a heuristic that breaks the moment
+   a page is filtered down to fewer raw rows than per_page for any reason,
+   permanently stopping infinite scroll even though thousands more releases
+   exist upstream. current_page<total_pages is the real signal. */
+function extractTotalPages(data){
+  const p=data&&data.pagination;
+  if(!p)return null;
+  if(p.total_pages!=null)return p.total_pages;
+  if(p.total_count!=null&&p.per_page!=null)return Math.ceil(p.total_count/p.per_page);
+  return null;
+}
+function computeHasMore(data,currentPage){
+  const tp=extractTotalPages(data);
+  if(tp!=null){LIVE_TOTAL_PAGES=tp;return currentPage<tp;}
+  const list=(data&&(data.list||data.releases))||[];
+  return list.length>=LIVE_PERPAGE;   // fallback only if the API omits pagination entirely
+}
 
 function showLoadingRow(on){
   const grid=$('#grid');if(!grid)return;
@@ -1094,15 +1219,33 @@ async function goLive(){
     const byGame=parseReleaseRows(list);
     const games=Object.values(byGame);
     await Promise.all(games.map(resolveAndEnrich));   // live Steam metadata + builds
-    GAMES.length=0;GAMES.push(...games);
-    const total=data?.total_count ?? data?.pagination?.total_count;
+    // Windows/Steam-only: a game only ever renders if a Steam appid actually
+    // resolved for it — that's the real signal for "this has a PC release",
+    // not the xREL dirname text (console-tagged dirnames routinely turn out
+    // to be genuine Windows cracks, e.g. ELDEN.RING.PS4-DUPLEX).
+    const resolved=games.filter(g=>g.appid!=null);
+    GAMES.length=0;GAMES.push(...resolved);
     LIVE_PAGE=2;
-    LIVE_HASMORE=list.length>=LIVE_PERPAGE && (total==null||GAMES.length<total);
+    LIVE_HASMORE=computeHasMore(data,1);
     renderHome();
     LIVE_LASTSYNC=Date.now();updateSyncLabel();
     $('#livelabel').textContent='LIVE';
     if(!LIVE_REFRESH_TIMER)LIVE_REFRESH_TIMER=setInterval(refreshLiveFeed,LIVE_REFRESH_MS);
   }catch(e){$('#livelabel').textContent='SEEDED';}
+}
+
+/* Shared by scroll-triggered paging and direct page-number clicks: fetch one
+   xREL browse page, merge it into GAMES (appid-filtered, see
+   mergeGamesIntoCatalog), and refresh the hasMore/total-pages state. */
+async function fetchAndMergeLivePage(page){
+  const r=await fetch(xrelBase()+'/browse?page='+page+'&per_page='+LIVE_PERPAGE);
+  const data=await r.json();
+  const list=data?.list||[];
+  if(list.length){
+    const byGame=parseReleaseRows(list);
+    await mergeGamesIntoCatalog(byGame);
+  }
+  LIVE_HASMORE=computeHasMore(data,page);
 }
 
 /* Scroll-triggered — called once the locally-loaded list runs out, so the
@@ -1112,28 +1255,56 @@ async function loadNextLivePage(){
   if(!CONFIG.XREL_PROXY||LIVE_LOADING||!LIVE_HASMORE)return;
   LIVE_LOADING=true;showLoadingRow(true);
   try{
-    const r=await fetch(xrelBase()+'/browse?page='+LIVE_PAGE+'&per_page='+LIVE_PERPAGE);
-    const data=await r.json();
-    const list=data?.list||[];
-    if(!list.length){LIVE_HASMORE=false;}
-    else{
-      const byGame=parseReleaseRows(list);
-      const added=mergeGamesIntoCatalog(byGame);
-      if(added.length)await Promise.all(added.map(resolveAndEnrich));
-      LIVE_PAGE++;
-      const total=data?.total_count ?? data?.pagination?.total_count;
-      LIVE_HASMORE=list.length>=LIVE_PERPAGE && (total==null||GAMES.length<total);
-      renderHome();
-      LIVE_LASTSYNC=Date.now();updateSyncLabel();
-    }
+    await fetchAndMergeLivePage(LIVE_PAGE);
+    LIVE_PAGE++;
+    renderHome();
+    LIVE_LASTSYNC=Date.now();updateSyncLabel();
   }catch(e){LIVE_HASMORE=false;}
   finally{LIVE_LOADING=false;showLoadingRow(false);}
+}
+
+/* Numbered pager — jumps straight to any xREL page instead of walking there
+   one scroll-triggered page at a time. Reuses the same merge pipeline as
+   scroll paging, then resumes infinite scroll from just past the page that
+   was jumped to. */
+async function goToLivePage(n){
+  if(!CONFIG.XREL_PROXY||LIVE_LOADING||n<1||(LIVE_TOTAL_PAGES!=null&&n>LIVE_TOTAL_PAGES))return;
+  LIVE_LOADING=true;showLoadingRow(true);
+  try{
+    await fetchAndMergeLivePage(n);
+    LIVE_PAGE=n+1;
+    renderHome();
+    LIVE_LASTSYNC=Date.now();updateSyncLabel();
+    $('#grid').scrollIntoView({behavior:'smooth',block:'start'});
+  }catch(e){}
+  finally{LIVE_LOADING=false;showLoadingRow(false);}
+}
+
+/* Bounded window of page numbers (first/last + a few around the current
+   page) so this stays usable even once total_pages is in the hundreds. */
+function renderPager(){
+  const el=$('#pager');if(!el)return;
+  if(!CONFIG.XREL_PROXY||!LIVE_TOTAL_PAGES||LIVE_TOTAL_PAGES<=1){el.innerHTML='';return;}
+  const total=LIVE_TOTAL_PAGES,cur=Math.min(total,Math.max(1,LIVE_PAGE-1));
+  const nums=new Set([1,2,total-1,total,cur-1,cur,cur+1].filter(n=>n>=1&&n<=total));
+  const sorted=[...nums].sort((a,b)=>a-b);
+  let html=`<button class="pagebtn" ${cur<=1?'disabled':''} onclick="goToLivePage(${cur-1})">‹</button>`;
+  let prev=0;
+  for(const n of sorted){
+    if(prev&&n-prev>1)html+='<span class="pagegap">…</span>';
+    html+=`<button class="pagebtn${n===cur?' on':''}" onclick="goToLivePage(${n})">${n}</button>`;
+    prev=n;
+  }
+  html+=`<button class="pagebtn" ${cur>=total?'disabled':''} onclick="goToLivePage(${cur+1})">›</button>`;
+  el.innerHTML=html;
 }
 
 /* Periodic — re-polls just page 1 (newest releases first) so freshly-dropped
    cracks show up without re-walking the whole paginated catalog every time.
    mergeGamesIntoCatalog already dedupes by xrelId, so seeing the same
-   releases again on every poll is a no-op, not a growing duplicate list. */
+   releases again on every poll is a no-op, not a growing duplicate list.
+   Only refreshes LIVE_TOTAL_PAGES (for the pager) — it must not touch
+   LIVE_PAGE/LIVE_HASMORE, which track how far scroll/pager paging has gotten. */
 async function refreshLiveFeed(){
   if(!CONFIG.XREL_PROXY||LIVE_LOADING)return;
   try{
@@ -1142,10 +1313,10 @@ async function refreshLiveFeed(){
     const list=data?.list||[];
     if(list.length){
       const byGame=parseReleaseRows(list);
-      const added=mergeGamesIntoCatalog(byGame);
-      if(added.length)await Promise.all(added.map(resolveAndEnrich));
+      await mergeGamesIntoCatalog(byGame);
       renderHome();
     }
+    const tp=extractTotalPages(data);if(tp!=null){LIVE_TOTAL_PAGES=tp;renderPager();}
     LIVE_LASTSYNC=Date.now();updateSyncLabel();
   }catch(e){}
 }

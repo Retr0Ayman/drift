@@ -152,6 +152,9 @@ export default {
     const node = data && data[appid];
     if (!node || !node.success) return j({ appid: Number(appid), success: false }, 600);
     const d = node.data;
+    // Steam returns pc_requirements as {minimum, recommended} HTML strings, or
+    // as an empty array [] on some delisted/unusual apps — never assume object shape.
+    const pcr = d.pc_requirements && !Array.isArray(d.pc_requirements) ? d.pc_requirements : null;
     const slim = {
       appid: Number(appid),
       title: d.name,
@@ -168,6 +171,7 @@ export default {
       publishers: d.publishers || [],
       metacritic: (d.metacritic && d.metacritic.score) || null,
       currentBuild: await buildId(appid),   // live build id merged in
+      pcReq: pcr ? { minimum: reqLines(pcr.minimum), recommended: reqLines(pcr.recommended) } : null,
     };
     return j(slim, 3600);
   },
@@ -238,3 +242,15 @@ function j(obj, maxage, status = 200) {
   });
 }
 function parseYear(s) { const m = s && s.match(/\b(19|20)\d{2}\b/); return m ? Number(m[0]) : null; }
+// Steam's requirements HTML is a <li>-per-line list (e.g. "OS *: Windows 10");
+// turn it into plain-text lines client-side can esc() safely, no HTML relayed.
+function reqLines(html) {
+  if (!html) return [];
+  return html
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<li>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .split("\n")
+    .map((s) => s.replace(/&amp;/g, "&").replace(/&nbsp;/g, " ").trim())
+    .filter(Boolean);
+}
