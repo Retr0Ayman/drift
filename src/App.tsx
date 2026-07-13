@@ -5,6 +5,8 @@ import Home from "./components/home/Home";
 import GameDetail from "./components/game/GameDetail";
 import GroupsDirectory from "./components/groups/GroupsDirectory";
 import GroupProfile from "./components/groups/GroupProfile";
+import PublishersDirectory from "./components/publishers/PublishersDirectory";
+import PublisherProfile from "./components/publishers/PublisherProfile";
 import { useLiveCatalog } from "./hooks/useLiveCatalog";
 import type { CatalogContextValue } from "./hooks/useCatalog";
 
@@ -36,6 +38,8 @@ export default function App() {
         <Route path="/game/:id" element={<GameDetail />} />
         <Route path="/groups" element={<GroupsDirectory />} />
         <Route path="/group/:key" element={<GroupProfile />} />
+        <Route path="/publishers" element={<PublishersDirectory />} />
+        <Route path="/publisher/:key" element={<PublisherProfile />} />
       </Route>
     </Routes>
   );

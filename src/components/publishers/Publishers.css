@@ -1,0 +1,130 @@
+.publishers-page {
+  padding: 24px 24px 96px;
+}
+
+.publishers-head {
+  margin-top: 12px;
+  max-width: 68ch;
+}
+
+.publishers-eyebrow {
+  display: block;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+
+.publishers-head h1 {
+  font-size: var(--fs-h1);
+  font-weight: 800;
+  letter-spacing: -1.5px;
+  margin: 10px 0 10px;
+  color: var(--ink);
+}
+
+.publishers-lede {
+  color: var(--ink-2);
+  font-weight: 450;
+  font-size: 0.96rem;
+  line-height: 1.6;
+}
+
+.publishers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 16px;
+  margin-top: 28px;
+}
+
+.publisher-card {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 16px 18px;
+  cursor: pointer;
+  transition: transform var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+
+.publisher-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--glass-border-strong);
+}
+
+.publisher-name {
+  font-weight: 700;
+  font-size: 0.94rem;
+  color: var(--ink);
+}
+
+.publisher-count {
+  font-size: 0.72rem;
+  color: var(--ink-3);
+  margin-top: 3px;
+  font-weight: 600;
+}
+
+/* publisher profile */
+.publisherhead {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  margin-bottom: 36px;
+}
+
+.publisherhead-tag {
+  display: inline-block;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  background: var(--glass-bg-strong);
+  padding: 4px 10px;
+  border-radius: var(--pill);
+  margin-bottom: 6px;
+}
+
+.publisherhead h1 {
+  font-size: 1.9rem;
+  line-height: 1.1;
+  font-weight: 800;
+  letter-spacing: -1px;
+  color: var(--ink);
+}
+
+.publisherhead-meta {
+  font-size: 0.82rem;
+  color: var(--ink-2);
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+.franchise-block {
+  margin-bottom: 36px;
+}
+
+.franchise-title {
+  font-size: var(--fs-h3);
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: var(--ink);
+  margin-bottom: 16px;
+}
+
+.franchise-title--muted {
+  color: var(--ink-3);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.franchise-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 16px;
+}
