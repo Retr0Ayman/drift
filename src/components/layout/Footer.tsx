@@ -12,7 +12,7 @@ export default function Footer() {
       <div className="footer-right">
         Real: Steam metadata, groups, facts, build ids · Curated: crack-build pairings
         <br />
-        Dark by design. See DEPLOY.md.
+        See DEPLOY.md.
       </div>
     </footer>
   );

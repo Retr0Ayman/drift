@@ -24,11 +24,14 @@ interface NavbarProps {
 export default function Navbar({ games, status, onLiveGameResolved }: NavbarProps) {
   const { scrollY } = useScroll();
   const blur = useTransform(scrollY, [0, 140], [0, 22]);
-  const bgAlpha = useTransform(scrollY, [0, 140], [0, 0.72]);
-  const borderAlpha = useTransform(scrollY, [0, 140], [0, 0.1]);
+  const bgAlpha = useTransform(scrollY, [0, 140], [0, 0.78]);
+  const borderAlpha = useTransform(scrollY, [0, 140], [0, 0.22]);
   const backdropFilter = useTransform(blur, (b) => `blur(${b}px) saturate(160%)`);
-  const background = useTransform(bgAlpha, (a) => `rgba(8, 9, 11, ${a})`);
-  const borderColor = useTransform(borderAlpha, (a) => `rgba(255, 255, 255, ${a})`);
+  // rgb(244, 236, 224) is --bg-0 (the warm cream page base); the border
+  // ramps in a warm brown tint (matching --glass-border-strong) rather than
+  // white, which would be invisible against a light ground.
+  const background = useTransform(bgAlpha, (a) => `rgba(244, 236, 224, ${a})`);
+  const borderColor = useTransform(borderAlpha, (a) => `rgba(130, 95, 60, ${a})`);
 
   const [menuOpen, setMenuOpen] = useState(false);
 

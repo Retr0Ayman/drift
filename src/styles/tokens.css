@@ -1,52 +1,56 @@
 /* ==========================================================================
    DRIFT design tokens — Linear x Apple x Liquid Glass
-   Dark-first, near-black base, one accent (signal cyan). The four functional
-   status colors (green/orange/purple/red) are reserved for crack-status
-   meaning only -- never reused as UI chrome, so status always reads
-   unambiguously. Everything else in the system is grayscale + the one accent.
+   Warm coffee-cream light theme, one accent (deepened signal teal for AA
+   contrast on a light ground). The four functional status colors
+   (green/orange/purple/red) are reserved for crack-status meaning only --
+   never reused as UI chrome, so status always reads unambiguously.
+   Everything else in the system is warm-tinted neutrals + the one accent.
    ========================================================================== */
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 
   /* -------- surfaces -------- */
-  --bg-0: #08090b; /* page base */
-  --bg-1: #0d0f12; /* raised base, pre-glass */
-  --bg-2: #16181c; /* further raised */
+  --bg-0: #f4ece0; /* page base -- warm ivory/latte */
+  --bg-1: #faf4ea; /* raised base, pre-glass */
+  --bg-2: #fffaf1; /* further raised */
 
   /* -------- ink -------- */
-  --ink: #f3f4f6;
-  --ink-2: rgba(243, 244, 246, 0.64);
-  --ink-3: rgba(243, 244, 246, 0.4);
-  --ink-4: rgba(243, 244, 246, 0.14);
+  --ink: #241a10; /* espresso near-black */
+  --ink-2: rgba(36, 26, 16, 0.66);
+  --ink-3: rgba(36, 26, 16, 0.44);
+  --ink-4: rgba(36, 26, 16, 0.14);
 
-  /* -------- accent: signal cyan --------
+  /* -------- accent: signal teal --------
      Hue-distant from every functional status color on purpose -- it must
-     never be mistaken for a status. Used sparingly: focus rings, links,
-     the live-sync pip, the odd highlighted number. */
-  --accent: #2fe8d8;
-  --accent-ink: #06201d; /* text-on-accent, for solid accent buttons */
-  --accent-dim: rgba(47, 232, 216, 0.12);
-  --accent-dim-2: rgba(47, 232, 216, 0.22);
-  --accent-glow: rgba(47, 232, 216, 0.35);
+     never be mistaken for a status. Deepened from the dark-theme cyan for
+     AA contrast on a light ground. Used sparingly: focus rings, links, the
+     live-sync pip, the odd highlighted number. */
+  --accent: #0d9c93;
+  --accent-ink: #ffffff; /* text-on-accent, for solid accent buttons */
+  --accent-dim: rgba(13, 156, 147, 0.12);
+  --accent-dim-2: rgba(13, 156, 147, 0.22);
+  --accent-glow: rgba(13, 156, 147, 0.35);
 
-  /* -------- functional status colors (reserved, do not repurpose) -------- */
-  --hv: #bf5af2; /* hypervisor */
-  --trad: #2fe8d8; /* traditional crack -- shares the accent hue deliberately */
-  --dead: #30d158; /* cracked / bypassed */
-  --out: #ff9f0a; /* outdated */
-  --unc: #ff453a; /* uncracked */
-  --unv: #8e8e93; /* unverified / unreleased */
+  /* -------- functional status colors (reserved, do not repurpose) --------
+     Deepened from the dark-theme values where the original was too light
+     to hold AA contrast against the cream base; same hues, same meaning. */
+  --hv: #8b3fd1; /* hypervisor */
+  --trad: #0d9c93; /* traditional crack -- shares the accent hue deliberately */
+  --dead: #1f8a45; /* cracked / bypassed */
+  --out: #b8650a; /* outdated */
+  --unc: #c43a2b; /* uncracked */
+  --unv: #8a7a68; /* unverified / unreleased -- warm-tinted grey, not cool */
 
   /* -------- liquid glass -------- */
-  --glass-bg: rgba(255, 255, 255, 0.045);
-  --glass-bg-strong: rgba(255, 255, 255, 0.075);
-  --glass-border: rgba(255, 255, 255, 0.09);
-  --glass-border-strong: rgba(255, 255, 255, 0.16);
-  --glass-highlight: rgba(255, 255, 255, 0.18);
+  --glass-bg: rgba(255, 250, 240, 0.6);
+  --glass-bg-strong: rgba(255, 250, 240, 0.86);
+  --glass-border: rgba(150, 115, 80, 0.24);
+  --glass-border-strong: rgba(130, 95, 60, 0.34);
+  --glass-highlight: rgba(255, 255, 250, 0.92);
   --glass-blur: 22px;
   --glass-blur-strong: 34px;
-  --glass-shadow: 0 24px 70px -12px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  --glass-shadow-lg: 0 32px 90px -14px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  --glass-shadow: 0 20px 50px -12px rgba(110, 75, 35, 0.16), inset 0 1px 0 rgba(255, 255, 250, 0.9);
+  --glass-shadow-lg: 0 28px 70px -14px rgba(110, 75, 35, 0.2), inset 0 1px 0 rgba(255, 255, 250, 0.95);
 
   /* -------- type -------- */
   --font: -apple-system, "SF Pro Display", "SF Pro Text", system-ui, Inter, "Segoe UI", sans-serif;
