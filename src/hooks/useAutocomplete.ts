@@ -22,10 +22,16 @@ interface SearchReleasesResponse {
   list?: LiveSuggestion["raw"][];
 }
 
+const MAX_RESULTS = 8;
+
 /* Instant local matches while typing (synchronous filter over whatever's
-   already loaded), falling back to a debounced live xREL search only when
-   nothing local matches -- so this isn't firing a request per keystroke,
-   and doesn't hit the network at all for anything already in the catalog. */
+   already loaded), MERGED with a debounced live xREL search -- not gated
+   off by local matches existing. Previously the live fetch only ran when
+   localMatches was empty, which meant a genuinely different title (e.g.
+   "Watch Dogs 2") could never surface if literally any locally-loaded game
+   happened to match the in-progress query, all-or-nothing against local
+   results. Now the live search always runs once the query is long enough,
+   and results are local-first + live-appended, deduped by title. */
 export function useAutocomplete(query: string, games: Game[]) {
   const debounced = useDebounce(query.trim(), 300);
   const [liveResults, setLiveResults] = useState<LiveSuggestion[]>([]);
@@ -36,12 +42,12 @@ export function useAutocomplete(query: string, games: Game[]) {
     if (q.length < 2) return [];
     return games
       .filter((g) => g.title.toLowerCase().includes(q))
-      .slice(0, 8)
+      .slice(0, MAX_RESULTS)
       .map((g) => ({ kind: "local", id: g.id, title: g.title, year: g.year }));
   }, [query, games]);
 
   useEffect(() => {
-    if (debounced.length < 2 || localMatches.length > 0) {
+    if (debounced.length < 2) {
       setLiveResults([]);
       return;
     }
@@ -60,7 +66,7 @@ export function useAutocomplete(query: string, games: Game[]) {
           if (seen.has(key)) continue;
           seen.add(key);
           suggestions.push({ kind: "live", id: row.id, title, raw: row });
-          if (suggestions.length >= 8) break;
+          if (suggestions.length >= MAX_RESULTS) break;
         }
         setLiveResults(suggestions);
       })
@@ -71,8 +77,20 @@ export function useAutocomplete(query: string, games: Game[]) {
     return () => {
       cancelled = true;
     };
-  }, [debounced, localMatches.length]);
+  }, [debounced]);
 
-  const results: Suggestion[] = localMatches.length ? localMatches : liveResults;
-  return { results, loading: loading && localMatches.length === 0 };
+  const results: Suggestion[] = useMemo(() => {
+    const localTitles = new Set(localMatches.map((m) => m.title.toLowerCase()));
+    const merged: Suggestion[] = [...localMatches];
+    for (const live of liveResults) {
+      if (merged.length >= MAX_RESULTS) break;
+      if (localTitles.has(live.title.toLowerCase())) continue;
+      merged.push(live);
+    }
+    return merged;
+  }, [localMatches, liveResults]);
+
+  // Only show a loading state when there's nothing to show yet -- local
+  // matches display instantly while live results fill in quietly behind them.
+  return { results, loading: loading && results.length === 0 };
 }

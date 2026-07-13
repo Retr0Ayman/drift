@@ -137,17 +137,3 @@
 .nfo-toggle:hover {
   color: var(--ink);
 }
-
-.nfo-ascii {
-  margin-top: 12px;
-  background: #05070a;
-  color: #a6f5df;
-  border: 1px solid var(--glass-border);
-  border-radius: 12px;
-  padding: 16px 18px;
-  font-family: var(--mono);
-  font-size: 0.68rem;
-  line-height: 1.55;
-  white-space: pre;
-  overflow-x: auto;
-}

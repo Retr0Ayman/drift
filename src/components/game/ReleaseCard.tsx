@@ -1,8 +1,6 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import type { Game, Release } from "../../types/game";
 import { relStatus, fmtBuild, slugify, crackTimingLabel } from "../../lib/format";
-import { nfoText } from "../../lib/nfo";
 import Pill, { type PillTone } from "../ui/Pill";
 import GlassPanel from "../ui/GlassPanel";
 import "./ReleaseCard.css";
@@ -12,7 +10,6 @@ const FLAG_TONE: Record<string, PillTone> = { out: "out", unv: "unv", cur: "dead
 const BUILD_COLOR: Record<string, string> = { out: "var(--out)", unv: "var(--unv)", cur: "var(--accent)" };
 
 export default function ReleaseCard({ game, release }: { game: Game; release: Release }) {
-  const [nfoOpen, setNfoOpen] = useState(false);
   const st = relStatus(game, release);
   const delta = st === "out" && release.build && game.currentBuild ? game.currentBuild - release.build : 0;
   const timing = crackTimingLabel(game, release);
@@ -70,10 +67,11 @@ export default function ReleaseCard({ game, release }: { game: Game; release: Re
 
       {release.note ? <p className="release-note">{release.note}</p> : null}
 
-      <button className="nfo-toggle" onClick={() => setNfoOpen((o) => !o)}>
-        {nfoOpen ? "▾ Hide .NFO" : "▸ View .NFO"}
-      </button>
-      {nfoOpen ? <pre className="nfo-ascii">{nfoText(game, release)}</pre> : null}
+      {release.link_href ? (
+        <a className="nfo-toggle" href={release.link_href} target="_blank" rel="noopener noreferrer">
+          View .NFO on xREL ↗
+        </a>
+      ) : null}
     </GlassPanel>
   );
 }

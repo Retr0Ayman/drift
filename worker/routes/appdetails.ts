@@ -16,6 +16,8 @@ interface SteamAppData {
   publishers?: string[];
   metacritic?: { score?: number };
   pc_requirements?: { minimum?: string; recommended?: string } | unknown[];
+  is_free?: boolean;
+  price_overview?: { final_formatted?: string };
 }
 interface SteamAppDetailsResponse {
   [appid: string]: { success: boolean; data: SteamAppData };
@@ -52,6 +54,10 @@ export const handleAppdetails: Handler = async ({ request }) => {
     developers: d.developers || [],
     publishers: d.publishers || [],
     metacritic: d.metacritic?.score ?? null,
+    // "if available" -- Steam omits price_overview entirely for regionally
+    // restricted/unlisted apps, and is_free is its own separate flag; null
+    // means genuinely unknown, never fabricated as "Free".
+    price: d.is_free ? "Free" : (d.price_overview?.final_formatted ?? null),
     currentBuild: await buildId(appid as string),
     pcReq: pcr ? { minimum: reqLines(pcr.minimum), recommended: reqLines(pcr.recommended) } : null,
   };

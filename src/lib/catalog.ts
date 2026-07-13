@@ -7,6 +7,7 @@ interface RawRelease {
   dirname: string;
   time?: number;
   group_name?: string;
+  link_href?: string;
   ext_info?: { type?: string; id?: string; title?: string };
 }
 
@@ -74,6 +75,7 @@ export function parseReleaseRows(list: RawRelease[]): Record<string, PartialGame
       ts: rel.time || 0,
       note: rel.dirname || "",
       xrelId: rel.id,
+      link_href: rel.link_href,
     });
     byGame[key].xrelTime = Math.max(byGame[key].xrelTime || 0, rel.time || 0);
   }
@@ -159,6 +161,7 @@ export async function buildLiveGame(row: RawRelease): Promise<Game | null> {
     ts: row.time || 0,
     note: row.dirname || "",
     xrelId: row.id,
+    link_href: row.link_href,
   };
   const game: PartialGame = {
     id: slugify(title),

@@ -7,8 +7,13 @@ interface PillProps {
   children: ReactNode;
   tone?: PillTone;
   className?: string;
+  title?: string;
 }
 
-export default function Pill({ children, tone = "neutral", className = "" }: PillProps) {
-  return <span className={`pill pill--${tone}${className ? ` ${className}` : ""}`}>{children}</span>;
+export default function Pill({ children, tone = "neutral", className = "", title }: PillProps) {
+  return (
+    <span className={`pill pill--${tone}${className ? ` ${className}` : ""}`} title={title}>
+      {children}
+    </span>
+  );
 }

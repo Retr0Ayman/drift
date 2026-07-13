@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { useCatalog } from "../../hooks/useCatalog";
 import Carousel from "./Carousel";
 import ReleaseCard from "./ReleaseCard";
+import DlcRow from "./DlcRow";
 import GlassPanel from "../ui/GlassPanel";
 import Pill from "../ui/Pill";
 import Reveal from "../ui/Reveal";
@@ -174,12 +175,16 @@ export default function GameDetail() {
               <div className="detail-dlc">
                 <h4>Editions &amp; DLC</h4>
                 <GlassPanel className="detail-dlc-list">
-                  {game.dlc.map((d, i) => (
-                    <div className="detail-dlc-row" key={i}>
-                      <span>{d.n}</span>
-                      <span className="detail-dlc-price">{d.p}</span>
-                    </div>
-                  ))}
+                  {game.dlc.map((d, i) =>
+                    d.appid ? (
+                      <DlcRow key={i} appid={d.appid} fallbackName={d.n} />
+                    ) : (
+                      <div className="detail-dlc-row" key={i}>
+                        <span>{d.n}</span>
+                        <span className="detail-dlc-price">{d.p}</span>
+                      </div>
+                    ),
+                  )}
                 </GlassPanel>
               </div>
             </Reveal>

@@ -10,6 +10,10 @@ export interface Release {
   note?: string;
   ts?: number;
   xrelId?: string;
+  /* Real xREL page for this specific release (its own .../nfo.html), when
+     known -- only present for live-tracked releases with a real xrelId,
+     never fabricated for hand-authored seed entries. */
+  link_href?: string;
 }
 
 export interface Dlc {
