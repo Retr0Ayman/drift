@@ -1,5 +1,6 @@
 .catalogue {
-  padding: 12px 24px 96px;
+  padding: 40px 24px 96px;
+  border-top: 1px solid var(--glass-border);
 }
 
 .catalogue-head {
@@ -27,4 +28,15 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(258px, 1fr));
   gap: 18px;
+}
+
+.catalogue-empty {
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--ink-3);
+  font-size: 0.92rem;
+  font-weight: 500;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-lg);
 }
