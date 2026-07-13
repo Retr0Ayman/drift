@@ -1,126 +1,102 @@
-# DRIFT — deploy (free, no server to maintain)
+# DRIFT — deploy (free, one Cloudflare Pages project)
 
-Two pieces: the site (static, GitHub Pages) and the API engine (Cloudflare
-Worker, free tier). Optional: a GitHub Action that refreshes `status.json`
-on a schedule if you're using the curated-feed path instead of/alongside
-the live xREL path.
+One project now, not three: the React/Vite frontend and the API (`functions/api/**`,
+Cloudflare Pages Functions) deploy together from this repo. Cloudflare's Git
+integration builds and deploys both on every `git push` — no more pasting code into
+the dashboard by hand. GitHub Pages and the standalone `drift-api` Worker are
+retired; nothing to clean up there beyond turning GitHub Pages off if you'd
+previously enabled it (Settings → Pages → Source → `None`).
 
-## 1. Deploy the Worker (`worker.js`)
+## 1. One-time setup (you do this — the only manual step)
 
-1. Go to [dash.cloudflare.com](https://dash.cloudflare.com) → **Workers & Pages** → **Create** → **Create Worker**.
-2. Give it a name (e.g. `drift-api`) → **Deploy** (deploys the default template first).
-3. **Edit code** → delete the template contents → paste in the full contents of `worker.js` → **Deploy**.
-4. Note the URL Cloudflare gives you: `https://drift-api.<your-subdomain>.workers.dev`.
+1. Go to [dash.cloudflare.com](https://dash.cloudflare.com) → **Workers & Pages** →
+   **Create** → **Pages** tab → **Connect to Git**.
+2. Pick this repo (`Retr0Ayman/drift`) and branch `main`.
+3. Build settings:
+   | field | value |
+   |---|---|
+   | Framework preset | `Vite` (or None — the settings below are explicit either way) |
+   | Build command | `npm run build` |
+   | Build output directory | `dist` |
+   | Root directory | `/` |
+   Functions need no separate configuration — Cloudflare auto-detects the
+   `/functions` directory at the repo root and deploys every route under it
+   alongside the static build.
+4. **Save and Deploy.** Cloudflare gives you a URL like
+   `https://drift.pages.dev` (or `https://<project-name>.pages.dev` if the name
+   differs). Every subsequent `git push` to `main` triggers a new build+deploy of
+   both the frontend and the functions automatically; pushes to other branches get
+   their own preview URL.
+5. (Optional) Attach a custom domain under the same project → **Custom domains** —
+   Cloudflare handles the TLS cert automatically.
 
-### NFO image secrets (optional, and probably not worth chasing)
+## 2. Secrets (xREL NFO images — optional, everything else needs none)
 
-Everything that matters — the live release feed, group classification, drift
-detection — needs **no xREL auth at all**: `release/latest.json`,
-`search/releases.json` and `release/info.json` are all unauthenticated per
-xREL's own API docs. Only the real scanned NFO *image* (`nfo/release.json`)
-sits behind OAuth, and there's no static token to paste — you'd need a
-**Consumer Key/Secret** from an "app" registered on xREL, which is a manual
-approval step on their end. Nobody's lined that up, and it may just never
-happen — that's fine, it's not blocking anything. The generated ASCII `.nfo`
-already in `drift.html` is the permanent NFO experience, not a placeholder.
+Every route that matters — the live release feed, group classification (including
+the P2P `voices38`/`DenuvOwO` lookup), drift detection — needs **no xREL auth at
+all**: `release/latest.json`, `search/releases.json` and `release/info.json` are all
+unauthenticated per xREL's own API docs. Only the real scanned NFO *image*
+(`nfo/release.json`) sits behind OAuth, and there's no static token to paste — it
+needs a **Consumer Key/Secret** from an app registered on xREL, a manual approval
+step on their end that may never happen. That's fine — the generated ASCII `.nfo` is
+the permanent NFO experience, not a placeholder waiting on this.
 
-If you ever do get a Key/Secret, it starts working with zero other changes —
-in the Worker → **Settings** → **Variables and Secrets** → add:
+If you ever do get a Key/Secret: project → **Settings** → **Environment variables**
+→ add for both **Production** and **Preview**:
 
 | name | value |
 |---|---|
 | `XREL_CLIENT_ID` | the Consumer Key |
 | `XREL_CLIENT_SECRET` | the Consumer Secret |
 
-Without these, `/xrel/nfo` returns `501` and the client silently falls back
-to the generated ASCII `.nfo` — nothing breaks.
+Mark both as **Secret** (encrypted), not plaintext. Never committed to git, never
+pasted in chat — dashboard-only, same as before. Without them, `/api/xrel/nfo`
+returns `501` and the client falls back to the ASCII `.nfo` — nothing breaks.
 
-### Sanity-check the routes
+## 3. Sanity-check the routes
 
-Once deployed, hit these directly in a browser (replace the host):
+Once deployed, hit these directly (replace the host with your `*.pages.dev` URL):
 
 ```
-https://drift-api.<sub>.workers.dev/?appid=2358720                 -> {appid, title, desc, currentBuild, dlc:[appids], ...}
-https://drift-api.<sub>.workers.dev/resolve?title=Black+Myth+Wukong -> {appid, matchedName} — title lookup, small &
-                                                                        targeted (Steam storesearch, not the full app list)
-https://drift-api.<sub>.workers.dev/build?appid=2358720            -> {appid, buildid}
-https://drift-api.<sub>.workers.dev/xrel?latest=1                  -> {list:[...]} (xREL releases, page 1 only)
-https://drift-api.<sub>.workers.dev/xrel/browse?page=1&per_page=60 -> {list:[...], total_count} — paginated; this is
-                                                                        what drift.html actually walks on scroll
-https://drift-api.<sub>.workers.dev/xrel/nfo?id=<relid>            -> PNG, or 501 if secrets unset
+https://<project>.pages.dev/api/appdetails?appid=2358720            -> {appid, title, desc, currentBuild, dlc:[appids], ...}
+https://<project>.pages.dev/api/resolve?title=Watch+Dogs             -> {appid:243470, matchedName:"Watch_Dogs™"}
+https://<project>.pages.dev/api/resolve?title=Watch+Dogs+2           -> {appid:447040, matchedName:"Watch_Dogs® 2"}
+https://<project>.pages.dev/api/build?appid=2358720                  -> {appid, buildid}
+https://<project>.pages.dev/api/xrel?latest=1                        -> {list:[...]} (xREL releases, page 1 only)
+https://<project>.pages.dev/api/xrel/browse?page=1&per_page=60       -> {list:[...], total_count} — the main Windows-category catalog feed
+https://<project>.pages.dev/api/xrel/group?name=DenuvOwO             -> {list:[...]} — that group's real releases (P2P groups aren't in /browse at all, see functions/api/xrel/group.ts)
+https://<project>.pages.dev/api/xrel/nfo?id=<relid>                  -> PNG, or 501 if secrets unset
 ```
 
-`findAppid()` in `drift.html` calls `/resolve` on demand, one small request per
-unresolved title, cached client-side. An earlier design downloaded Steam's
-entire ~190k-entry app list (`?applist=1`) through the Worker on every page
-load just to do this lookup locally — too heavy to reliably relay and parse
-in a browser, and that route has been removed.
+## 4. Local dev
 
-`drift.html`'s catalog loader (`goLive()`/`loadNextLivePage()`/`refreshLiveFeed()`)
-calls `/xrel/browse` directly, not `/xrel?latest=1` — the latter still works
-as a quick one-page sanity check but isn't what the live site uses.
+- `npm run dev` — plain Vite dev server (fast HMR), but `/api/*` calls 404 — fine
+  for pure UI work.
+- `npm run pages:dev` — builds, then serves the real build through
+  `wrangler pages dev`, functions included, on one origin — the faithful
+  production-equivalent check. Requires no Cloudflare login for routes that don't
+  touch secrets; the NFO route just 501s locally the same way it does in prod
+  without secrets configured.
 
-If `/xrel?latest=1` errors or comes back empty, the site just stays on the
-seed `GAMES` array and `#livelabel` shows `SEEDED` — it fails closed, not
-loudly.
+## 5. Optional: curated build-id refresh (`status.json` path)
 
-## 2. Wire the site to the Worker
-
-In `drift.html`, find `CONFIG` near the top of the `<script>` block:
-
-```js
-const CONFIG = {
-  STEAM_PROXY: "https://drift-api.<sub>.workers.dev/?appid=",
-  XREL_PROXY:  "https://drift-api.<sub>.workers.dev/xrel",
-  STATUS_FEED: null,   // or "./status.json" to use the curated override instead
-};
-```
-
-Leaving `XREL_PROXY` set makes `goLive()` the primary data path on every page
-load; the built-in `GAMES` seed array is only ever shown as a fallback.
-
-## 3. Host the site (GitHub Pages)
-
-1. Repo → **Settings** → **Pages** → **Source**: `Deploy from a branch` → `main` → `/ (root)`.
-2. Save. GitHub gives you `https://<user>.github.io/<repo>/` in a minute or two.
-3. (Optional) Add a custom domain under the same Pages settings — GitHub
-   handles the TLS cert automatically once DNS is pointed at it.
-
-No build step — `drift.html` is served as-is.
-
-## 4. Optional: curated build-id refresh (`status.json` path)
-
-Only needed if you're using `STATUS_FEED` (curated overrides) instead of, or
-alongside, the live xREL path — it keeps `currentBuild` in `status.json`
-fresh so drift detection stays accurate even without live xREL data.
-
-Already wired up in this repo:
+Unchanged, untouched by this migration, and not the primary data path (the live
+xREL feed is). Only relevant if the app is ever pointed at `STATUS_FEED` instead of
+the live path:
 
 - [`sync-builds.js`](sync-builds.js) — reads `status.json`, asks
-  `api.steamcmd.net` for each game's latest public build id, writes changes
-  back.
-- [`.github/workflows/build-sync.yml`](.github/workflows/build-sync.yml) —
-  runs it every 6 hours (`workflow_dispatch` also lets you trigger it
-  manually from the Actions tab) and commits `status.json` if anything
-  changed.
-
-Nothing to configure — once the workflow file is on `main` with **Actions**
-enabled for the repo (Settings → Actions → General → Allow all actions), it
-just runs. It needs `contents: write` permission to commit back, which the
-workflow file already requests.
+  `api.steamcmd.net` for each game's latest public build id, writes changes back.
+- [`.github/workflows/build-sync.yml`](.github/workflows/build-sync.yml) — runs it
+  every 6 hours and commits `status.json` if anything changed.
 
 ## Recap: what's free vs. what needs a human
 
 | piece | cost | human touch after setup |
 |---|---|---|
-| GitHub Pages hosting | free | none |
-| Cloudflare Worker (100k req/day) | free | none |
+| Cloudflare Pages hosting + Functions (100k req/day) | free | none |
 | Steam / steamcmd data | free, no key | none |
-| xREL release list + search | free, no key | none |
-| xREL release feed, groups, drift detection | free, no key | none |
+| xREL release list, search, P2P group lookup, drift detection | free, no key | none |
 | xREL NFO images | free | optional, needs an xREL-approved Consumer Key/Secret — skip it, ASCII `.nfo` is permanent |
 | build-id refresh (curated path) | free (GitHub Actions minutes) | none |
 
-Everything above runs with zero ongoing intervention. The NFO-image secrets
-are the one piece that isn't self-serve — leave them unset and nothing about
-the site is degraded, it just shows the generated ASCII `.nfo` always.
+Everything above runs with zero ongoing intervention once step 1 is done.
