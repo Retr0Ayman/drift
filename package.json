@@ -7,8 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "preview": "vite preview",
-    "pages:dev": "npm run build && wrangler pages dev dist"
+    "preview": "npm run build && wrangler dev",
+    "pages:dev": "npm run build && wrangler pages dev dist",
+    "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.19",
@@ -22,6 +23,7 @@
     "react-router-dom": "^7.18.1"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.44.0",
     "@cloudflare/workers-types": "^5.20260713.1",
     "@types/node": "^24.13.2",
     "@types/react": "^19.2.17",
