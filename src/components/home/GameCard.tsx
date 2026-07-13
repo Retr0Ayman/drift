@@ -1,0 +1,54 @@
+import { Link } from "react-router-dom";
+import GlassPanel from "../ui/GlassPanel";
+import Pill from "../ui/Pill";
+import type { Game } from "../../types/game";
+import { coverImg, fmtBuild, gStatus, relStatus, statusMeta } from "../../lib/format";
+import "./GameCard.css";
+
+export default function GameCard({ game }: { game: Game }) {
+  const sm = statusMeta(game);
+  const img = coverImg(game);
+  const code = game.title.split(/[:\s]/)[0].slice(0, 10).toUpperCase();
+  const status = gStatus(game);
+
+  return (
+    <Link to={`/game/${game.id}`} className="game-card-link">
+      <GlassPanel className="game-card">
+        <div className="game-card-cover">
+          {img ? (
+            <img className="game-card-thumb" src={img} alt="" loading="lazy" onError={(e) => e.currentTarget.remove()} />
+          ) : (
+            <div className="game-card-code">{code}</div>
+          )}
+          <span className={`game-card-badge pill pill--${sm.cls === "unr" ? "unv" : sm.cls}`}>{sm.label}</span>
+          {game.year ? <span className="game-card-year">{game.year}</span> : null}
+        </div>
+        <div className="game-card-body">
+          <h3 className="game-card-title">{game.title}</h3>
+          <div className="game-card-methods">
+            {game.releases.length ? (
+              game.releases.map((r, i) => {
+                const st = relStatus(game, r);
+                const marker = st === "out" ? " ◆" : st === "unv" ? " ?" : "";
+                return (
+                  <Pill key={i} tone={r.method}>
+                    {r.method === "hv" ? "HV" : "TRAD"} · {r.group}
+                    {marker}
+                  </Pill>
+                );
+              })
+            ) : (
+              <Pill tone="neutral">{status === "unreleased" ? "Unreleased" : "Uncracked"}</Pill>
+            )}
+          </div>
+          <div className="game-card-foot">
+            <span>{game.developer || ""}</span>
+            <span>
+              latest <b>{fmtBuild(game.currentBuild)}</b>
+            </span>
+          </div>
+        </div>
+      </GlassPanel>
+    </Link>
+  );
+}

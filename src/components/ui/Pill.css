@@ -1,0 +1,51 @@
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  padding: 4px 10px;
+  border-radius: var(--pill);
+  white-space: nowrap;
+}
+
+.pill--neutral {
+  color: var(--ink-2);
+  background: var(--glass-bg-strong);
+}
+
+.pill--accent {
+  color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.pill--hv {
+  color: var(--hv);
+  background: color-mix(in srgb, var(--hv) 16%, transparent);
+}
+
+.pill--trad {
+  color: var(--trad);
+  background: color-mix(in srgb, var(--trad) 16%, transparent);
+}
+
+.pill--dead {
+  color: var(--dead);
+  background: color-mix(in srgb, var(--dead) 16%, transparent);
+}
+
+.pill--out {
+  color: var(--out);
+  background: color-mix(in srgb, var(--out) 16%, transparent);
+}
+
+.pill--unc {
+  color: var(--unc);
+  background: color-mix(in srgb, var(--unc) 16%, transparent);
+}
+
+.pill--unv {
+  color: var(--unv);
+  background: color-mix(in srgb, var(--unv) 18%, transparent);
+}

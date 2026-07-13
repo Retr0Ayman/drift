@@ -1,0 +1,30 @@
+.catalogue {
+  padding: 12px 24px 96px;
+}
+
+.catalogue-head {
+  margin-bottom: 28px;
+}
+
+.catalogue-eyebrow {
+  display: block;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.catalogue-title {
+  font-size: var(--fs-h1);
+  font-weight: 800;
+  letter-spacing: -1.5px;
+  color: var(--ink);
+}
+
+.catalogue-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(258px, 1fr));
+  gap: 18px;
+}

@@ -1,0 +1,50 @@
+.seg {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--pill);
+}
+
+.seg-item {
+  position: relative;
+  z-index: 0;
+  border: none;
+  background: transparent;
+  color: var(--ink-2);
+  font-family: var(--font);
+  font-weight: 600;
+  font-size: var(--fs-sm);
+  padding: 8px 15px;
+  border-radius: var(--pill);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color var(--dur) var(--ease);
+}
+
+.seg-item:hover {
+  color: var(--ink);
+}
+
+.seg-item[data-state="on"] {
+  color: var(--bg-0);
+}
+
+.seg-item:active {
+  transform: scale(0.96);
+}
+
+.seg-pill {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: var(--pill);
+  background: var(--accent);
+  box-shadow: 0 4px 16px -4px var(--accent-glow);
+}
+
+.seg-label {
+  position: relative;
+  z-index: 1;
+}

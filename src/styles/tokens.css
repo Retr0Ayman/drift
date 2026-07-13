@@ -1,0 +1,78 @@
+/* ==========================================================================
+   DRIFT design tokens — Linear x Apple x Liquid Glass
+   Dark-first, near-black base, one accent (signal cyan). The four functional
+   status colors (green/orange/purple/red) are reserved for crack-status
+   meaning only -- never reused as UI chrome, so status always reads
+   unambiguously. Everything else in the system is grayscale + the one accent.
+   ========================================================================== */
+:root {
+  color-scheme: dark;
+
+  /* -------- surfaces -------- */
+  --bg-0: #08090b; /* page base */
+  --bg-1: #0d0f12; /* raised base, pre-glass */
+  --bg-2: #16181c; /* further raised */
+
+  /* -------- ink -------- */
+  --ink: #f3f4f6;
+  --ink-2: rgba(243, 244, 246, 0.64);
+  --ink-3: rgba(243, 244, 246, 0.4);
+  --ink-4: rgba(243, 244, 246, 0.14);
+
+  /* -------- accent: signal cyan --------
+     Hue-distant from every functional status color on purpose -- it must
+     never be mistaken for a status. Used sparingly: focus rings, links,
+     the live-sync pip, the odd highlighted number. */
+  --accent: #2fe8d8;
+  --accent-ink: #06201d; /* text-on-accent, for solid accent buttons */
+  --accent-dim: rgba(47, 232, 216, 0.12);
+  --accent-dim-2: rgba(47, 232, 216, 0.22);
+  --accent-glow: rgba(47, 232, 216, 0.35);
+
+  /* -------- functional status colors (reserved, do not repurpose) -------- */
+  --hv: #bf5af2; /* hypervisor */
+  --trad: #2fe8d8; /* traditional crack -- shares the accent hue deliberately */
+  --dead: #30d158; /* cracked / bypassed */
+  --out: #ff9f0a; /* outdated */
+  --unc: #ff453a; /* uncracked */
+  --unv: #8e8e93; /* unverified / unreleased */
+
+  /* -------- liquid glass -------- */
+  --glass-bg: rgba(255, 255, 255, 0.045);
+  --glass-bg-strong: rgba(255, 255, 255, 0.075);
+  --glass-border: rgba(255, 255, 255, 0.09);
+  --glass-border-strong: rgba(255, 255, 255, 0.16);
+  --glass-highlight: rgba(255, 255, 255, 0.18);
+  --glass-blur: 22px;
+  --glass-blur-strong: 34px;
+  --glass-shadow: 0 24px 70px -12px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --glass-shadow-lg: 0 32px 90px -14px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+
+  /* -------- type -------- */
+  --font: -apple-system, "SF Pro Display", "SF Pro Text", system-ui, Inter, "Segoe UI", sans-serif;
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+
+  --fs-hero: clamp(2.75rem, 3.2rem + 3.6vw, 6rem);
+  --fs-h1: clamp(2rem, 1.6rem + 1.8vw, 3rem);
+  --fs-h2: clamp(1.4rem, 1.2rem + 1vw, 2rem);
+  --fs-h3: clamp(1.1rem, 1rem + 0.4vw, 1.35rem);
+  --fs-body: 1rem;
+  --fs-sm: 0.875rem;
+  --fs-xs: 0.75rem;
+  --fs-2xs: 0.6875rem;
+
+  /* -------- radii -------- */
+  --r-lg: 28px;
+  --r-md: 18px;
+  --r-sm: 13px;
+  --pill: 999px;
+
+  /* -------- motion -------- */
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast: 160ms;
+  --dur: 280ms;
+  --dur-slow: 480ms;
+
+  /* -------- layout -------- */
+  --wrap: 1180px;
+}
