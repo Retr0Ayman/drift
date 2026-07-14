@@ -17,7 +17,7 @@ const SEEDED_MARKER_KEY = "__seeded__";
    directly with a synthetic same-origin Request rather than a real
    self-fetch back into this Worker -- identical logic and xREL-side
    caching, no extra network hop. */
-async function collectCandidates(env: Env): Promise<RawXrelRelease[]> {
+export async function collectCandidates(env: Env): Promise<RawXrelRelease[]> {
   const seen = new Map<string, RawXrelRelease>();
 
   const browseRes = await handleXrelBrowse({
@@ -49,7 +49,7 @@ async function collectCandidates(env: Env): Promise<RawXrelRelease[]> {
    happened (a repack didn't crack anything; crediting one here would be the
    same mislabel isRepackGroup/isAnonymousUpload guard against everywhere
    else in this app). */
-function isAlertable(rel: RawXrelRelease): boolean {
+export function isAlertable(rel: RawXrelRelease): boolean {
   const ext = rel.ext_info || {};
   if (ext.type && ext.type !== "master_game") return false;
   if (!ext.title) return false;
