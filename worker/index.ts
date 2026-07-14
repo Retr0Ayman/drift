@@ -17,6 +17,7 @@ import { handleSummary } from "./routes/summary";
 import { handleFact } from "./routes/fact";
 import { handleSearchAssist } from "./routes/searchAssist";
 import { handleSitemap } from "./routes/sitemap";
+import { handleBadge } from "./routes/badge";
 import { runScheduledAlert } from "./scheduled";
 
 /* This is a Worker with static assets (wrangler.jsonc `main` + `assets`), not
@@ -40,6 +41,7 @@ const ROUTES: Record<string, Handler> = {
   "/api/fx": handleFx,
   "/api/summary": handleSummary,
   "/api/fact": handleFact,
+  "/api/badge": handleBadge,
   "/api/search-assist": handleSearchAssist,
 };
 
