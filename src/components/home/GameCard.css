@@ -11,12 +11,13 @@
 }
 
 /* Scale + shadow lift, not just a border glow -- the card visibly rises off
-   the page on hover, with a real cast shadow to sell the depth, instead of
-   a faint outline changing color. */
+   the page on hover, with a real cast shadow plus a faint accent-tinted
+   glow to sell the depth on a dark ground, instead of a faint outline
+   changing color. */
 .game-card:hover {
   transform: translateY(-10px) scale(1.02);
   border-color: var(--glass-border-strong);
-  box-shadow: 0 36px 70px -24px rgba(110, 75, 35, 0.38), var(--glass-shadow);
+  box-shadow: 0 36px 70px -24px rgba(0, 0, 0, 0.7), 0 0 0 1px var(--accent-dim), var(--glass-shadow);
 }
 
 .game-card:active {

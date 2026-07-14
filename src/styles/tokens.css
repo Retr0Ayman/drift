@@ -1,62 +1,66 @@
 /* ==========================================================================
-   Orvyn design tokens — Linear x Apple x Liquid Glass
-   Warm coffee-cream light theme, one accent (deepened signal teal for AA
-   contrast on a light ground). The four functional status colors
+   Orvyn design tokens — dark Liquid Glass
+   Deliberate commitment, not a default: near-black graphite base (never
+   pure #000, which flattens depth and reads generic), warm-white ink
+   inheriting the old palette's espresso/cream warmth just inverted, one
+   bright signal-cyan accent. The four functional status colors
    (green/orange/purple/red) are reserved for crack-status meaning only --
-   never reused as UI chrome, so status always reads unambiguously.
-   Everything else in the system is warm-tinted neutrals + the one accent.
+   never reused as UI chrome, so status always reads unambiguously. This is
+   the register real "Liquid Glass" lives in -- visionOS, iOS Control
+   Center, macOS -- glass only reads as glass with real light and motion
+   behind it, which a near-black ground makes far more legible than a pale
+   one ever could.
    ========================================================================== */
 :root {
-  color-scheme: light;
+  color-scheme: dark;
 
   /* -------- surfaces -------- */
-  --bg-0: #f4ece0; /* page base -- warm ivory/latte */
-  --bg-1: #faf4ea; /* raised base, pre-glass */
-  --bg-2: #fffaf1; /* further raised */
+  --bg-0: #0a0b0f; /* page base -- deep graphite, not flat black */
+  --bg-1: #15161d; /* raised base, pre-glass */
+  --bg-2: #1c1e27; /* further raised */
 
   /* -------- ink -------- */
-  --ink: #241a10; /* espresso near-black */
-  --ink-2: rgba(36, 26, 16, 0.66);
-  --ink-3: rgba(36, 26, 16, 0.44);
-  --ink-4: rgba(36, 26, 16, 0.14);
+  --ink: #f4efe6; /* warm white -- the old --bg-0 cream, inverted to text */
+  --ink-2: rgba(244, 239, 230, 0.7);
+  --ink-3: rgba(244, 239, 230, 0.48);
+  --ink-4: rgba(244, 239, 230, 0.16);
 
-  /* -------- accent: signal teal --------
+  /* -------- accent: signal cyan --------
      Hue-distant from every functional status color on purpose -- it must
-     never be mistaken for a status. Deepened from the dark-theme cyan for
-     AA contrast on a light ground. Used sparingly: focus rings, links, the
-     live-sync pip, the odd highlighted number. */
-  --accent: #0d9c93;
-  --accent-ink: #ffffff; /* text-on-accent, for solid accent buttons */
-  --accent-dim: rgba(13, 156, 147, 0.12);
-  --accent-dim-2: rgba(13, 156, 147, 0.22);
-  --accent-glow: rgba(13, 156, 147, 0.35);
+     never be mistaken for a status. Brightened from the light-theme teal
+     for real glow on a near-black ground. Used sparingly: focus rings,
+     links, the live-sync pip, the odd highlighted number. */
+  --accent: #2de2d1;
+  --accent-ink: #06201c; /* text-on-accent, for solid accent buttons */
+  --accent-dim: rgba(45, 226, 209, 0.14);
+  --accent-dim-2: rgba(45, 226, 209, 0.26);
+  --accent-glow: rgba(45, 226, 209, 0.5);
 
   /* -------- functional status colors (reserved, do not repurpose) --------
-     Deepened from the dark-theme values where the original was too light
-     to hold AA contrast against the cream base; same hues, same meaning. */
-  --hv: #8b3fd1; /* hypervisor */
-  --trad: #0d9c93; /* traditional crack -- shares the accent hue deliberately */
-  --dead: #1f8a45; /* cracked / bypassed */
-  --out: #b8650a; /* outdated */
-  --unc: #c43a2b; /* uncracked */
-  --unv: #8a7a68; /* unverified / unreleased -- warm-tinted grey, not cool */
+     Brightened from the light-theme values for AA contrast against the
+     graphite base; same hues, same meaning. */
+  --hv: #b072f5; /* hypervisor */
+  --trad: #2de2d1; /* traditional crack -- shares the accent hue deliberately */
+  --dead: #3ddc97; /* cracked / bypassed */
+  --out: #ff9d4d; /* outdated */
+  --unc: #ff6f61; /* uncracked */
+  --unv: #a79c8c; /* unverified / unreleased -- warm-tinted grey, not cool */
 
   /* -------- liquid glass --------
-     Alpha deliberately kept low (was 0.6/0.86 -- read as solid cards with a
-     slight blur, not genuinely see-through glass) so the moving ambient
-     background is clearly visible through every panel and the navbar, not
-     just subtly tinting them. Blur is raised to compensate: lower alpha
-     alone would let sharp blob edges show through undiffused, blur is what
-     turns that into a smooth frosted wash instead of a see-through window. */
-  --glass-bg: rgba(255, 250, 240, 0.34);
-  --glass-bg-strong: rgba(255, 250, 240, 0.54);
-  --glass-border: rgba(150, 115, 80, 0.22);
-  --glass-border-strong: rgba(130, 95, 60, 0.32);
-  --glass-highlight: rgba(255, 255, 250, 0.85);
+     Light-tinted overlays on a dark ground (not the old warm-cream
+     overlays inverted, which would just look muddy) -- low alpha so the
+     moving ambient background genuinely shows through, real black shadows
+     for depth instead of the old warm-brown ones that made no sense once
+     the ground itself went dark. */
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-bg-strong: rgba(255, 255, 255, 0.09);
+  --glass-border: rgba(255, 255, 255, 0.09);
+  --glass-border-strong: rgba(255, 255, 255, 0.17);
+  --glass-highlight: rgba(255, 255, 255, 0.16);
   --glass-blur: 28px;
   --glass-blur-strong: 42px;
-  --glass-shadow: 0 20px 50px -12px rgba(110, 75, 35, 0.16), inset 0 1px 0 rgba(255, 255, 250, 0.75);
-  --glass-shadow-lg: 0 28px 70px -14px rgba(110, 75, 35, 0.2), inset 0 1px 0 rgba(255, 255, 250, 0.8);
+  --glass-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  --glass-shadow-lg: 0 28px 70px -14px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.09);
 
   /* -------- type -------- */
   --font: -apple-system, "SF Pro Display", "SF Pro Text", system-ui, Inter, "Segoe UI", sans-serif;

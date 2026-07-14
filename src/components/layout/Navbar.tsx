@@ -33,9 +33,9 @@ export default function Navbar({ games, status, onLiveGameResolved }: NavbarProp
   const borderAlpha = useTransform(scrollProgress, [0, 1], [0.22, 0.36]);
   const boxShadow = useTransform(
     shadowAlpha,
-    (a) => `0 24px 60px -18px rgba(110, 75, 35, ${a}), inset 0 1px 0 rgba(255,255,250,0.7)`,
+    (a) => `0 24px 60px -18px rgba(0, 0, 0, ${a}), inset 0 1px 0 rgba(255,255,255,0.08)`,
   );
-  const borderColor = useTransform(borderAlpha, (a) => `rgba(130, 95, 60, ${a})`);
+  const borderColor = useTransform(borderAlpha, (a) => `rgba(255, 255, 255, ${a})`);
 
   const [menuOpen, setMenuOpen] = useState(false);
 

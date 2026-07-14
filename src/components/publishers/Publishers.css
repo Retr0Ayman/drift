@@ -115,7 +115,7 @@
 .publisher-card:hover {
   transform: translateY(-8px) scale(1.015);
   border-color: var(--glass-border-strong);
-  box-shadow: 0 30px 60px -22px rgba(110, 75, 35, 0.34), var(--glass-shadow);
+  box-shadow: 0 30px 60px -22px rgba(0, 0, 0, 0.65), 0 0 0 1px var(--accent-dim), var(--glass-shadow);
 }
 
 .publisher-card--aaa {
