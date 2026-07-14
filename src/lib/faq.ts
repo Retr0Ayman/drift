@@ -11,9 +11,9 @@ export interface FaqResult {
 const FLAG_LABEL: Record<string, string> = { out: "outdated", unv: "unverified", cur: "current" };
 
 /* Cached per game in localStorage -- generated once, not regenerated every
-   page view. pollinations.ai is a free, keyless, informal community
-   service with no uptime/SLA guarantee; a failure surfaces as a real error
-   message, not a silent retry loop or a fabricated-looking fallback. */
+   page view. Backed by Groq (server-side, see worker/routes/faq.ts) --
+   a failure (key unset, rate limit, etc.) surfaces as a real error message,
+   not a silent retry loop or a fabricated-looking fallback. */
 export async function fetchFaq(game: Game): Promise<FaqResult> {
   const cacheKey = CACHE_PREFIX + game.id;
   const cached = localStorage.getItem(cacheKey);

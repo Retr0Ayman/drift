@@ -1,5 +1,6 @@
 import type { Handler } from "../shared/types";
 import { json } from "../shared/http";
+import { callGroq } from "../shared/groq";
 
 interface FaqRequest {
   title: string;
@@ -15,10 +16,14 @@ interface FaqRequest {
    the facts handed to it, and this route builds the fact list itself from
    structured fields -- the client can never pass a raw freeform prompt, both
    to keep the grounding consistent and so this can't be used as an open
-   proxy to pollinations.ai for unrelated content. text.pollinations.ai is a
-   genuinely public, keyless, informal community service with no uptime/SLA
-   guarantee -- errors are relayed as a real "unavailable" response, not
-   masked or silently retried into something that looks like success. */
+   proxy to Groq for unrelated content.
+
+   Switched from pollinations.ai to Groq: pollinations hit real 429/502s
+   twice during testing (a free, keyless, informal community service with no
+   uptime/SLA guarantee). Groq has a real free tier and is meaningfully more
+   reliable -- but the honesty rule doesn't change: a missing key or a failed
+   call surfaces as a real "unavailable" response, never masked or silently
+   retried into something that looks like success. */
 const SYSTEM_PROMPT =
   "You write short, factual FAQ answers about video games for a crack/build-status tracking site. " +
   "You are STRICTLY grounded in the facts provided in the user message -- title, developer, publisher, " +
@@ -43,7 +48,7 @@ function buildFacts(body: FaqRequest): string {
   return lines.filter(Boolean).join("\n");
 }
 
-export const handleFaq: Handler = async ({ request }) => {
+export const handleFaq: Handler = async ({ request, env }) => {
   if (request.method !== "POST") return json({ error: "POST only" }, 60, 405);
 
   let body: FaqRequest;
@@ -54,27 +59,10 @@ export const handleFaq: Handler = async ({ request }) => {
   }
   if (!body.title) return json({ error: "title required" }, 60, 400);
 
-  try {
-    const r = await fetch("https://text.pollinations.ai/", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: buildFacts(body) },
-        ],
-        model: "openai",
-      }),
-    });
-    if (!r.ok) {
-      return json({ error: `pollinations.ai returned ${r.status}` }, 30, 502);
-    }
-    const text = (await r.text()).trim();
-    if (!text) {
-      return json({ error: "empty response from pollinations.ai" }, 30, 502);
-    }
-    return json({ faq: text }, 3600);
-  } catch (e) {
-    return json({ error: `pollinations.ai request failed: ${e instanceof Error ? e.message : String(e)}` }, 30, 502);
-  }
+  const { text, error } = await callGroq(env, [
+    { role: "system", content: SYSTEM_PROMPT },
+    { role: "user", content: buildFacts(body) },
+  ]);
+  if (!text) return json({ error: error || "FAQ generation unavailable" }, 30, 502);
+  return json({ faq: text }, 3600);
 };

@@ -28,7 +28,9 @@ function Layout() {
     <>
       <IntroAnimation />
       <Navbar games={catalog.games} status={catalog.status} onLiveGameResolved={catalog.mergeOne} />
-      <Outlet context={context} />
+      <main className="page-content">
+        <Outlet context={context} />
+      </main>
       <Footer />
     </>
   );

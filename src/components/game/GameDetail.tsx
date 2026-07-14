@@ -8,6 +8,7 @@ import FaqSection from "./FaqSection";
 import GlassPanel from "../ui/GlassPanel";
 import Pill from "../ui/Pill";
 import Reveal from "../ui/Reveal";
+import Tabs, { type TabDef } from "../ui/Tabs";
 import { bestBuild, driftDelta, fmtBuild, gStatus, sortReleasesByPriority, statusMeta, steamImg, steamLink, steamdbLink } from "../../lib/format";
 import "./GameDetail.css";
 
@@ -57,6 +58,86 @@ export default function GameDetail() {
       ));
 
   const releases = sortReleasesByPriority(game.releases);
+
+  const tabs: TabDef[] = [
+    {
+      value: "cracks",
+      label: `Crack options${releases.length ? ` (${releases.length})` : ""}`,
+      content: (
+        <div className="detail-releases">
+          <div className="detail-release-list">
+            {releases.length ? (
+              releases.map((r, i) => <ReleaseCard key={i} game={game} release={r} />)
+            ) : (
+              <GlassPanel className="detail-release-empty">
+                {gStatus(game) === "unreleased" ? "Unreleased — no crack tracked yet." : "No crack tracked yet."}
+              </GlassPanel>
+            )}
+          </div>
+          {releases.length ? (
+            <div className="detail-legend">
+              <span>
+                <i className="legend-dot legend-dot--cur" />
+                Current — crack build matches or beats the latest Steam build
+              </span>
+              <span>
+                <i className="legend-dot legend-dot--out" />
+                Outdated — crack build trails the latest Steam build
+              </span>
+              <span>
+                <i className="legend-dot legend-dot--unv" />
+                Unverified — live-tracked release with no confirmed build number yet
+              </span>
+            </div>
+          ) : null}
+        </div>
+      ),
+    },
+    {
+      value: "overview",
+      label: "Overview",
+      content: (
+        <div className="detail-overview">
+          <div className="detail-about">
+            <p>{game.desc}</p>
+          </div>
+          {game.fact ? (
+            <GlassPanel className="detail-factbox">
+              <div className="detail-factbox-h">Did you know</div>
+              <p>{game.fact}</p>
+            </GlassPanel>
+          ) : null}
+        </div>
+      ),
+    },
+    ...(game.dlc && game.dlc.length
+      ? [
+          {
+            value: "dlc",
+            label: `Editions & DLC (${game.dlc.length})`,
+            content: (
+              <GlassPanel className="detail-dlc-list">
+                {game.dlc.map((d, i) =>
+                  d.appid ? (
+                    <DlcRow key={i} appid={d.appid} fallbackName={d.n} />
+                  ) : (
+                    <div className="detail-dlc-row" key={i}>
+                      <span>{d.n}</span>
+                      <span className="detail-dlc-price">{d.p}</span>
+                    </div>
+                  ),
+                )}
+              </GlassPanel>
+            ),
+          },
+        ]
+      : []),
+    {
+      value: "faq",
+      label: "FAQ",
+      content: <FaqSection game={game} />,
+    },
+  ];
 
   return (
     <div className="wrap detail">
@@ -124,75 +205,8 @@ export default function GameDetail() {
             </div>
           </Reveal>
 
-          <Reveal delay={0.05}>
-            <div className="detail-about">
-              <h4>About this game</h4>
-              <p>{game.desc}</p>
-            </div>
-          </Reveal>
-
-          {game.fact ? (
-            <Reveal delay={0.1}>
-              <GlassPanel className="detail-factbox">
-                <div className="detail-factbox-h">Did you know</div>
-                <p>{game.fact}</p>
-              </GlassPanel>
-            </Reveal>
-          ) : null}
-
-          <Reveal delay={0.15}>
-            <div className="detail-releases">
-              <h4>Crack options — hypervisor vs traditional</h4>
-              <div className="detail-release-list">
-                {releases.length ? (
-                  releases.map((r, i) => <ReleaseCard key={i} game={game} release={r} />)
-                ) : (
-                  <GlassPanel className="detail-release-empty">
-                    {gStatus(game) === "unreleased" ? "Unreleased — no crack tracked yet." : "No crack tracked yet."}
-                  </GlassPanel>
-                )}
-              </div>
-              {releases.length ? (
-                <div className="detail-legend">
-                  <span>
-                    <i className="legend-dot legend-dot--cur" />
-                    Current — crack build matches or beats the latest Steam build
-                  </span>
-                  <span>
-                    <i className="legend-dot legend-dot--out" />
-                    Outdated — crack build trails the latest Steam build
-                  </span>
-                  <span>
-                    <i className="legend-dot legend-dot--unv" />
-                    Unverified — live-tracked release with no confirmed build number yet
-                  </span>
-                </div>
-              ) : null}
-            </div>
-          </Reveal>
-
-          {game.dlc && game.dlc.length ? (
-            <Reveal delay={0.2}>
-              <div className="detail-dlc">
-                <h4>Editions &amp; DLC</h4>
-                <GlassPanel className="detail-dlc-list">
-                  {game.dlc.map((d, i) =>
-                    d.appid ? (
-                      <DlcRow key={i} appid={d.appid} fallbackName={d.n} />
-                    ) : (
-                      <div className="detail-dlc-row" key={i}>
-                        <span>{d.n}</span>
-                        <span className="detail-dlc-price">{d.p}</span>
-                      </div>
-                    ),
-                  )}
-                </GlassPanel>
-              </div>
-            </Reveal>
-          ) : null}
-
-          <Reveal delay={0.25}>
-            <FaqSection game={game} />
+          <Reveal delay={0.08}>
+            <Tabs tabs={tabs} defaultValue="cracks" ariaLabel={`${game.title} detail sections`} />
           </Reveal>
         </div>
 

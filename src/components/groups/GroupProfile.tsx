@@ -8,6 +8,7 @@ import { useGroupReleases } from "../../hooks/useGroupReleases";
 import GlassPanel from "../ui/GlassPanel";
 import Pill from "../ui/Pill";
 import Reveal from "../ui/Reveal";
+import AiSummary from "../ui/AiSummary";
 import "./Groups.css";
 
 interface DisplayRow {
@@ -164,6 +165,17 @@ export default function GroupProfile() {
                 output, only what xREL's search currently returns.
               </div>
             ) : null}
+            <AiSummary
+              kind="group"
+              cacheKey={key || name}
+              name={name}
+              facts={{
+                "Releases tracked": rows.length,
+                Leaning: isRepackGroupProfile ? "Repack group" : `${leaning}-leaning`,
+                Starred: STARRED_GROUPS.includes(key || "") ? "yes (P2P-only group)" : "no",
+                "Recent titles": rows.slice(0, 8).map((r) => r.title),
+              }}
+            />
           </div>
         </div>
       </Reveal>

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { SEED_GAMES } from "../data/seedGames";
 import type { Game } from "../types/game";
-import { parseReleaseRows, resolveAndEnrich, type PartialGame } from "../lib/catalog";
+import { parseReleaseRows, resolveAndEnrich, dedupeReleasesByGroup, type PartialGame } from "../lib/catalog";
 
 /* Starred P2P groups whose releases never appear in the browse/archive feeds
    (confirmed live: those endpoints have no p2p_results field at all) get
@@ -9,10 +9,17 @@ import { parseReleaseRows, resolveAndEnrich, type PartialGame } from "../lib/cat
    session. This is the real fix for "Hypervisor filter always returns 0
    results" -- structurally, no game could ever reach the catalog with an
    "hv" release before this, since DenuvOwO (the only hv-tagged group) never
-   showed up through the normal crawl. */
-const HV_SEED_GROUPS = ["DenuvOwO"];
+   showed up through the normal crawl.
+
+   Originally just DenuvOwO (fixing the hv filter specifically) -- voices38
+   had the identical structural gap (also P2P-only, also invisible to
+   browse/archive) but was left out, so its releases only ever reached the
+   catalog if a user happened to search up that exact title first. Both
+   starred groups get the same proactive treatment now. */
+const SEED_GROUPS = ["DenuvOwO", "voices38"];
 
 const PER_PAGE = 60;
+const RESOLVE_BATCH_SIZE = 6;
 
 /* Deep-history archive walk (widens catalog depth beyond the ~5000-most-
    recent-release window the Windows browse feed is capped at) -- confirmed
@@ -84,12 +91,30 @@ export function useLiveCatalog(): LiveCatalog {
 
   const resolveNewCandidates = useCallback(async (byGame: Record<string, PartialGame>) => {
     const candidates = Object.values(byGame).filter((g) => !seenKeys.current.has(g.xrelKey));
-    candidates.forEach((g) => seenKeys.current.add(g.xrelKey));
-    await Promise.all(candidates.map(resolveAndEnrich));
+    // Batched, not Promise.all(candidates.map(...)) -- confirmed live: a
+    // starred group like DenuvOwO can hand back ~30 titles in one response,
+    // and firing 30 concurrent /api/resolve calls (each hitting Steam's
+    // storesearch) at once measurably caused some of them to fail to
+    // resolve under real load. RESOLVE_BATCH_SIZE keeps this to a handful
+    // of in-flight requests at a time.
+    for (let i = 0; i < candidates.length; i += RESOLVE_BATCH_SIZE) {
+      await Promise.all(candidates.slice(i, i + RESOLVE_BATCH_SIZE).map(resolveAndEnrich));
+    }
     // Windows/Steam-only: a game only ever renders if a Steam appid actually
     // resolved -- that's the real signal for "this has a PC release," not
     // the xREL dirname text.
-    return candidates.filter((g): g is PartialGame & { appid: number } => g.appid != null);
+    const resolved = candidates.filter((g): g is PartialGame & { appid: number } => g.appid != null);
+    // Only the ones that actually resolved get permanently marked "seen" --
+    // confirmed live root cause of a real bug: 007 First Light's DenuvOwO
+    // release never appeared in the catalog because an earlier pass (browse
+    // or archive) had already tried and failed to resolve the same xrelKey
+    // (title-string mismatch or a transient Steam hiccup) and marked it seen
+    // regardless of outcome, permanently blocking every later, otherwise-
+    // successful attempt for the rest of the session. A failed candidate is
+    // left off seenKeys so the next pass that encounters the same xrelKey
+    // gets a genuine retry instead of being silently skipped forever.
+    resolved.forEach((g) => seenKeys.current.add(g.xrelKey));
+    return resolved;
   }, []);
 
   const mergePage = useCallback(
@@ -156,11 +181,12 @@ export function useLiveCatalog(): LiveCatalog {
      route (search/releases.json?p2p=1, hard-filtered to an exact group-name
      match server-side), groups by title, resolves Steam appids the same way
      the browse/archive path does, and merges in whatever actually resolved.
-     Titles the browse crawl already picked up just get their DenuvOwO
-     release folded in via id match (Game.id is a deterministic slug of the
-     title), so this adds real hv-tagged releases without duplicating rows. */
-  const mergeHvSeedGroups = useCallback(async () => {
-    for (const name of HV_SEED_GROUPS) {
+     Titles the browse crawl (or an earlier search-driven merge) already
+     picked up just get this group's release folded in via id match (Game.id
+     is a deterministic slug of the title) and re-deduped, so this adds real
+     releases without ever duplicating a row that's already there. */
+  const mergeSeedGroups = useCallback(async () => {
+    for (const name of SEED_GROUPS) {
       try {
         const r = await fetch(`/api/xrel/group?name=${encodeURIComponent(name)}`);
         const data = (await r.json()) as { list?: unknown[] };
@@ -174,7 +200,7 @@ export function useLiveCatalog(): LiveCatalog {
           const hit = byId.get(g.id);
           if (!hit) return g;
           byId.delete(g.id);
-          return { ...g, releases: [...g.releases, ...hit.releases] };
+          return { ...g, releases: dedupeReleasesByGroup([...g.releases, ...hit.releases]) };
         });
         commit([...merged, ...byId.values()]);
       } catch {
@@ -242,13 +268,13 @@ export function useLiveCatalog(): LiveCatalog {
         loadingRef.current = false;
         setLoading(false);
       }
-      mergeHvSeedGroups();
+      mergeSeedGroups();
       intervalId = setInterval(archiveTick, ARCHIVE_TICK_MS);
     })();
     return () => {
       if (intervalId) clearInterval(intervalId);
     };
-  }, [mergePage, archiveTick, mergeHvSeedGroups]);
+  }, [mergePage, archiveTick, mergeSeedGroups]);
 
   return { games, status, loading, hasMore, totalPages, loadMore, mergeOne, archiveMonth, archiveDepthMonths };
 }

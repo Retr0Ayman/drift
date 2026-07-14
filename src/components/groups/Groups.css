@@ -46,14 +46,17 @@
 }
 
 .group-card {
-  padding: 18px;
+  padding: 20px;
+  border-radius: 26px;
   cursor: pointer;
-  transition: transform var(--dur) var(--ease), border-color var(--dur) var(--ease);
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color var(--dur) var(--ease);
 }
 
 .group-card:hover {
-  transform: translateY(-3px);
+  transform: translateY(-8px) scale(1.015);
   border-color: var(--glass-border-strong);
+  box-shadow: 0 30px 60px -22px rgba(110, 75, 35, 0.34), var(--glass-shadow);
 }
 
 .group-card--starred {

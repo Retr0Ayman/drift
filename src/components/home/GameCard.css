@@ -1,27 +1,33 @@
 .game-card-link {
   display: block;
-  border-radius: var(--r-lg);
+  border-radius: 32px;
 }
 
 .game-card {
   cursor: pointer;
-  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease), border-color var(--dur) var(--ease);
+  border-radius: 32px;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color var(--dur) var(--ease);
 }
 
+/* Scale + shadow lift, not just a border glow -- the card visibly rises off
+   the page on hover, with a real cast shadow to sell the depth, instead of
+   a faint outline changing color. */
 .game-card:hover {
-  transform: translateY(-5px);
+  transform: translateY(-10px) scale(1.02);
   border-color: var(--glass-border-strong);
+  box-shadow: 0 36px 70px -24px rgba(110, 75, 35, 0.38), var(--glass-shadow);
 }
 
 .game-card:active {
-  transform: scale(0.98);
+  transform: translateY(-6px) scale(0.99);
 }
 
 .game-card-cover {
   position: relative;
-  height: 148px;
-  margin: 9px 9px 0;
-  border-radius: var(--r-md);
+  height: 208px;
+  margin: 10px 10px 0;
+  border-radius: 24px;
   overflow: hidden;
   background: linear-gradient(135deg, var(--glass-bg-strong), var(--bg-2));
 }
@@ -31,11 +37,11 @@
   height: 100%;
   object-fit: cover;
   display: block;
-  transition: transform var(--dur-slow) var(--ease);
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .game-card:hover .game-card-thumb {
-  transform: scale(1.06);
+  transform: scale(1.08);
 }
 
 .game-card-code {
@@ -43,7 +49,7 @@
   inset: 0;
   display: grid;
   place-items: center;
-  font-size: 1.2rem;
+  font-size: 1.3rem;
   font-weight: 800;
   color: var(--ink-2);
   letter-spacing: 1px;
@@ -51,34 +57,34 @@
 
 .game-card-year {
   position: absolute;
-  bottom: 10px;
-  left: 12px;
-  font-size: 0.64rem;
+  bottom: 12px;
+  left: 14px;
+  font-size: 0.66rem;
   font-weight: 700;
   color: #fff;
   background: rgba(0, 0, 0, 0.4);
-  padding: 3px 8px;
+  padding: 4px 9px;
   border-radius: var(--pill);
   backdrop-filter: blur(6px);
 }
 
 .game-card-badge {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: 12px;
+  right: 12px;
   text-transform: uppercase;
   backdrop-filter: blur(10px);
 }
 
 .game-card-body {
-  padding: 14px 16px 17px;
+  padding: 18px 20px 21px;
 }
 
 .game-card-title {
-  font-size: 1rem;
-  font-weight: 700;
+  font-size: 1.06rem;
+  font-weight: 750;
   line-height: 1.28;
-  letter-spacing: -0.2px;
+  letter-spacing: -0.3px;
   color: var(--ink);
 }
 
@@ -86,14 +92,14 @@
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
-  margin-top: 11px;
+  margin-top: 13px;
 }
 
 .game-card-crack {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 10px;
+  margin-top: 12px;
   font-size: 0.68rem;
   font-weight: 700;
   font-family: var(--mono);
@@ -104,7 +110,9 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 13px;
+  margin-top: 15px;
+  padding-top: 14px;
+  border-top: 1px solid var(--glass-border);
   font-size: 0.68rem;
   color: var(--ink-3);
   font-weight: 600;

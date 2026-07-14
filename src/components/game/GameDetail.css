@@ -115,19 +115,10 @@
   margin-top: 2px;
 }
 
-.detail-about {
-  margin-top: 24px;
-}
-
-.detail-about h4,
-.detail-releases h4,
-.detail-dlc h4 {
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: var(--ink-3);
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  margin-bottom: 12px;
+.detail-overview {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .detail-about p {
@@ -138,7 +129,6 @@
 }
 
 .detail-factbox {
-  margin-top: 20px;
   padding: 18px 20px;
 }
 
@@ -156,10 +146,6 @@
   line-height: 1.6;
   margin-top: 8px;
   font-weight: 500;
-}
-
-.detail-releases {
-  margin-top: 28px;
 }
 
 .detail-release-list {
@@ -206,10 +192,6 @@
   background: var(--unv);
 }
 
-.detail-dlc {
-  margin-top: 28px;
-}
-
 .detail-dlc-list {
   padding: 0 !important;
   display: flex;
@@ -238,7 +220,7 @@
 
 .detail-side {
   position: sticky;
-  top: 92px;
+  top: 100px;
   display: flex;
   flex-direction: column;
   gap: 14px;

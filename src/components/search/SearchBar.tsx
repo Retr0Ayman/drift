@@ -1,8 +1,9 @@
-import { useState, type KeyboardEvent } from "react";
+import { useMemo, useState, type KeyboardEvent } from "react";
 import * as Popover from "@radix-ui/react-popover";
 import { useNavigate } from "react-router-dom";
 import { useAutocomplete, type Suggestion } from "../../hooks/useAutocomplete";
 import { buildLiveGameFromRows } from "../../lib/catalog";
+import { parseSearchIntent } from "../../lib/searchIntent";
 import type { Game } from "../../types/game";
 import "./SearchBar.css";
 
@@ -18,12 +19,32 @@ export default function SearchBar({ games, onLiveGameResolved }: SearchBarProps)
   const [resolving, setResolving] = useState(false);
   const navigate = useNavigate();
   const { results, loading } = useAutocomplete(query, games);
-  const showPopover = open && (loading || resolving || results.length > 0);
+  const intent = useMemo(() => parseSearchIntent(query), [query]);
+  const showPopover = open && (loading || resolving || results.length > 0 || !!intent);
+
+  const localResults = results.filter((r) => r.kind === "local");
+  const liveResults = results.filter((r) => r.kind === "live");
+  // Flat index across intent row + both groups, so arrow-key navigation
+  // still moves through every visible row in the order they're rendered.
+  const flat: Array<Suggestion | { kind: "intent" }> = [
+    ...(intent ? [{ kind: "intent" as const }] : []),
+    ...localResults,
+    ...liveResults,
+  ];
 
   function closeAndReset() {
     setOpen(false);
     setQuery("");
     setActiveIndex(-1);
+  }
+
+  function applyIntent() {
+    if (!intent) return;
+    const params = new URLSearchParams();
+    if (intent.status) params.set("status", intent.status);
+    if (intent.year) params.set("year", intent.year);
+    navigate(`/?${params.toString()}`);
+    closeAndReset();
   }
 
   async function selectSuggestion(s: Suggestion) {
@@ -43,22 +64,29 @@ export default function SearchBar({ games, onLiveGameResolved }: SearchBarProps)
     closeAndReset();
   }
 
+  function activate(row: Suggestion | { kind: "intent" } | undefined) {
+    if (!row) return;
+    if (row.kind === "intent") applyIntent();
+    else selectSuggestion(row);
+  }
+
   function onKeyDown(e: KeyboardEvent<HTMLInputElement>) {
-    if (!results.length) return;
+    if (!flat.length) return;
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setActiveIndex((i) => (i + 1) % results.length);
+      setActiveIndex((i) => (i + 1) % flat.length);
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      setActiveIndex((i) => (i - 1 + results.length) % results.length);
+      setActiveIndex((i) => (i - 1 + flat.length) % flat.length);
     } else if (e.key === "Enter") {
       e.preventDefault();
-      const s = results[activeIndex] ?? results[0];
-      if (s) selectSuggestion(s);
+      activate(flat[activeIndex] ?? flat[0]);
     } else if (e.key === "Escape") {
       setOpen(false);
     }
   }
+
+  let rowCursor = -1;
 
   return (
     <Popover.Root open={showPopover} onOpenChange={(o) => setOpen(o)}>
@@ -69,7 +97,7 @@ export default function SearchBar({ games, onLiveGameResolved }: SearchBarProps)
             <path d="m20 20-3.5-3.5" />
           </svg>
           <input
-            placeholder="Search"
+            placeholder="Search titles, groups, publishers…"
             aria-label="Search titles"
             value={query}
             onChange={(e) => {
@@ -83,27 +111,72 @@ export default function SearchBar({ games, onLiveGameResolved }: SearchBarProps)
         </div>
       </Popover.Anchor>
       <Popover.Portal>
+        {/* Open/close motion via Radix's own [data-state] CSS animation
+            hooks (see SearchBar.css) -- Radix's Presence primitive already
+            defers unmount until the exit animation finishes, no
+            forceMount/AnimatePresence wiring needed on top of it. */}
         <Popover.Content
           className="searchbar-popover"
           align="end"
           sideOffset={10}
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
+          {intent ? (
+            <button
+              className={`searchbar-intent${(rowCursor += 1) === activeIndex ? " searchbar-item--active" : ""}`}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={applyIntent}
+            >
+              <span className="searchbar-intent-icon">⌁</span>
+              <span>
+                Filter by <strong>{intent.label}</strong>
+              </span>
+            </button>
+          ) : null}
+
           {loading ? <div className="searchbar-status">Searching…</div> : null}
           {resolving ? <div className="searchbar-status">Opening…</div> : null}
-          {!loading && !resolving
-            ? results.map((s, i) => (
-                <button
-                  key={s.id}
-                  className={`searchbar-item${i === activeIndex ? " searchbar-item--active" : ""}`}
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => selectSuggestion(s)}
-                >
-                  <span className="searchbar-item-title">{s.title}</span>
-                  {s.kind === "local" && s.year ? <span className="searchbar-item-year">{s.year}</span> : null}
-                </button>
-              ))
-            : null}
+
+          {!loading && !resolving && localResults.length ? (
+            <div className="searchbar-group">
+              <div className="searchbar-group-label">In your catalogue</div>
+              {localResults.map((s) => {
+                rowCursor += 1;
+                const idx = rowCursor;
+                return (
+                  <button
+                    key={s.id}
+                    className={`searchbar-item${idx === activeIndex ? " searchbar-item--active" : ""}`}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => selectSuggestion(s)}
+                  >
+                    <span className="searchbar-item-title">{s.title}</span>
+                    {s.kind === "local" && s.year ? <span className="searchbar-item-year">{s.year}</span> : null}
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
+
+          {!loading && !resolving && liveResults.length ? (
+            <div className="searchbar-group">
+              <div className="searchbar-group-label">From xREL, live</div>
+              {liveResults.map((s) => {
+                rowCursor += 1;
+                const idx = rowCursor;
+                return (
+                  <button
+                    key={s.id}
+                    className={`searchbar-item${idx === activeIndex ? " searchbar-item--active" : ""}`}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => selectSuggestion(s)}
+                  >
+                    <span className="searchbar-item-title">{s.title}</span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>

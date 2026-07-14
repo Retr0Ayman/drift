@@ -18,71 +18,70 @@ interface NavbarProps {
   onLiveGameResolved: (game: Game) => void;
 }
 
-/* Blur radius + background alpha scale with scroll position via Motion values
-   (no React re-render on scroll -- these update on the compositor/rAF
-   directly), instead of a flat fixed bar. */
+/* Floating pill nav, Apple/Linear-marketing-site style -- margin from every
+   edge, never spans the full viewport width, sits on top of the page
+   rather than being part of its flow (position: fixed; App.tsx compensates
+   with padding-top on .page-content). Scroll only nudges the pill's own
+   shadow/border intensity and a slight scale-down, not a 0->solid alpha
+   ramp -- a floating element that's invisible at rest reads as broken, not
+   restrained, the way a flush edge-to-edge bar could get away with. */
 export default function Navbar({ games, status, onLiveGameResolved }: NavbarProps) {
   const { scrollY } = useScroll();
-  // Peak alpha lowered from 0.78 -- even scrolled, the navbar should stay
-  // genuinely translucent (the moving ambient background visible through
-  // its blur), not read as a solid bar with blur applied to nothing. Blur
-  // raised slightly to compensate, same tradeoff as the glass tokens.
-  const blur = useTransform(scrollY, [0, 140], [0, 26]);
-  const bgAlpha = useTransform(scrollY, [0, 140], [0, 0.5]);
-  const borderAlpha = useTransform(scrollY, [0, 140], [0, 0.22]);
-  const backdropFilter = useTransform(blur, (b) => `blur(${b}px) saturate(160%)`);
-  // rgb(244, 236, 224) is --bg-0 (the warm cream page base); the border
-  // ramps in a warm brown tint (matching --glass-border-strong) rather than
-  // white, which would be invisible against a light ground.
-  const background = useTransform(bgAlpha, (a) => `rgba(244, 236, 224, ${a})`);
+  const scrollProgress = useTransform(scrollY, [0, 120], [0, 1]);
+  const scale = useTransform(scrollProgress, [0, 1], [1, 0.985]);
+  const shadowAlpha = useTransform(scrollProgress, [0, 1], [0.14, 0.32]);
+  const borderAlpha = useTransform(scrollProgress, [0, 1], [0.22, 0.36]);
+  const boxShadow = useTransform(
+    shadowAlpha,
+    (a) => `0 24px 60px -18px rgba(110, 75, 35, ${a}), inset 0 1px 0 rgba(255,255,250,0.7)`,
+  );
   const borderColor = useTransform(borderAlpha, (a) => `rgba(130, 95, 60, ${a})`);
 
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <motion.nav
-      className="navbar"
-      style={{ backdropFilter, WebkitBackdropFilter: backdropFilter, background, borderBottomColor: borderColor }}
-    >
-      <div className="navbar-inner wrap">
-        <Link to="/" className="navbar-logo" onClick={() => setMenuOpen(false)}>
-          <span className="navbar-mark">
-            <svg viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="7" stroke="currentColor" strokeWidth="2.2" />
+    <div className="navbar-float">
+      <motion.nav className="navbar" style={{ scale, boxShadow, borderColor }}>
+        <div className="navbar-inner">
+          <Link to="/" className="navbar-logo" onClick={() => setMenuOpen(false)}>
+            <span className="navbar-mark">
+              <svg viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="7" stroke="currentColor" strokeWidth="2.2" />
+              </svg>
+            </span>
+            <span className="navbar-word">
+              <span className="navbar-title">Orvyn</span>
+              <span className="navbar-sub">BY DAREALAYMAN</span>
+            </span>
+          </Link>
+
+          <button
+            className="navbar-toggle"
+            aria-label="Menu"
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((o) => !o)}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M4 7h16M4 12h16M4 17h16" />
             </svg>
-          </span>
-          <span className="navbar-word">
-            <span className="navbar-title">Orvyn</span>
-            <span className="navbar-sub">BY DAREALAYMAN</span>
-          </span>
-        </Link>
+          </button>
 
-        <button
-          className="navbar-toggle"
-          aria-label="Menu"
-          aria-expanded={menuOpen}
-          onClick={() => setMenuOpen((o) => !o)}
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <path d="M4 7h16M4 12h16M4 17h16" />
-          </svg>
-        </button>
+          <div className={`navbar-links${menuOpen ? " navbar-links--open" : ""}`}>
+            <Link to="/" onClick={() => setMenuOpen(false)}>Home</Link>
+            <Link to="/groups" onClick={() => setMenuOpen(false)}>Groups</Link>
+            <Link to="/publishers" onClick={() => setMenuOpen(false)}>Publishers</Link>
+          </div>
 
-        <div className={`navbar-links${menuOpen ? " navbar-links--open" : ""}`}>
-          <Link to="/" onClick={() => setMenuOpen(false)}>Home</Link>
-          <Link to="/groups" onClick={() => setMenuOpen(false)}>Groups</Link>
-          <Link to="/publishers" onClick={() => setMenuOpen(false)}>Publishers</Link>
+          <div className="navbar-search-slot">
+            <SearchBar games={games} onLiveGameResolved={onLiveGameResolved} />
+          </div>
+
+          <div className="navbar-live">
+            <span className="navbar-pip" />
+            <span>{STATUS_LABEL[status]}</span>
+          </div>
         </div>
-
-        <div className="navbar-search-slot">
-          <SearchBar games={games} onLiveGameResolved={onLiveGameResolved} />
-        </div>
-
-        <div className="navbar-live">
-          <span className="navbar-pip" />
-          <span>{STATUS_LABEL[status]}</span>
-        </div>
-      </div>
-    </motion.nav>
+      </motion.nav>
+    </div>
   );
 }

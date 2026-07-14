@@ -1,9 +1,10 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useCatalog } from "../../hooks/useCatalog";
-import { publisherDomain, groupByFranchise } from "../../lib/companies";
+import { publisherDomain, isAaaPublisher, publisherCountry, groupByFranchise } from "../../lib/companies";
 import { slugify } from "../../lib/format";
 import CompanyLogo from "./CompanyLogo";
 import Reveal from "../ui/Reveal";
+import AiSummary from "../ui/AiSummary";
 import GameCard from "../home/GameCard";
 import "./Publishers.css";
 
@@ -41,6 +42,17 @@ export default function PublisherProfile() {
               {matches.length} title{matches.length === 1 ? "" : "s"} tracked
               {franchises.length ? ` · ${franchises.length} franchise${franchises.length === 1 ? "" : "s"}` : ""}
             </div>
+            <AiSummary
+              kind="publisher"
+              cacheKey={key || name}
+              name={name}
+              facts={{
+                "Titles tracked": matches.length,
+                "AAA tier": isAaaPublisher(name) ? "yes" : "no",
+                "HQ region": publisherCountry(name) || "unknown",
+                "Tracked titles": matches.slice(0, 8).map((g) => g.title),
+              }}
+            />
           </div>
         </div>
       </Reveal>

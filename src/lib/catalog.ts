@@ -21,18 +21,39 @@ const dateFromTs = (t?: number): string =>
   t ? new Date(t * 1000).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "";
 
 /* Best-effort, non-invented version token pulled from the scene dirname,
-   e.g. "...-Update.3-CODEX" -> "Update 3", "...v1.05-RUNE" -> "v1.05". Falls
-   back to the raw dirname (still shown via the note field) when nothing
-   matches -- never fabricate a Steam build id from this. */
+   e.g. "...-Update.3-CODEX" -> "Update 3", "...v1.05-RUNE" -> "v1.05". When
+   nothing matches this returns "" -- the raw dirname is still shown once,
+   via the note field, never duplicated into both fields (the previous
+   `|| dn` fallback here made VERSION and the note paragraph show the exact
+   same text underneath each other -- confirmed live on 007 First Light's
+   ElAmigos and voices38 entries). */
 function parseVersionFromDirname(dn?: string): string {
   if (!dn) return "";
   const m = dn.match(/\b(v\d+(?:\.\d+)+|update\.?\d+|build\.?\d+|hotfix\.?\d+|patch\.?\d+)\b/i);
   return m ? m[0].replace(/\./g, " ").replace(/^\w/, (c) => c.toUpperCase()) : "";
 }
 
+/* Real Steam build id, when a group's dirname convention embeds one --
+   confirmed live, not a guess: 007 First Light's DenuvOwO release is
+   "007.First.Light.Build.23909702-DenuvOwO", and /api/build for its real
+   appid (3768760) returns buildid: 23909702 -- an exact match, not a
+   coincidence. This was being parsed into the *display* version text
+   ("Build 23909702") the whole time but never into the structured `build`
+   field the Current/Outdated/Unverified status logic actually compares
+   against, so a release with a real, verifiable current build number sat
+   there permanently reading "Unverified". Requires the literal word
+   "build" immediately before the digits and at least 5 digits, so this
+   never fires on an unrelated "Update.4" or "v1.05" token. */
+function parseBuildFromDirname(dn?: string): number | null {
+  if (!dn) return null;
+  const m = dn.match(/\bbuild[.\s]?(\d{5,9})\b/i);
+  return m ? Number(m[1]) : null;
+}
+
 /* Builds one Release from a raw xREL row -- shared by every path that turns
    search/browse/archive rows into display data, so platform filtering,
-   repack/anonymous tagging, and version parsing only live in one place. */
+   repack/anonymous tagging, and version/build parsing only live in one
+   place. */
 function releaseFromRow(rel: RawRelease): Release {
   const group = rel.group_name || "scene";
   const m = methodForGroup(group);
@@ -40,8 +61,8 @@ function releaseFromRow(rel: RawRelease): Release {
     method: m,
     label: m === "hv" ? "Hypervisor" : "Traditional",
     group,
-    build: null,
-    version: parseVersionFromDirname(rel.dirname) || rel.dirname || "",
+    build: parseBuildFromDirname(rel.dirname),
+    version: parseVersionFromDirname(rel.dirname),
     date: dateFromTs(rel.time),
     ts: rel.time || 0,
     note: rel.dirname || "",
@@ -60,7 +81,7 @@ function releaseFromRow(rel: RawRelease): Release {
    Meier's Civilization VII alone had 3 separate DenuvOwO rows and 3
    separate ElAmigos rows for what a user experiences as one ongoing crack
    per group, not six unrelated releases. */
-function dedupeReleasesByGroup(releases: Release[]): Release[] {
+export function dedupeReleasesByGroup(releases: Release[]): Release[] {
   const byGroup = new Map<string, Release[]>();
   for (const r of releases) {
     const key = r.group.toLowerCase();

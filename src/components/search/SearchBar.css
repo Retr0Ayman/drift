@@ -7,55 +7,139 @@
 
 .searchbar svg {
   position: absolute;
-  left: 12px;
-  width: 15px;
-  height: 15px;
+  left: 14px;
+  width: 16px;
+  height: 16px;
   pointer-events: none;
+  transition: color var(--dur) var(--ease);
 }
 
 .searchbar input {
-  height: 36px;
+  height: 40px;
   background: var(--glass-bg);
-  border: 1px solid transparent;
+  border: 1px solid var(--glass-border);
   border-radius: var(--pill);
   color: var(--ink);
-  font-size: 0.88rem;
-  padding: 0 14px 0 34px;
-  width: 200px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  padding: 0 16px 0 38px;
+  width: 220px;
   outline: none;
-  transition: width var(--dur) var(--ease), border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+  transition: width var(--dur) var(--ease), border-color var(--dur) var(--ease), background var(--dur) var(--ease),
+    box-shadow var(--dur) var(--ease);
 }
 
 .searchbar input::placeholder {
   color: var(--ink-3);
+  font-weight: 450;
 }
 
 .searchbar input:focus {
-  width: 260px;
+  width: 320px;
   background: var(--glass-bg-strong);
   border-color: var(--accent-dim-2);
+  box-shadow: 0 0 0 4px var(--accent-dim);
+}
+
+.searchbar input:focus + svg,
+.searchbar:focus-within svg {
+  color: var(--accent);
 }
 
 .searchbar-popover {
-  width: min(320px, 90vw);
-  background: var(--bg-2);
+  width: min(380px, 90vw);
   background: linear-gradient(var(--glass-bg-strong), var(--glass-bg-strong)), var(--bg-2);
   backdrop-filter: blur(var(--glass-blur-strong)) saturate(180%);
   -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(180%);
   border: 1px solid var(--glass-border-strong);
-  border-radius: var(--r-sm);
+  border-radius: var(--r-md);
   box-shadow: var(--glass-shadow-lg);
-  padding: 6px;
+  padding: 8px;
   z-index: 90;
-  max-height: 60vh;
+  max-height: 64vh;
   overflow-y: auto;
+  transform-origin: top right;
+  animation: searchbar-pop-in 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.searchbar-popover[data-state="closed"] {
+  animation: searchbar-pop-out 0.12s ease-in forwards;
+}
+
+@keyframes searchbar-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes searchbar-pop-out {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
 }
 
 .searchbar-status {
-  padding: 12px 14px;
+  padding: 14px 14px;
   font-size: 0.82rem;
   color: var(--ink-3);
   font-weight: 500;
+}
+
+.searchbar-group + .searchbar-group {
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--glass-border);
+}
+
+.searchbar-group-label {
+  padding: 8px 12px 4px;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.searchbar-intent {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 14px;
+  margin-bottom: 4px;
+  border: none;
+  border-radius: var(--r-sm);
+  background: var(--accent-dim);
+  color: var(--ink);
+  font-size: 0.86rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+}
+
+.searchbar-intent strong {
+  color: var(--accent);
+}
+
+.searchbar-intent:hover,
+.searchbar-intent.searchbar-item--active {
+  background: var(--accent-dim-2);
+}
+
+.searchbar-intent-icon {
+  font-size: 1rem;
+  color: var(--accent);
+  flex: none;
 }
 
 .searchbar-item {
@@ -64,15 +148,16 @@
   justify-content: space-between;
   gap: 10px;
   width: 100%;
-  padding: 10px 12px;
+  padding: 11px 12px;
   border: none;
   background: none;
   border-radius: var(--r-sm);
-  font-size: 0.86rem;
+  font-size: 0.87rem;
   font-weight: 600;
   color: var(--ink-2);
   cursor: pointer;
   text-align: left;
+  transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
 }
 
 .searchbar-item:hover,
@@ -96,10 +181,10 @@
 
 @media (max-width: 720px) {
   .searchbar input {
-    width: 130px;
+    width: 140px;
   }
 
   .searchbar input:focus {
-    width: 150px;
+    width: 180px;
   }
 }

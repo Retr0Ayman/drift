@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import Hero from "./Hero";
 import GameGrid from "./GameGrid";
 import FilterBar from "./FilterBar";
@@ -7,15 +8,27 @@ import { useCatalog } from "../../hooks/useCatalog";
 import { usePageSize } from "../../hooks/usePageSize";
 import { availableGenres, availableYears, passesFilters, sortGames, type SortKey, type StatusFilter } from "../../lib/filters";
 
+const VALID_STATUS: StatusFilter[] = ["all", "outdated", "hv", "trad", "uncracked", "unreleased"];
+
 export default function Home() {
   const { games, hasMore, loading, loadMore } = useCatalog();
   const [pageSize, setPageSize] = usePageSize(24);
   const [page, setPage] = useState(1);
   const [pendingPage, setPendingPage] = useState<number | null>(null);
 
-  const [status, setStatus] = useState<StatusFilter>("all");
+  // Seeded once from ?status=&year=, set by the search bar's deterministic
+  // "hypervisor games from june 2026" -> real-filter mapping (see
+  // lib/searchIntent.ts) -- read only on first mount, same as any other
+  // initial-state default, not kept in sync with the URL afterward.
+  const [searchParams] = useSearchParams();
+  const initialStatus = searchParams.get("status");
+  const initialYear = searchParams.get("year");
+
+  const [status, setStatus] = useState<StatusFilter>(
+    initialStatus && (VALID_STATUS as string[]).includes(initialStatus) ? (initialStatus as StatusFilter) : "all",
+  );
   const [genre, setGenre] = useState("all");
-  const [year, setYear] = useState("all");
+  const [year, setYear] = useState(initialYear || "all");
   const [sort, setSort] = useState<SortKey>("date-desc");
 
   const genres = useMemo(() => availableGenres(games), [games]);
@@ -72,7 +85,7 @@ export default function Home() {
 
   return (
     <>
-      <Hero />
+      <Hero games={games} />
       <GameGrid
         games={pageItems}
         filters={

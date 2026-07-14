@@ -44,8 +44,7 @@ export default function FaqSection({ game }: { game: Game }) {
           <p className="faq-status">Generating…</p>
         ) : error || !lines.length ? (
           <p className="faq-status">
-            FAQ generation is unavailable right now{error ? ` (${error})` : ""}. This uses a free community AI
-            service (pollinations.ai) with no uptime guarantee.
+            FAQ generation is unavailable right now{error ? ` (${error})` : ""}.
           </p>
         ) : (
           <div className="faq-body">
