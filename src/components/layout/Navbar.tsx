@@ -69,6 +69,7 @@ export default function Navbar({ games, status, onLiveGameResolved }: NavbarProp
           <div className={`navbar-links${menuOpen ? " navbar-links--open" : ""}`}>
             <Link to="/" onClick={() => setMenuOpen(false)}>Home</Link>
             <Link to="/groups" onClick={() => setMenuOpen(false)}>Groups</Link>
+            <Link to="/leaderboard" onClick={() => setMenuOpen(false)}>Leaderboard</Link>
             <Link to="/publishers" onClick={() => setMenuOpen(false)}>Publishers</Link>
             <Link to="/watchlist" onClick={() => setMenuOpen(false)}>Watchlist</Link>
           </div>

@@ -38,6 +38,10 @@ export default function GroupsDirectory() {
         ‹ All titles
       </button>
 
+      <Link to="/leaderboard" className="groups-leaderboard-link">
+        Speed leaderboard — who cracks fastest ›
+      </Link>
+
       <Reveal>
         <div className="groups-hero">
           <div className="groups-hero-main">

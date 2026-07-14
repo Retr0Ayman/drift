@@ -120,15 +120,24 @@ export function releaseTs(r: Release): number | null {
   return isNaN(t) ? null : t;
 }
 
+/* Shared math behind crackTimingLabel/dPlusNLabel/the leaderboard: how many
+   days after (positive) or before (negative, an early leak) a game's Steam
+   release date a given release actually landed. Returns null (never a
+   fabricated 0) when either side can't be parsed. */
+export function crackTimingDays(g: Game, r: Release): number | null {
+  const releaseTsVal = g.released ? Date.parse(g.released) : NaN;
+  const crackTsVal = releaseTs(r);
+  if (isNaN(releaseTsVal) || crackTsVal == null) return null;
+  return Math.round((crackTsVal - releaseTsVal) / 86400000);
+}
+
 /* "Cracked in N day(s)" / "Leaked N day(s) early" -- a release's own timing
    relative to the game's Steam release date, distinct from relStatus (which
    compares crack BUILD number to current build, not release DATE to release
    date). */
 export function crackTimingLabel(g: Game, r: Release): string | null {
-  const releaseTsVal = g.released ? Date.parse(g.released) : NaN;
-  const crackTsVal = releaseTs(r);
-  if (isNaN(releaseTsVal) || crackTsVal == null) return null;
-  const days = Math.round((crackTsVal - releaseTsVal) / 86400000);
+  const days = crackTimingDays(g, r);
+  if (days == null) return null;
   if (days === 0) return "Cracked on release day";
   if (days > 0) return `Cracked in ${days} day${days === 1 ? "" : "s"}`;
   return `Leaked ${Math.abs(days)} day${Math.abs(days) === 1 ? "" : "s"} early`;
@@ -137,9 +146,7 @@ export function crackTimingLabel(g: Game, r: Release): string | null {
 /* Same underlying comparison as crackTimingLabel, terser "D+N"/"D-N" form for
    the group release list where every row needs to stay scannable. */
 export function dPlusNLabel(g: Game, r: Release): string | null {
-  const releaseTsVal = g.released ? Date.parse(g.released) : NaN;
-  const crackTsVal = releaseTs(r);
-  if (isNaN(releaseTsVal) || crackTsVal == null) return null;
-  const days = Math.round((crackTsVal - releaseTsVal) / 86400000);
+  const days = crackTimingDays(g, r);
+  if (days == null) return null;
   return (days >= 0 ? "D+" : "D") + days;
 }
