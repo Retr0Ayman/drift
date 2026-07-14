@@ -7,37 +7,55 @@
   margin-bottom: 10px;
 }
 
-.vpicker-trigger {
-  width: 100%;
-  justify-content: space-between;
+.vpicker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 320px;
+  overflow-y: auto;
 }
 
-.vpicker-trigger-inner {
+.vpicker-row {
   display: flex;
   align-items: center;
   gap: 10px;
-  min-width: 0;
+  width: 100%;
+  padding: 9px 10px;
+  border: none;
+  background: none;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  text-align: left;
+  color: var(--ink-2);
+  font-family: var(--font);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
 }
 
-.vpicker-trigger-label {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.vpicker-row:hover {
+  background: var(--glass-bg-strong);
+  color: var(--ink);
 }
 
-.vpicker-content {
-  max-height: 320px;
+.vpicker-row:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-dim-2);
 }
 
-.vpicker-item {
-  gap: 10px;
-  padding-left: 30px;
-  position: relative;
+.vpicker-row--selected .vpicker-row-label {
+  color: var(--ink);
+  font-weight: 700;
 }
 
 .vpicker-check {
-  position: absolute;
-  left: 10px;
+  flex: none;
+  width: 12px;
+  height: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
 }
 
 .vpicker-label {
@@ -46,6 +64,9 @@
   gap: 8px;
   flex: 1;
   min-width: 0;
+}
+
+.vpicker-row-label {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
