@@ -1,24 +1,33 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "drift",
-  "main": "worker/index.ts",
-  "compatibility_date": "2026-07-13",
-  "assets": {
-    "directory": "./dist",
-    "binding": "ASSETS"
-  },
-  "observability": {
-    "enabled": true
-  },
-  "triggers": {
-    "crons": ["*/15 * * * *"]
-  }
-  // kv_namespaces intentionally NOT added here yet -- worker/scheduled.ts
-  // (Discord alerts) needs a `SEEN_RELEASES` binding, but that requires a
-  // real namespace ID from `wrangler kv namespace create SEEN_RELEASES`
-  // (Cloudflare auth, can't be scripted from inside the repo). Until that's
-  // added, runScheduledAlert() no-ops every time this cron fires -- see
-  // DEPLOY.md section 6 for the exact block to add and where the ID comes
-  // from. Logic verified locally with a throwaway local-only KV binding +
-  // a mock webhook receiver, not committed.
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "drift",
+	"main": "worker/index.ts",
+	"compatibility_date": "2026-07-13",
+	"assets": {
+		"directory": "./dist",
+		"binding": "ASSETS"
+	},
+	"observability": {
+		"enabled": true
+	},
+	"triggers": {
+		"crons": [
+			"*/15 * * * *"
+		]
+	},
+	"d1_databases": [
+		{
+			"binding": "orlaz_catalog",
+			"database_name": "orlaz-catalog",
+			"database_id": "c9943be6-025c-4198-978c-36ed1449bf9a"
+		}
+	]
+	// kv_namespaces intentionally NOT added here yet -- worker/scheduled.ts
+	// (Discord alerts) needs a `SEEN_RELEASES` binding, but that requires a
+	// real namespace ID from `wrangler kv namespace create SEEN_RELEASES`
+	// (Cloudflare auth, can't be scripted from inside the repo). Until that's
+	// added, runScheduledAlert() no-ops every time this cron fires -- see
+	// DEPLOY.md section 6 for the exact block to add and where the ID comes
+	// from. Logic verified locally with a throwaway local-only KV binding +
+	// a mock webhook receiver, not committed.
 }
