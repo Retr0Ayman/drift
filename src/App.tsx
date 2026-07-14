@@ -39,7 +39,7 @@ function Layout() {
         onLiveGameResolved={catalog.mergeOne}
         revealBrandO={introDone}
       />
-      <CommandPalette games={catalog.games} onLiveGameResolved={catalog.mergeOne} />
+      <CommandPalette games={catalog.games} catalogStatus={catalog.status} onLiveGameResolved={catalog.mergeOne} />
       <main className="page-content">
         <Outlet context={context} />
       </main>

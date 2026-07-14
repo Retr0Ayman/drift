@@ -5,17 +5,19 @@ import { useAutocomplete, type Suggestion } from "../../hooks/useAutocomplete";
 import { parseSearchIntent } from "../../lib/searchIntent";
 import { buildLiveGameFromRows } from "../../lib/catalog";
 import type { Game } from "../../types/game";
+import type { CatalogStatus } from "../../hooks/useLiveCatalog";
 import "./CommandPalette.css";
 
 interface CommandPaletteProps {
   games: Game[];
+  catalogStatus: CatalogStatus;
   onLiveGameResolved: (game: Game) => void;
 }
 
 // Global Cmd/Ctrl+K overlay -- reuses the exact same useAutocomplete +
 // parseSearchIntent that power SearchBar's popover, just in a full-screen
 // Dialog instead of a Popover anchored to the navbar input.
-export default function CommandPalette({ games, onLiveGameResolved }: CommandPaletteProps) {
+export default function CommandPalette({ games, catalogStatus, onLiveGameResolved }: CommandPaletteProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -202,7 +204,14 @@ export default function CommandPalette({ games, onLiveGameResolved }: CommandPal
               </div>
             ) : null}
 
-            {!loading && !resolving && !intent && !flat.length && query.trim().length >= 2 ? (
+            {/* "No matches" must mean we actually checked, not just that
+                nothing has come back yet -- besides the in-flight live
+                fetch (loading) and the Groq typo-assist stage (assisting,
+                which can still turn up a "did you mean"), the catalog's
+                own first sync pass (status "syncing") also has to be past
+                us, since local matches are only as good as whatever's
+                loaded into `games` so far. */}
+            {!loading && !resolving && !assisting && !intent && !flat.length && catalogStatus !== "syncing" && query.trim().length >= 2 ? (
               <div className="cmdk-status">No matches.</div>
             ) : null}
           </div>
