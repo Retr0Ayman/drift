@@ -1,0 +1,35 @@
+.watch-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 700;
+  font-size: 0.72rem;
+  color: var(--ink-2);
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--pill);
+  padding: 5px 11px;
+  cursor: pointer;
+  transition: color var(--dur) var(--ease), background var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+
+.watch-toggle:hover {
+  color: var(--ink);
+  border-color: var(--glass-border-strong);
+}
+
+.watch-toggle--on {
+  color: var(--accent-ink);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.watch-toggle-star {
+  font-size: 0.95em;
+  line-height: 1;
+}
+
+.watch-toggle--lg {
+  font-size: 0.84rem;
+  padding: 8px 15px;
+}

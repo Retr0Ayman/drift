@@ -3,6 +3,7 @@ import type { Game, Release } from "../../types/game";
 import { relStatus, fmtBuild, slugify, crackTimingLabel } from "../../lib/format";
 import Pill, { type PillTone } from "../ui/Pill";
 import GlassPanel from "../ui/GlassPanel";
+import WatchToggle from "../ui/WatchToggle";
 import "./ReleaseCard.css";
 
 const FLAG_LABEL: Record<string, string> = { out: "Outdated", unv: "Unverified", cur: "Current" };
@@ -25,6 +26,7 @@ export default function ReleaseCard({ game, release }: { game: Game; release: Re
           <span className="release-updated">Updated {release.updateCount}×</span>
         ) : null}
         {timing ? <span className="release-timing">{timing}</span> : null}
+        <WatchToggle gameId={game.id} className="release-watch" />
       </div>
 
       {/* Inspired by the clean per-release info-card layout on sites like

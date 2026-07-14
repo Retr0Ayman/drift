@@ -1,0 +1,70 @@
+.watchlist-page {
+  padding: 24px 24px 96px;
+}
+
+.watchlist-hero {
+  max-width: 64ch;
+  margin-top: 20px;
+  margin-bottom: 32px;
+}
+
+.watchlist-eyebrow {
+  display: block;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+
+.watchlist-hero h1 {
+  font-size: var(--fs-h1);
+  font-weight: 800;
+  letter-spacing: -1.5px;
+  margin: 10px 0 10px;
+  color: var(--ink);
+}
+
+.watchlist-lede {
+  color: var(--ink-2);
+  font-weight: 450;
+  font-size: 0.96rem;
+  line-height: 1.6;
+}
+
+.watchlist-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 18px;
+}
+
+.watchlist-card-wrap {
+  position: relative;
+}
+
+.watchlist-drift-badge {
+  position: absolute;
+  top: 8px;
+  left: 18px;
+  z-index: 2;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  color: var(--out);
+  background: color-mix(in srgb, var(--out) 20%, var(--bg-1) 80%);
+  border: 1px solid color-mix(in srgb, var(--out) 45%, transparent);
+  padding: 4px 10px;
+  border-radius: var(--pill);
+  pointer-events: none;
+}
+
+.watchlist-empty {
+  padding: 48px 28px;
+  text-align: center;
+  color: var(--ink-2);
+  font-size: 0.94rem;
+  line-height: 1.6;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-lg);
+}

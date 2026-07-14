@@ -52,6 +52,14 @@
   white-space: nowrap;
 }
 
+/* Always pushed flush right, whether or not .release-timing (which also
+   carries margin-left: auto) is present in this particular row -- adjacent
+   auto margins on a flex row just collapse into one push, so this is safe
+   either way. */
+.release-watch {
+  margin-left: auto;
+}
+
 .release-updated {
   font-size: 0.64rem;
   font-weight: 700;

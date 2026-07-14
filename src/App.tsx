@@ -8,6 +8,7 @@ import GroupsDirectory from "./components/groups/GroupsDirectory";
 import GroupProfile from "./components/groups/GroupProfile";
 import PublishersDirectory from "./components/publishers/PublishersDirectory";
 import PublisherProfile from "./components/publishers/PublisherProfile";
+import Watchlist from "./components/watchlist/Watchlist";
 import { useLiveCatalog } from "./hooks/useLiveCatalog";
 import type { CatalogContextValue } from "./hooks/useCatalog";
 
@@ -46,6 +47,7 @@ export default function App() {
         <Route path="/group/:key" element={<GroupProfile />} />
         <Route path="/publishers" element={<PublishersDirectory />} />
         <Route path="/publisher/:key" element={<PublisherProfile />} />
+        <Route path="/watchlist" element={<Watchlist />} />
       </Route>
     </Routes>
   );

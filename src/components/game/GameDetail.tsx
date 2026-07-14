@@ -8,6 +8,7 @@ import FaqSection from "./FaqSection";
 import GlassPanel from "../ui/GlassPanel";
 import Pill from "../ui/Pill";
 import Reveal from "../ui/Reveal";
+import WatchToggle from "../ui/WatchToggle";
 import Tabs, { type TabDef } from "../ui/Tabs";
 import { bestBuild, driftDelta, fmtBuild, gStatus, sortReleasesByPriority, statusMeta, steamImg, steamLink, steamdbLink } from "../../lib/format";
 import "./GameDetail.css";
@@ -151,7 +152,10 @@ export default function GameDetail() {
           <Reveal>
             <div className="detail-head">
               <div className="detail-code">{(game.genres || []).join(" · ")}</div>
-              <h1>{game.title}</h1>
+              <div className="detail-title-row">
+                <h1>{game.title}</h1>
+                <WatchToggle gameId={game.id} size="lg" />
+              </div>
               <div className="detail-metarow">
                 <div className="detail-meta">
                   <span className="k">Developer</span>

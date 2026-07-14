@@ -32,6 +32,13 @@
   text-transform: uppercase;
 }
 
+.detail-title-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
 .detail-head h1 {
   font-size: var(--fs-h1);
   line-height: 1.06;
