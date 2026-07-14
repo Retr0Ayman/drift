@@ -38,6 +38,27 @@ export function anyOutdated(g: Game): boolean {
   return !!g.releases && g.releases.some((r) => relOutdated(g, r));
 }
 
+export type RecencyStatus = "likely-current" | "likely-outdated" | null;
+
+/* Secondary, honest signal for releases with no real Steam build ID (P2P
+   groups don't produce one -- relStatus above already refuses to claim
+   Current/Outdated without one). Compares the release's own timestamp
+   against every other tracked release for the same game: the most recent
+   one is "likely current," anything with a strictly newer release after it
+   is "likely outdated." Returns null (no directional claim) whenever there
+   isn't a real build-less timestamp to compare, or nothing to compare it
+   against -- this is a recency heuristic, not a confirmed match, so it
+   must never fire for a release that already has a real build number. */
+export function recencyStatusFor(release: Release, allReleases: Release[]): RecencyStatus {
+  if (release.build != null) return null;
+  const ts = release.ts || 0;
+  if (!ts) return null;
+  const comparable = allReleases.filter((r) => (r.ts || 0) > 0);
+  if (comparable.length < 2) return null;
+  const maxTs = Math.max(...comparable.map((r) => r.ts || 0));
+  return ts >= maxTs ? "likely-current" : "likely-outdated";
+}
+
 /* Which crack to lead with when a game has more than one: higher build
    (closer to/matching the current Steam build) wins outright regardless of
    method -- a hypervisor bypass that's still current beats a traditional

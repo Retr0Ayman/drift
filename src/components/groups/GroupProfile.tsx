@@ -1,33 +1,36 @@
 import { useMemo, useState } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
+import type { Game, Release } from "../../types/game";
 import { useCatalog } from "../../hooks/useCatalog";
-import { allReleases } from "../../lib/groups";
-import { colorForName, dPlusNLabel, fmtDateMs, relOutdated, releaseTs, slugify } from "../../lib/format";
-import { STARRED_GROUPS, methodForGroup, isRepackGroup } from "../../lib/constants";
 import { useGroupReleases } from "../../hooks/useGroupReleases";
+import { usePlatformP2PIndex } from "../../hooks/usePlatformP2PIndex";
+import { allReleases } from "../../lib/groups";
+import { colorForName, fmtDateMs, recencyStatusFor, relOutdated, releaseTs, slugify } from "../../lib/format";
+import { STARRED_GROUPS } from "../../lib/constants";
+import { buildLiveGameFromRows, mergeP2PReleases, releaseFromRow } from "../../lib/catalog";
 import GlassPanel from "../ui/GlassPanel";
-import Pill from "../ui/Pill";
 import Reveal from "../ui/Reveal";
 import AiSummary from "../ui/AiSummary";
+import ReleaseCard from "../game/ReleaseCard";
 import { usePageMeta } from "../../hooks/usePageMeta";
 import "./Groups.css";
 
-interface DisplayRow {
+interface RowEntry {
   key: string;
-  title: string;
+  game: Game;
+  release: Release;
+  comparisonReleases: Release[];
   method: "hv" | "trad";
   isRepack: boolean;
   ts: number;
-  dateLabel: string;
-  timingLabel: string | null;
-  href: string;
-  external: boolean;
+  isKnownGame: boolean;
+  rawTitle: string;
 }
 
 interface MonthGroup {
   key: string; // "2026-07", or "unknown"
   label: string; // "July 2026"
-  rows: DisplayRow[];
+  rows: RowEntry[];
 }
 
 function monthKey(ts: number): string {
@@ -42,8 +45,8 @@ function monthLabel(key: string): string {
   return new Date(y, m - 1, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" });
 }
 
-function groupByMonth(rows: DisplayRow[]): MonthGroup[] {
-  const map = new Map<string, DisplayRow[]>();
+function groupByMonth(rows: RowEntry[]): MonthGroup[] {
+  const map = new Map<string, RowEntry[]>();
   for (const row of rows) {
     const key = monthKey(row.ts);
     if (!map.has(key)) map.set(key, []);
@@ -60,10 +63,36 @@ function groupByMonth(rows: DisplayRow[]): MonthGroup[] {
 
 const CURRENT_MONTH_KEY = monthKey(Date.now());
 
+/* A P2P title not already in the loaded catalog has no real Steam/game
+   data yet -- this fills in just enough of a Game shape for ReleaseCard to
+   render honestly (blank/"—" fields, not fabricated ones), until the row
+   is clicked and resolveAndGo replaces it with the real thing. */
+function syntheticGame(title: string, release: Release): Game {
+  return {
+    id: slugify(title),
+    title,
+    appid: null,
+    year: release.ts ? new Date(release.ts * 1000).getFullYear() : null,
+    released: "",
+    developer: "",
+    publisher: "",
+    genres: [],
+    tags: [],
+    currentBuild: 0,
+    survivalHrs: null,
+    releases: [release],
+    desc: "",
+    fact: "",
+    dlc: [],
+    source: { name: "xREL", url: "https://www.xrel.to/" },
+  };
+}
+
 export default function GroupProfile() {
   const { key } = useParams();
   const navigate = useNavigate();
-  const { games } = useCatalog();
+  const { games, mergeOne } = useCatalog();
+  const { index: p2pIndex } = usePlatformP2PIndex();
   const seedMatches = allReleases(games).filter(({ r }) => slugify(r.group || "unknown") === key);
 
   // The exact display name (needed for the live query) only comes from a
@@ -74,36 +103,49 @@ export default function GroupProfile() {
 
   const seedTitles = useMemo(() => new Set(seedMatches.map(({ g }) => g.title.toLowerCase())), [seedMatches]);
 
-  const seedRows: DisplayRow[] = seedMatches.map(({ g, r }) => ({
-    key: g.id + "-" + (r.xrelId || r.date),
-    title: g.title,
-    method: r.method,
-    isRepack: !!r.isRepack,
-    ts: releaseTs(r) || 0,
-    dateLabel: r.date || "—",
-    timingLabel: dPlusNLabel(g, r),
-    href: `/game/${g.id}`,
-    external: false,
-  }));
+  const seedRows: RowEntry[] = useMemo(
+    () =>
+      seedMatches.map(({ g, r }) => ({
+        key: g.id + "-" + (r.xrelId || r.date),
+        game: g,
+        release: r,
+        comparisonReleases: mergeP2PReleases(g.releases, g.title, p2pIndex),
+        method: r.method,
+        isRepack: !!r.isRepack,
+        ts: releaseTs(r) || 0,
+        isKnownGame: true,
+        rawTitle: g.title,
+      })),
+    [seedMatches, p2pIndex],
+  );
 
   // Live rows fill in every real release the group has (per the P2P-lookup
-  // fix) that isn't already covered by a seed entry -- no reliable Steam
-  // release date to compare against for these, so no D+N timing label; link
-  // out to the release's own xREL page since there's no local detail page
-  // for a title that isn't in the seed catalog.
-  const liveExtraRows: DisplayRow[] = liveRows
-    .filter((row) => !seedTitles.has((row.ext_info?.title || "").toLowerCase()))
-    .map((row) => ({
-      key: row.id,
-      title: row.ext_info?.title || row.dirname,
-      method: methodForGroup(row.group_name || displayName),
-      isRepack: isRepackGroup(row.group_name || displayName),
-      ts: (row.time || 0) * 1000,
-      dateLabel: row.time ? fmtDateMs(row.time * 1000) : "—",
-      timingLabel: null,
-      href: row.link_href || "https://www.xrel.to/",
-      external: true,
-    }));
+  // fix) that isn't already covered by a seed entry. A title that isn't
+  // yet a locally-known game gets a synthetic Game wrapper so ReleaseCard
+  // can still render it -- clicking resolves the real thing on demand (see
+  // resolveAndGo), same pattern SearchBar's live results already use, so
+  // this doesn't have to assume "no local page exists."
+  const liveExtraRows: RowEntry[] = useMemo(
+    () =>
+      liveRows
+        .filter((row) => !seedTitles.has((row.ext_info?.title || "").toLowerCase()))
+        .map((row) => {
+          const title = row.ext_info?.title || row.dirname;
+          const release = releaseFromRow(row);
+          return {
+            key: row.id,
+            game: syntheticGame(title, release),
+            release,
+            comparisonReleases: mergeP2PReleases([release], title, p2pIndex),
+            method: release.method,
+            isRepack: !!release.isRepack,
+            ts: (row.time || 0) * 1000,
+            isKnownGame: false,
+            rawTitle: title,
+          };
+        }),
+    [liveRows, seedTitles, p2pIndex],
+  );
 
   const rows = [...seedRows, ...liveExtraRows].sort((a, b) => b.ts - a.ts);
   const months = useMemo(() => groupByMonth(rows), [rows]);
@@ -125,11 +167,27 @@ export default function GroupProfile() {
     });
   }
 
+  async function handleRowClick(row: RowEntry) {
+    if (row.isKnownGame) {
+      navigate(`/game/${row.game.id}`);
+      return;
+    }
+    const resolved = await buildLiveGameFromRows(row.rawTitle);
+    // A live match that never resolves a Steam appid is skipped, not
+    // navigated to a placeholder -- a wrong/missing match is worse than
+    // staying put (same rule SearchBar's live results already follow).
+    if (!resolved) return;
+    mergeOne(resolved);
+    navigate(`/game/${resolved.id}`);
+  }
+
   if (!rows.length && !loading) {
     return (
       <div className="wrap groups-page">
         <p className="groups-lede">No releases tracked for this group yet.</p>
-        <Link to="/groups">‹ Scene groups</Link>
+        <button className="back-link" onClick={() => navigate("/groups")}>
+          ‹ Scene groups
+        </button>
       </div>
     );
   }
@@ -184,7 +242,7 @@ export default function GroupProfile() {
                 "Releases tracked": rows.length,
                 Leaning: isRepackGroupProfile ? "Repack group" : `${leaning}-leaning`,
                 Starred: STARRED_GROUPS.includes(key || "") ? "yes (P2P-only group)" : "no",
-                "Recent titles": rows.slice(0, 8).map((r) => r.title),
+                "Recent titles": rows.slice(0, 8).map((r) => r.game.title),
               }}
             />
           </div>
@@ -225,27 +283,27 @@ export default function GroupProfile() {
                   </span>
                 </button>
                 {isOpen ? (
-                  <GlassPanel className="group-rel-list">
-                    {month.rows.map((row) =>
-                      row.external ? (
-                        <a className="group-rel-row" key={row.key} href={row.href} target="_blank" rel="noopener noreferrer">
-                          <span className="group-rel-title">{row.title}</span>
-                          <Pill tone={row.isRepack ? "neutral" : row.method}>
-                            {row.isRepack ? "REPACK" : row.method === "hv" ? "HV" : "TRAD"}
-                          </Pill>
-                          <span className="group-rel-dn">xREL ↗</span>
-                        </a>
-                      ) : (
-                        <Link className="group-rel-row" key={row.key} to={row.href}>
-                          <span className="group-rel-title">{row.title}</span>
-                          <Pill tone={row.isRepack ? "neutral" : row.method}>
-                            {row.isRepack ? "REPACK" : row.method === "hv" ? "HV" : "TRAD"}
-                          </Pill>
-                          {row.timingLabel ? <span className="group-rel-dn">{row.timingLabel}</span> : null}
-                        </Link>
-                      ),
-                    )}
-                  </GlassPanel>
+                  <div className="group-rel-grid">
+                    {month.rows.map((row) => (
+                      <div
+                        key={row.key}
+                        className="group-rel-card-wrap"
+                        role="link"
+                        tabIndex={0}
+                        onClick={() => handleRowClick(row)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleRowClick(row);
+                        }}
+                      >
+                        <div className="group-rel-card-title">{row.game.title}</div>
+                        <ReleaseCard
+                          game={row.game}
+                          release={row.release}
+                          recencyStatus={recencyStatusFor(row.release, row.comparisonReleases)}
+                        />
+                      </div>
+                    ))}
+                  </div>
                 ) : null}
               </div>
             );

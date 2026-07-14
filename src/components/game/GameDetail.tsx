@@ -1,5 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
+import type { Game } from "../../types/game";
 import { useCatalog } from "../../hooks/useCatalog";
 import Carousel from "./Carousel";
 import ReleaseCard from "./ReleaseCard";
@@ -12,7 +13,20 @@ import Reveal from "../ui/Reveal";
 import WatchToggle from "../ui/WatchToggle";
 import Tabs, { type TabDef } from "../ui/Tabs";
 import { usePageMeta } from "../../hooks/usePageMeta";
-import { bestBuild, driftDelta, fmtBuild, gStatus, sortReleasesByPriority, statusMeta, steamImg, steamLink, steamdbLink } from "../../lib/format";
+import { usePlatformP2PIndex } from "../../hooks/usePlatformP2PIndex";
+import { mergeP2PReleases } from "../../lib/catalog";
+import {
+  bestBuild,
+  driftDelta,
+  fmtBuild,
+  gStatus,
+  recencyStatusFor,
+  sortReleasesByPriority,
+  statusMeta,
+  steamImg,
+  steamLink,
+  steamdbLink,
+} from "../../lib/format";
 import "./GameDetail.css";
 
 const STATUS_RING: Record<string, { bg: string; label: string }> = {
@@ -27,6 +41,21 @@ export default function GameDetail() {
   const navigate = useNavigate();
   const { games } = useCatalog();
   const game = games.find((g) => g.id === id);
+  const { index: p2pIndex } = usePlatformP2PIndex();
+
+  // P2P groups (voices38/DenuvOwO) never appear in the browse feed
+  // game.releases is built from -- merge in whatever they have for this
+  // exact title before anything downstream reads game.releases, so a
+  // P2P-only crack isn't silently invisible on its own game page. Memoized
+  // so this only produces a new object when the inputs actually change --
+  // mergeP2PReleases returns a fresh array whenever it has something to
+  // merge, and an unmemoized `{...game, releases: merged}` on every render
+  // would make FaqSection's `[game]`-dependent effect re-fire constantly.
+  const mergedGame: Game | undefined = useMemo(() => {
+    if (!game) return undefined;
+    const merged = mergeP2PReleases(game.releases, game.title, p2pIndex);
+    return merged === game.releases ? game : { ...game, releases: merged };
+  }, [game, p2pIndex]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -38,7 +67,7 @@ export default function GameDetail() {
     image: game?.appid ? steamImg(game.appid, "header.jpg") : undefined,
   });
 
-  if (!game) {
+  if (!mergedGame) {
     return (
       <div className="wrap detail-notfound">
         <p>Title not found.</p>
@@ -47,16 +76,16 @@ export default function GameDetail() {
     );
   }
 
-  const sm = statusMeta(game);
+  const sm = statusMeta(mergedGame);
   const ring = STATUS_RING[sm.cls];
-  const bd = bestBuild(game);
-  const drift = driftDelta(game);
+  const bd = bestBuild(mergedGame);
+  const drift = driftDelta(mergedGame);
 
   // Images only -- no trailer slide (the YouTube-search trailer link was
   // flaky enough in practice not to be worth keeping).
-  const slides = game.appid
+  const slides = mergedGame.appid
     ? ["library_hero.jpg", "header.jpg", "capsule_616x353.jpg"].map((f) => (
-        <img key={f} src={steamImg(game.appid as number, f)} alt="" onError={(e) => (e.currentTarget.style.display = "none")} />
+        <img key={f} src={steamImg(mergedGame.appid as number, f)} alt="" onError={(e) => (e.currentTarget.style.display = "none")} />
       ))
     : [0, 1, 2].map((i) => (
         <div className="carousel-placeholder" key={i}>
@@ -66,7 +95,7 @@ export default function GameDetail() {
         </div>
       ));
 
-  const releases = sortReleasesByPriority(game.releases);
+  const releases = sortReleasesByPriority(mergedGame.releases);
 
   const tabs: TabDef[] = [
     {
@@ -76,10 +105,12 @@ export default function GameDetail() {
         <div className="detail-releases">
           <div className="detail-release-list">
             {releases.length ? (
-              releases.map((r, i) => <ReleaseCard key={i} game={game} release={r} />)
+              releases.map((r, i) => (
+                <ReleaseCard key={i} game={mergedGame} release={r} recencyStatus={recencyStatusFor(r, releases)} />
+              ))
             ) : (
               <GlassPanel className="detail-release-empty">
-                {gStatus(game) === "unreleased" ? "Unreleased — no crack tracked yet." : "No crack tracked yet."}
+                {gStatus(mergedGame) === "unreleased" ? "Unreleased — no crack tracked yet." : "No crack tracked yet."}
               </GlassPanel>
             )}
           </div>
@@ -108,20 +139,20 @@ export default function GameDetail() {
       content: (
         <div className="detail-overview">
           <div className="detail-about">
-            <p>{game.desc}</p>
+            <p>{mergedGame.desc}</p>
           </div>
-          <GameFact game={game} />
+          <GameFact game={mergedGame} />
         </div>
       ),
     },
-    ...(game.dlc && game.dlc.length
+    ...(mergedGame.dlc && mergedGame.dlc.length
       ? [
           {
             value: "dlc",
-            label: `Editions & DLC (${game.dlc.length})`,
+            label: `Editions & DLC (${mergedGame.dlc.length})`,
             content: (
               <GlassPanel className="detail-dlc-list">
-                {game.dlc.map((d, i) =>
+                {mergedGame.dlc.map((d, i) =>
                   d.appid ? (
                     <DlcRow key={i} appid={d.appid} fallbackName={d.n} />
                   ) : (
@@ -139,7 +170,7 @@ export default function GameDetail() {
     {
       value: "faq",
       label: "FAQ",
-      content: <FaqSection game={game} />,
+      content: <FaqSection game={mergedGame} />,
     },
   ];
 
@@ -154,42 +185,42 @@ export default function GameDetail() {
 
           <Reveal>
             <div className="detail-head">
-              <div className="detail-code">{(game.genres || []).join(" · ")}</div>
+              <div className="detail-code">{(mergedGame.genres || []).join(" · ")}</div>
               <div className="detail-title-row">
-                <h1>{game.title}</h1>
-                <WatchToggle gameId={game.id} size="lg" />
+                <h1>{mergedGame.title}</h1>
+                <WatchToggle gameId={mergedGame.id} size="lg" />
               </div>
               <div className="detail-metarow">
                 <div className="detail-meta">
                   <span className="k">Developer</span>
-                  <span className="v">{game.developer || "—"}</span>
+                  <span className="v">{mergedGame.developer || "—"}</span>
                 </div>
                 <div className="detail-meta">
                   <span className="k">Publisher</span>
-                  <span className="v">{game.publisher || "—"}</span>
+                  <span className="v">{mergedGame.publisher || "—"}</span>
                 </div>
                 <div className="detail-meta">
                   <span className="k">Released</span>
-                  <span className="v">{game.released || "—"}</span>
+                  <span className="v">{mergedGame.released || "—"}</span>
                 </div>
               </div>
               <div className="detail-genres">
-                {(game.tags || []).map((t) => (
+                {(mergedGame.tags || []).map((t) => (
                   <Pill key={t}>{t}</Pill>
                 ))}
-                {(game.genres || []).map((t) => (
+                {(mergedGame.genres || []).map((t) => (
                   <Pill key={t}>{t}</Pill>
                 ))}
               </div>
-              {game.metacritic || game.reviewPct ? (
+              {mergedGame.metacritic || mergedGame.reviewPct ? (
                 <div className="detail-stats">
-                  {game.metacritic ? (
+                  {mergedGame.metacritic ? (
                     <div className="detail-stat">
                       <div
                         className="detail-stat-badge"
-                        style={{ background: game.metacritic >= 75 ? "var(--dead)" : game.metacritic >= 50 ? "var(--out)" : "var(--unc)" }}
+                        style={{ background: mergedGame.metacritic >= 75 ? "var(--dead)" : mergedGame.metacritic >= 50 ? "var(--out)" : "var(--unc)" }}
                       >
-                        {game.metacritic}
+                        {mergedGame.metacritic}
                       </div>
                       <div>
                         <div className="detail-stat-l">Metascore</div>
@@ -197,12 +228,12 @@ export default function GameDetail() {
                       </div>
                     </div>
                   ) : null}
-                  {game.reviewPct ? (
+                  {mergedGame.reviewPct ? (
                     <div className="detail-stat">
                       <div>
                         <div className="detail-stat-l">Steam reviews</div>
-                        <div className="detail-stat-v" style={{ color: game.reviewPct >= 70 ? "var(--dead)" : "var(--out)" }}>
-                          {game.reviewPct}% positive
+                        <div className="detail-stat-v" style={{ color: mergedGame.reviewPct >= 70 ? "var(--dead)" : "var(--out)" }}>
+                          {mergedGame.reviewPct}% positive
                         </div>
                       </div>
                     </div>
@@ -213,7 +244,7 @@ export default function GameDetail() {
           </Reveal>
 
           <Reveal delay={0.08}>
-            <Tabs tabs={tabs} defaultValue="cracks" ariaLabel={`${game.title} detail sections`} />
+            <Tabs tabs={tabs} defaultValue="cracks" ariaLabel={`${mergedGame.title} detail sections`} />
           </Reveal>
         </div>
 
@@ -226,14 +257,14 @@ export default function GameDetail() {
               <div>
                 <div className="status-label">{sm.label}</div>
                 <div className="status-sub">
-                  {game.releases.length} crack option{game.releases.length === 1 ? "" : "s"} tracked
+                  {mergedGame.releases.length} crack option{mergedGame.releases.length === 1 ? "" : "s"} tracked
                 </div>
               </div>
             </div>
             <div className="build-box">
               <div className="build-row">
                 <span className="k">Latest Steam build</span>
-                <span className="v">{fmtBuild(game.currentBuild)}</span>
+                <span className="v">{fmtBuild(mergedGame.currentBuild)}</span>
               </div>
               <div className="build-row">
                 <span className="k">Best crack build</span>
@@ -243,20 +274,20 @@ export default function GameDetail() {
               </div>
               <div className="build-row">
                 <span className="k">Survival</span>
-                <span className="v">{game.survivalHrs == null ? "—" : (game.survivalHrs < 0 ? "−" : "+") + Math.abs(game.survivalHrs) + "h"}</span>
+                <span className="v">{mergedGame.survivalHrs == null ? "—" : (mergedGame.survivalHrs < 0 ? "−" : "+") + Math.abs(mergedGame.survivalHrs) + "h"}</span>
               </div>
             </div>
           </GlassPanel>
 
           <GlassPanel className="side-panel side-actions">
-            <a className="btn btn--accent" href={steamLink(game)} target="_blank" rel="noopener noreferrer">
+            <a className="btn btn--accent" href={steamLink(mergedGame)} target="_blank" rel="noopener noreferrer">
               View on Steam
             </a>
-            <a className="btn btn--glass" href={steamdbLink(game)} target="_blank" rel="noopener noreferrer">
+            <a className="btn btn--glass" href={steamdbLink(mergedGame)} target="_blank" rel="noopener noreferrer">
               Build history · SteamDB
             </a>
-            <a className="btn btn--outline" href={game.source.url} target="_blank" rel="noopener noreferrer">
-              News source · {game.source.name}
+            <a className="btn btn--outline" href={mergedGame.source.url} target="_blank" rel="noopener noreferrer">
+              News source · {mergedGame.source.name}
             </a>
           </GlassPanel>
         </aside>

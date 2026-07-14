@@ -473,7 +473,7 @@ const FRANCHISE_MAP: Record<string, string> = {
   "hitman 3": "Hitman",
 };
 
-const normalizeTitle = (s: string): string =>
+export const normalizeTitle = (s: string): string =>
   (s || "")
     .replace(/[™®©]/g, "")
     .trim()

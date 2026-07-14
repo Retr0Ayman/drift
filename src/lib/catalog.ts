@@ -1,6 +1,8 @@
 import type { Game, Release } from "../types/game";
 import { slugify } from "./format";
 import { methodForGroup, isRepackGroup, isAnonymousUpload, isWindowsRelease } from "./constants";
+import { normalizeTitle } from "./companies";
+import type { XrelReleaseRow } from "./xrel";
 
 interface RawRelease {
   id: string;
@@ -54,7 +56,7 @@ function parseBuildFromDirname(dn?: string): number | null {
    search/browse/archive rows into display data, so platform filtering,
    repack/anonymous tagging, and version/build parsing only live in one
    place. */
-function releaseFromRow(rel: RawRelease): Release {
+export function releaseFromRow(rel: RawRelease): Release {
   const group = rel.group_name || "scene";
   const m = methodForGroup(group);
   return {
@@ -71,6 +73,33 @@ function releaseFromRow(rel: RawRelease): Release {
     isRepack: isRepackGroup(group),
     isAnonymous: isAnonymousUpload(group),
   };
+}
+
+/* Cross-references a game's title against the starred-P2P-groups index
+   (see hooks/usePlatformP2PIndex.ts) and merges in any release those groups
+   have for it that isn't already covered by `baseReleases` -- P2P groups
+   never show up in the browse feed baseReleases is normally built from (see
+   worker/routes/xrel/browse.ts), so without this, a P2P-only crack (e.g.
+   Pragmata's voices38 release) silently never appears on that game's own
+   page. Reuses releaseFromRow, same version/build parsing as any other
+   release -- a P2P dirname that genuinely embeds a real build number (the
+   007 First Light/DenuvOwO case cited above) earns the same exact-match
+   Current/Outdated status as a scene release with the same evidence, not
+   an artificially suppressed "unverified." Deduped by group name so a
+   release that's already present (e.g. already resolved via the browse
+   feed under the same group) isn't shown twice. */
+export function mergeP2PReleases(
+  baseReleases: Release[],
+  title: string,
+  p2pIndex: Map<string, XrelReleaseRow[]>,
+): Release[] {
+  const rows = p2pIndex.get(normalizeTitle(title)) || [];
+  if (!rows.length) return baseReleases;
+  const existingGroups = new Set(baseReleases.map((r) => r.group.toLowerCase()));
+  const extra = rows
+    .filter((row) => !existingGroups.has((row.group_name || "").toLowerCase()))
+    .map(releaseFromRow);
+  return extra.length ? [...baseReleases, ...extra] : baseReleases;
 }
 
 /* Collapses repeat releases from the same group (e.g. a group's "Update
