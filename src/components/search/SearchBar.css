@@ -47,6 +47,30 @@
   box-shadow: 0 0 0 4px var(--accent-dim);
 }
 
+.searchbar-kbd-hint {
+  flex: none;
+  margin-right: 10px;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--ink-3);
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-sm);
+  padding: 2px 6px;
+  pointer-events: none;
+}
+
+.searchbar input:focus ~ .searchbar-kbd-hint {
+  display: none;
+}
+
+@media (max-width: 720px) {
+  .searchbar-kbd-hint {
+    display: none;
+  }
+}
+
 .searchbar input:focus + svg,
 .searchbar:focus-within svg {
   color: var(--accent);

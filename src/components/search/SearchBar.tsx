@@ -112,6 +112,7 @@ export default function SearchBar({ games, onLiveGameResolved }: SearchBarProps)
               onFocus={() => setOpen(true)}
               onKeyDown={onKeyDown}
             />
+            <kbd className="searchbar-kbd-hint">⌘K</kbd>
           </div>
         </div>
       </Popover.Anchor>

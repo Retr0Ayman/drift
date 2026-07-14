@@ -3,6 +3,7 @@ import { Routes, Route, Outlet } from "react-router-dom";
 import Navbar from "./components/layout/Navbar";
 import Footer from "./components/layout/Footer";
 import IntroAnimation from "./components/layout/IntroAnimation";
+import CommandPalette from "./components/search/CommandPalette";
 import Home from "./components/home/Home";
 import GameDetail from "./components/game/GameDetail";
 import GroupsDirectory from "./components/groups/GroupsDirectory";
@@ -38,6 +39,7 @@ function Layout() {
         onLiveGameResolved={catalog.mergeOne}
         revealBrandO={introDone}
       />
+      <CommandPalette games={catalog.games} onLiveGameResolved={catalog.mergeOne} />
       <main className="page-content">
         <Outlet context={context} />
       </main>
