@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { useCatalog } from "../../hooks/useCatalog";
 import { publisherDomain, isAaaPublisher, publisherCountry, groupByFranchise } from "../../lib/companies";
 import { slugify } from "../../lib/format";
@@ -76,7 +76,9 @@ export default function PublisherProfile() {
       {franchises.map((f, i) => (
         <Reveal key={f.name} delay={Math.min(i, 6) * 0.05}>
           <section className="franchise-block">
-            <h2 className="franchise-title">{f.name}</h2>
+            <h2 className="franchise-title">
+              <Link to={`/franchise/${slugify(f.name)}`}>{f.name}</Link>
+            </h2>
             <div className="franchise-grid">
               {f.games.map((g) => (
                 <GameCard key={g.id} game={g} />

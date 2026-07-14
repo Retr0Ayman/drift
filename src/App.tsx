@@ -11,6 +11,7 @@ import GroupProfile from "./components/groups/GroupProfile";
 import Leaderboard from "./components/groups/Leaderboard";
 import PublishersDirectory from "./components/publishers/PublishersDirectory";
 import PublisherProfile from "./components/publishers/PublisherProfile";
+import FranchiseProfile from "./components/publishers/FranchiseProfile";
 import Watchlist from "./components/watchlist/Watchlist";
 import { useLiveCatalog } from "./hooks/useLiveCatalog";
 import type { CatalogContextValue } from "./hooks/useCatalog";
@@ -59,6 +60,7 @@ export default function App() {
         <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/publishers" element={<PublishersDirectory />} />
         <Route path="/publisher/:key" element={<PublisherProfile />} />
+        <Route path="/franchise/:slug" element={<FranchiseProfile />} />
         <Route path="/watchlist" element={<Watchlist />} />
       </Route>
     </Routes>

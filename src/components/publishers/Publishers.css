@@ -291,6 +291,10 @@
   margin-bottom: 16px;
 }
 
+.franchise-title a:hover {
+  text-decoration: underline;
+}
+
 .franchise-title--muted {
   color: var(--ink-3);
   font-size: var(--fs-sm);

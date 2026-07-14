@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { useAutocomplete, type Suggestion } from "../../hooks/useAutocomplete";
 import { parseSearchIntent } from "../../lib/searchIntent";
 import { buildLiveGameFromRows } from "../../lib/catalog";
+import { matchFranchise } from "../../lib/companies";
+import { slugify } from "../../lib/format";
 import type { Game } from "../../types/game";
 import type { CatalogStatus } from "../../hooks/useLiveCatalog";
 import "./CommandPalette.css";
@@ -25,6 +27,7 @@ export default function CommandPalette({ games, catalogStatus, onLiveGameResolve
   const navigate = useNavigate();
   const { results, loading, assisted, assisting } = useAutocomplete(query, games);
   const intent = useMemo(() => parseSearchIntent(query), [query]);
+  const franchiseMatch = useMemo(() => matchFranchise(query), [query]);
 
   useEffect(() => {
     function onKey(e: globalThis.KeyboardEvent) {
@@ -47,8 +50,9 @@ export default function CommandPalette({ games, catalogStatus, onLiveGameResolve
   const localResults = results.filter((r) => r.kind === "local");
   const liveResults = results.filter((r) => r.kind === "live");
   const assistedResults = assisted?.results ?? [];
-  const flat: Array<Suggestion | { kind: "intent" }> = [
+  const flat: Array<Suggestion | { kind: "intent" } | { kind: "franchise"; name: string }> = [
     ...(intent ? [{ kind: "intent" as const }] : []),
+    ...(franchiseMatch ? [{ kind: "franchise" as const, name: franchiseMatch }] : []),
     ...localResults,
     ...liveResults,
     ...assistedResults,
@@ -67,6 +71,12 @@ export default function CommandPalette({ games, catalogStatus, onLiveGameResolve
     close();
   }
 
+  function goToFranchise() {
+    if (!franchiseMatch) return;
+    navigate(`/franchise/${slugify(franchiseMatch)}`);
+    close();
+  }
+
   async function selectSuggestion(s: Suggestion) {
     if (s.kind === "local") {
       navigate(`/game/${s.id}`);
@@ -82,9 +92,10 @@ export default function CommandPalette({ games, catalogStatus, onLiveGameResolve
     close();
   }
 
-  function activate(row: Suggestion | { kind: "intent" } | undefined) {
+  function activate(row: Suggestion | { kind: "intent" } | { kind: "franchise"; name: string } | undefined) {
     if (!row) return;
     if (row.kind === "intent") applyIntent();
+    else if (row.kind === "franchise") goToFranchise();
     else selectSuggestion(row);
   }
 
@@ -137,6 +148,18 @@ export default function CommandPalette({ games, catalogStatus, onLiveGameResolve
                 <span className="cmdk-intent-icon">⌁</span>
                 <span>
                   Filter by <strong>{intent.label}</strong>
+                </span>
+              </button>
+            ) : null}
+
+            {franchiseMatch ? (
+              <button
+                className={`cmdk-intent cmdk-row${(rowCursor += 1) === activeIndex ? " cmdk-row--active" : ""}`}
+                onClick={goToFranchise}
+              >
+                <span className="cmdk-intent-icon">◈</span>
+                <span>
+                  Go to the <strong>{franchiseMatch}</strong> franchise ›
                 </span>
               </button>
             ) : null}

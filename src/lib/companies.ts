@@ -473,14 +473,39 @@ const FRANCHISE_MAP: Record<string, string> = {
   "hitman 3": "Hitman",
 };
 
+/* Steam's own API returns some titles with underscores standing in for
+   spaces (confirmed live: appid 243470 is literally "Watch_Dogs™") --
+   without folding those to spaces too, "Watch_Dogs™" and "Watch Dogs"
+   normalize to different strings and every lookup keyed on this (franchise
+   matching, P2P title matching) silently misses. */
 export const normalizeTitle = (s: string): string =>
   (s || "")
     .replace(/[™®©]/g, "")
+    .replace(/_/g, " ")
     .trim()
     .toLowerCase();
 
 export function franchiseFor(title: string): string | null {
   return FRANCHISE_MAP[normalizeTitle(title)] || null;
+}
+
+/* Deduped once at module load, not per-call -- both the /franchise/:slug
+   route and search's franchise-suggestion row need the same closed set of
+   real franchise names, never an AI-guessed one. */
+const FRANCHISE_NAMES: string[] = [...new Set(Object.values(FRANCHISE_MAP))].sort((a, b) => a.localeCompare(b));
+const FRANCHISE_SLUG_TO_NAME: Map<string, string> = new Map(FRANCHISE_NAMES.map((n) => [slugify(n), n]));
+
+export function franchiseNameForSlug(slug: string): string | null {
+  return FRANCHISE_SLUG_TO_NAME.get(slug) || null;
+}
+
+/* Same substring rule useAutocomplete uses for local game-title matches, so
+   a franchise suggestion appears exactly when a game with that title would
+   -- deterministic lookup against the curated map, never a guess. */
+export function matchFranchise(query: string): string | null {
+  const q = query.trim().toLowerCase();
+  if (q.length < 2) return null;
+  return FRANCHISE_NAMES.find((name) => name.toLowerCase().includes(q)) || null;
 }
 
 export interface PublisherEntry {

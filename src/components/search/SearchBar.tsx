@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { useAutocomplete, type Suggestion } from "../../hooks/useAutocomplete";
 import { buildLiveGameFromRows } from "../../lib/catalog";
 import { parseSearchIntent } from "../../lib/searchIntent";
+import { matchFranchise } from "../../lib/companies";
+import { slugify } from "../../lib/format";
 import type { Game } from "../../types/game";
 import "./SearchBar.css";
 
@@ -20,15 +22,17 @@ export default function SearchBar({ games, onLiveGameResolved }: SearchBarProps)
   const navigate = useNavigate();
   const { results, loading, assisted, assisting } = useAutocomplete(query, games);
   const intent = useMemo(() => parseSearchIntent(query), [query]);
-  const showPopover = open && (loading || resolving || assisting || results.length > 0 || !!intent || !!assisted);
+  const franchiseMatch = useMemo(() => matchFranchise(query), [query]);
+  const showPopover = open && (loading || resolving || assisting || results.length > 0 || !!intent || !!franchiseMatch || !!assisted);
 
   const localResults = results.filter((r) => r.kind === "local");
   const liveResults = results.filter((r) => r.kind === "live");
   const assistedResults = assisted?.results ?? [];
   // Flat index across every visible row group, in render order, so
   // arrow-key navigation moves through all of them in one sequence.
-  const flat: Array<Suggestion | { kind: "intent" }> = [
+  const flat: Array<Suggestion | { kind: "intent" } | { kind: "franchise"; name: string }> = [
     ...(intent ? [{ kind: "intent" as const }] : []),
+    ...(franchiseMatch ? [{ kind: "franchise" as const, name: franchiseMatch }] : []),
     ...localResults,
     ...liveResults,
     ...assistedResults,
@@ -49,6 +53,12 @@ export default function SearchBar({ games, onLiveGameResolved }: SearchBarProps)
     closeAndReset();
   }
 
+  function goToFranchise() {
+    if (!franchiseMatch) return;
+    navigate(`/franchise/${slugify(franchiseMatch)}`);
+    closeAndReset();
+  }
+
   async function selectSuggestion(s: Suggestion) {
     if (s.kind === "local") {
       navigate(`/game/${s.id}`);
@@ -66,9 +76,10 @@ export default function SearchBar({ games, onLiveGameResolved }: SearchBarProps)
     closeAndReset();
   }
 
-  function activate(row: Suggestion | { kind: "intent" } | undefined) {
+  function activate(row: Suggestion | { kind: "intent" } | { kind: "franchise"; name: string } | undefined) {
     if (!row) return;
     if (row.kind === "intent") applyIntent();
+    else if (row.kind === "franchise") goToFranchise();
     else selectSuggestion(row);
   }
 
@@ -140,6 +151,20 @@ export default function SearchBar({ games, onLiveGameResolved }: SearchBarProps)
               <span className="searchbar-intent-icon">⌁</span>
               <span>
                 Filter by <strong>{intent.label}</strong>
+              </span>
+            </button>
+          ) : null}
+
+          {franchiseMatch ? (
+            <button
+              className={`searchbar-intent searchbar-row${(rowCursor += 1) === activeIndex ? " searchbar-item--active" : ""}`}
+              style={{ "--i": ++stagger } as CSSProperties}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={goToFranchise}
+            >
+              <span className="searchbar-intent-icon">◈</span>
+              <span>
+                Go to the <strong>{franchiseMatch}</strong> franchise ›
               </span>
             </button>
           ) : null}
