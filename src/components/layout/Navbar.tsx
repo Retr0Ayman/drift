@@ -18,6 +18,8 @@ interface NavbarProps {
   status: CatalogStatus;
   onLiveGameResolved: (game: Game) => void;
   revealBrandO: boolean;
+  theme: "light" | "dark";
+  onToggleTheme: () => void;
 }
 
 /* Floating pill nav, Apple/Linear-marketing-site style -- margin from every
@@ -27,7 +29,7 @@ interface NavbarProps {
    shadow/border intensity and a slight scale-down, not a 0->solid alpha
    ramp -- a floating element that's invisible at rest reads as broken, not
    restrained, the way a flush edge-to-edge bar could get away with. */
-export default function Navbar({ games, status, onLiveGameResolved, revealBrandO }: NavbarProps) {
+export default function Navbar({ games, status, onLiveGameResolved, revealBrandO, theme, onToggleTheme }: NavbarProps) {
   const { scrollY } = useScroll();
   const scrollProgress = useTransform(scrollY, [0, 120], [0, 1]);
   const scale = useTransform(scrollProgress, [0, 1], [1, 0.985]);
@@ -81,6 +83,25 @@ export default function Navbar({ games, status, onLiveGameResolved, revealBrandO
             <span className="navbar-pip" />
             <span>{STATUS_LABEL[status]}</span>
           </div>
+
+          <button
+            type="button"
+            className="theme-toggle"
+            aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            onClick={onToggleTheme}
+          >
+            {theme === "dark" ? (
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="4.2" />
+                <path d="M12 2.5v2.4M12 19.1v2.4M4.2 4.2l1.7 1.7M18.1 18.1l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.2 19.8l1.7-1.7M18.1 5.9l1.7-1.7" />
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z" />
+              </svg>
+            )}
+          </button>
         </div>
       </motion.nav>
     </div>

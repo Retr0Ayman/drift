@@ -8,6 +8,20 @@
     <title>orlaz · by DaRealAyman</title>
   </head>
   <body>
+    <!-- Runs before React mounts, before first paint -- an explicit stored
+         theme choice (from useTheme.ts's toggle) needs to be on <html>
+         immediately, or a returning user whose choice differs from their
+         current OS setting sees a flash of the wrong theme while React
+         hydrates. "system" (no stored choice) needs nothing here: the CSS
+         media query alone already renders correctly on first paint. -->
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem("orlaz:theme");
+          if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+        } catch (e) {}
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

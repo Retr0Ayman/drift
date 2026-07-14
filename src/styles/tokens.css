@@ -70,10 +70,25 @@
   --aura-panel-bg: rgba(255, 255, 255, 0.85);
 }
 
-/* Auto dark mode, system-preference only (no manual toggle this pass --
-   see orlaz-versionpicker-fix-darkmode.md). Every token above gets a real
-   dark-mode value here, not just a handful -- a token left out silently
-   keeps whatever component uses it stuck in light mode. Status colors
+/* Dark mode, two ways it can turn on:
+   1. @media (prefers-color-scheme: dark) -- the OS-level default, applies
+      automatically before any explicit choice exists. This is what governs
+      on first visit and keeps following the OS live for as long as no
+      override has been made.
+   2. :root[data-theme="dark"] / :root[data-theme="light"] -- an explicit
+      user choice from the toggle (see useTheme.ts), persisted to
+      localStorage. useTheme sets/clears the data-theme attribute on
+      <html>; an attribute selector is more specific than the plain :root
+      the media query targets, so an explicit choice always wins over
+      whatever the OS currently says, in either direction. When no
+      explicit choice has been made, useTheme leaves data-theme unset and
+      the media query alone governs.
+
+   Both dark blocks below carry the exact same values -- duplicated, not
+   shared, since plain CSS custom properties have no block-level reuse
+   without a preprocessor. Every token defined in the base :root above
+   gets a real dark-mode value here, not just a handful -- a token left
+   out silently keeps whatever uses it stuck in light mode. Status colors
    (--hv/--trad/--dead/--out/--unc/--unv) are lightened/brightened, not
    just carried over as-is -- the light-mode values were tuned for
    contrast against a near-white background and would read as muddy,
@@ -122,4 +137,82 @@
 
     --aura-panel-bg: rgba(19, 18, 16, 0.82);
   }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg-0: #131210;
+  --bg-1: #1c1a17;
+  --bg-2: #221f1b;
+
+  --ink: #f5f3ee;
+  --ink-2: rgba(245, 243, 238, 0.68);
+  --ink-3: rgba(245, 243, 238, 0.45);
+  --ink-4: rgba(245, 243, 238, 0.14);
+
+  --accent: #f5f3ee;
+  --accent-ink: #131210;
+  --accent-dim: rgba(245, 243, 238, 0.08);
+  --accent-dim-2: rgba(245, 243, 238, 0.14);
+
+  --hv: #a68bdb;
+  --trad: #4fb8a0;
+  --dead: #5ec783;
+  --out: #e08e51;
+  --unc: #e06a5d;
+  --unv: #a89f8d;
+
+  --glass-bg: rgba(245, 243, 238, 0.05);
+  --glass-bg-strong: rgba(245, 243, 238, 0.09);
+  --glass-border: rgba(245, 243, 238, 0.14);
+  --glass-border-strong: rgba(245, 243, 238, 0.22);
+  --glass-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --glass-shadow-lg: 0 2px 10px rgba(0, 0, 0, 0.45);
+
+  --aura-a: #a68bdb55;
+  --aura-b: #4fb8a055;
+
+  --aura-panel-bg: rgba(19, 18, 16, 0.82);
+}
+
+/* Explicit "light" re-affirms the base :root values -- needed so someone
+   on a dark-OS system who picks light via the toggle actually gets light,
+   not just "no dark override" (which the media query above would still
+   fill in on its own). */
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --bg-0: #f7f5f0;
+  --bg-1: #ffffff;
+  --bg-2: #efece4;
+
+  --ink: #17150f;
+  --ink-2: rgba(23, 21, 15, 0.68);
+  --ink-3: rgba(23, 21, 15, 0.45);
+  --ink-4: rgba(23, 21, 15, 0.14);
+
+  --accent: #17150f;
+  --accent-ink: #f7f5f0;
+  --accent-dim: rgba(23, 21, 15, 0.06);
+  --accent-dim-2: rgba(23, 21, 15, 0.1);
+
+  --hv: #6b4fa0;
+  --trad: #1f7a6c;
+  --dead: #2f7a4f;
+  --out: #b5602a;
+  --unc: #a13f34;
+  --unv: #7a7263;
+
+  --glass-bg: rgba(23, 21, 15, 0.04);
+  --glass-bg-strong: rgba(23, 21, 15, 0.07);
+  --glass-border: rgba(23, 21, 15, 0.12);
+  --glass-border-strong: rgba(23, 21, 15, 0.2);
+  --glass-shadow: 0 1px 2px rgba(23, 21, 15, 0.06);
+  --glass-shadow-lg: 0 2px 8px rgba(23, 21, 15, 0.08);
+
+  --aura-a: #6b4fa055;
+  --aura-b: #1f7a6c55;
+
+  --aura-panel-bg: rgba(255, 255, 255, 0.85);
 }

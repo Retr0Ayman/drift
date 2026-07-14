@@ -14,10 +14,12 @@ import PublisherProfile from "./components/publishers/PublisherProfile";
 import FranchiseProfile from "./components/publishers/FranchiseProfile";
 import Watchlist from "./components/watchlist/Watchlist";
 import { useLiveCatalog } from "./hooks/useLiveCatalog";
+import { useTheme } from "./hooks/useTheme";
 import type { CatalogContextValue } from "./hooks/useCatalog";
 
 function Layout() {
   const catalog = useLiveCatalog();
+  const theme = useTheme();
   const [introDone, setIntroDone] = useState(false);
   const context: CatalogContextValue = {
     games: catalog.games,
@@ -39,6 +41,8 @@ function Layout() {
         status={catalog.status}
         onLiveGameResolved={catalog.mergeOne}
         revealBrandO={introDone}
+        theme={theme.resolved}
+        onToggleTheme={theme.toggle}
       />
       <CommandPalette games={catalog.games} catalogStatus={catalog.status} onLiveGameResolved={catalog.mergeOne} />
       <main className="page-content">
