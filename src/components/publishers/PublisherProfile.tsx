@@ -11,13 +11,20 @@ import "./Publishers.css";
 export default function PublisherProfile() {
   const { key } = useParams();
   const navigate = useNavigate();
-  const { games } = useCatalog();
+  const { games, status } = useCatalog();
   const matches = games.filter((g) => g.publisher && slugify(g.publisher) === key);
 
   if (!matches.length) {
     return (
       <div className="wrap publishers-page">
-        <p className="publishers-lede">No titles tracked for this publisher yet.</p>
+        <button className="back-link" onClick={() => navigate(-1)}>
+          ‹ Publishers
+        </button>
+        <p className="publishers-lede">
+          {status === "live"
+            ? "No titles from this publisher in the currently loaded catalogue."
+            : "Catalogue is still syncing — this publisher's titles may not have loaded yet."}
+        </p>
       </div>
     );
   }
@@ -46,6 +53,7 @@ export default function PublisherProfile() {
               kind="publisher"
               cacheKey={key || name}
               name={name}
+              ready={status === "live"}
               facts={{
                 "Titles tracked": matches.length,
                 "AAA tier": isAaaPublisher(name) ? "yes" : "no",

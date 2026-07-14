@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { STARRED_GROUPS, methodForGroup } from "../lib/constants";
-import { fetchGroupReleases } from "../lib/xrel";
+import { fetchGroupHistory } from "../lib/xrel";
 import { slugify } from "../lib/format";
 import type { GroupEntry } from "../lib/groups";
 
@@ -11,7 +11,10 @@ import type { GroupEntry } from "../lib/groups";
    either of them. This is a lightweight count-only summary (no per-title
    Steam enrichment -- that's what GroupProfile does on demand when someone
    actually opens the group), just enough for the directory to always show
-   a real, clickable card for both starred groups. */
+   a real, clickable card for both starred groups. Uses the same full-
+   history fetch as the group profile page (real pagination via
+   v2/p2p/releases.json?group_id=, not the capped search endpoint), so the
+   directory's counts and "last active" dates are the real numbers too. */
 export function useStarredGroupSummaries(): { summaries: GroupEntry[]; loading: boolean } {
   const [summaries, setSummaries] = useState<GroupEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -21,7 +24,7 @@ export function useStarredGroupSummaries(): { summaries: GroupEntry[]; loading: 
     (async () => {
       const results = await Promise.all(
         STARRED_GROUPS.map(async (key): Promise<GroupEntry | null> => {
-          const rows = await fetchGroupReleases(key);
+          const { rows } = await fetchGroupHistory(key);
           if (!rows.length) return null;
           const name = rows[0].group_name || key;
           let hv = 0;

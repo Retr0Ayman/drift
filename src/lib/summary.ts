@@ -1,9 +1,10 @@
-// v2: bumped to invalidate summaries generated before the ready-gating fix
-// (AiSummary used to fire on route-param-derived keys alone, so a group's
-// summary was frequently generated from a still-loading, artificially low
-// release count -- confirmed live on DenuvOwO). Old v1 entries are just
-// dead keys now, not actively cleaned up, but never read again.
-const CACHE_PREFIX = "drift.summary.v2.";
+// v3: bumped again -- v2's "ready" gate had its own bug (useGroupReleases
+// defaulted `loading` to false, so `ready={!loading}` was briefly true
+// before the fetch had even started; see useGroupReleases.ts), plus the
+// underlying group data itself just got deepened (real full history via
+// group_id pagination instead of the ~30-item capped search). Old v1/v2
+// entries are dead keys now, not actively cleaned up, but never read again.
+const CACHE_PREFIX = "drift.summary.v3.";
 
 export interface SummaryResult {
   summary: string | null;

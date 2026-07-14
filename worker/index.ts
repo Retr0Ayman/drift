@@ -10,6 +10,7 @@ import { handleXrelArchive } from "./routes/xrel/archive";
 import { handleXrelInfo } from "./routes/xrel/info";
 import { handleXrelNfo } from "./routes/xrel/nfo";
 import { handleXrelGroup } from "./routes/xrel/group";
+import { handleXrelP2PGroup } from "./routes/xrel/p2pGroup";
 import { handleFaq } from "./routes/faq";
 import { handleFx } from "./routes/fx";
 import { handleSummary } from "./routes/summary";
@@ -31,6 +32,7 @@ const ROUTES: Record<string, Handler> = {
   "/api/xrel/info": handleXrelInfo,
   "/api/xrel/nfo": handleXrelNfo,
   "/api/xrel/group": handleXrelGroup,
+  "/api/xrel/p2p-group": handleXrelP2PGroup,
   "/api/faq": handleFaq,
   "/api/fx": handleFx,
   "/api/summary": handleSummary,

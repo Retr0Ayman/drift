@@ -10,6 +10,7 @@ export interface RawXrelRelease {
   time?: number;
   pub_time?: number;
   group_name?: string;
+  group_id?: string;
   group?: { id?: string; name?: string };
   ext_info?: { type?: string; id?: string; title?: string };
   [key: string]: unknown;
@@ -20,5 +21,13 @@ export function normalizeP2P(rel: RawXrelRelease): RawXrelRelease {
     ...rel,
     time: rel.time ?? rel.pub_time,
     group_name: rel.group_name ?? rel.group?.name,
+    // Internal hash-style group ID (e.g. "d84f8fe31868" for DenuvOwO) --
+    // NOT the numeric URL-style ID xrel.to's own site uses in links like
+    // group-6248-denuvowo. This hash is what release/p2p.json's own
+    // group_id filter actually expects (confirmed live), and it's already
+    // present on every P2P release row for free, so no separate name->ID
+    // resolution service is needed for groups we've already seen a release
+    // from.
+    group_id: rel.group_id ?? rel.group?.id,
   };
 }

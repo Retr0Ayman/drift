@@ -56,7 +56,7 @@ export default function Hero({ games }: { games: Game[] }) {
             Orvyn
           </motion.h1>
           <motion.p className="hero-tag" {...fadeUp(0.3)}>
-            Crack · build · drift tracker
+            Crack · build · version tracker
           </motion.p>
           <motion.p className="hero-desc" {...fadeUp(0.4)}>
             Live crack, build and version status for PC games — hypervisor and traditional cracks side by

@@ -83,7 +83,7 @@ export default function ReleaseCard({ game, release }: { game: Game; release: Re
         </div>
         {st === "out" ? (
           <div className="release-datum">
-            <span className="k">Drift</span>
+            <span className="k">Build gap</span>
             <span className="v" style={{ color: "var(--out)" }}>
               −{delta.toLocaleString("en-US")}
             </span>

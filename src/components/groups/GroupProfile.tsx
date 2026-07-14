@@ -69,7 +69,7 @@ export default function GroupProfile() {
   // seed match; falling back to the URL key itself still works reasonably
   // since xREL's search is case-insensitive substring matching.
   const displayName = seedMatches[0]?.r.group || key || "";
-  const { rows: liveRows, loading } = useGroupReleases(displayName || null);
+  const { rows: liveRows, loading, complete } = useGroupReleases(displayName || null);
 
   const seedTitles = useMemo(() => new Set(seedMatches.map(({ g }) => g.title.toLowerCase())), [seedMatches]);
 
@@ -160,9 +160,11 @@ export default function GroupProfile() {
             </div>
             {STARRED_GROUPS.includes(key || "") ? (
               <div className="grouphead-caveat">
-                P2P group — xREL has no browsable feed for these, only a search lookup that hard-caps at
-                30 results regardless of query. This list may not reflect the group's complete recent
-                output, only what xREL's search currently returns.
+                {complete
+                  ? "P2P group — full release history pulled from xREL's own group archive, not the capped search endpoint."
+                  : loading
+                    ? "P2P group — loading full release history…"
+                    : "P2P group — xREL has no browsable feed for these; falling back to a search lookup that hard-caps around 30 results. This list may not reflect the group's complete output."}
               </div>
             ) : null}
             <AiSummary

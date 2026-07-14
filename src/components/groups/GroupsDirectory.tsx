@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCatalog } from "../../hooks/useCatalog";
 import { useStarredGroupSummaries } from "../../hooks/useStarredGroupSummaries";
@@ -6,7 +6,10 @@ import { groupsIndex } from "../../lib/groups";
 import { colorForName, fmtDateMs } from "../../lib/format";
 import GlassPanel from "../ui/GlassPanel";
 import Reveal from "../ui/Reveal";
+import SegmentedControl from "../ui/SegmentedControl";
 import "./Groups.css";
+
+type CategoryFilter = "all" | "p2p" | "scene";
 
 export default function GroupsDirectory() {
   const navigate = useNavigate();
@@ -18,6 +21,16 @@ export default function GroupsDirectory() {
   const starredCount = idx.filter((e) => e.starred).length;
 
   const topByVolume = useMemo(() => [...idx].sort((a, b) => b.count - a.count)[0], [idx]);
+
+  // "Starred" and "P2P" are the same set in this app's data model -- the
+  // only groups that ever get the starred flag are the curated P2P ones
+  // (xREL has no browse-by-category feed that includes P2P at all, so
+  // being on that curated list IS what "this is a P2P group" means here,
+  // not a separate guess layered on top of it).
+  const [category, setCategory] = useState<CategoryFilter>("all");
+  const visible = idx.filter((e) => (category === "all" ? true : category === "p2p" ? e.starred : !e.starred));
+  const p2pCount = idx.filter((e) => e.starred).length;
+  const sceneCount = idx.length - p2pCount;
 
   return (
     <div className="wrap groups-page">
@@ -68,8 +81,28 @@ export default function GroupsDirectory() {
         </div>
       </Reveal>
 
+      <div className="groups-filter-row">
+        <SegmentedControl
+          ariaLabel="Filter by category"
+          value={category}
+          onChange={(v) => setCategory(v as CategoryFilter)}
+          options={[
+            { value: "all", label: `All (${idx.length})` },
+            { value: "p2p", label: `P2P (${p2pCount})` },
+            { value: "scene", label: `Scene (${sceneCount})` },
+          ]}
+        />
+        <span className="groups-filter-note">
+          {category === "p2p"
+            ? "P2P groups have no browse-by-category feed on xREL, so these are curated and fetched directly."
+            : category === "scene"
+              ? "Scene groups surface naturally from tracked titles' own crack releases."
+              : "P2P groups (curated, starred) alongside scene groups seen across tracked titles."}
+        </span>
+      </div>
+
       <div className="groups-grid">
-        {idx.map((e, i) => {
+        {visible.map((e, i) => {
           const hvPct = e.count ? Math.round((e.hv / e.count) * 100) : 0;
           return (
             <Reveal key={e.key} delay={Math.min(i, 8) * 0.04}>
