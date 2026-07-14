@@ -3,6 +3,7 @@ import { useCatalog } from "../../hooks/useCatalog";
 import { useWatchlist } from "../../hooks/useWatchlist";
 import GameCard from "../home/GameCard";
 import Reveal from "../ui/Reveal";
+import WishlistImport from "./WishlistImport";
 import { usePageMeta } from "../../hooks/usePageMeta";
 import { anyOutdated, driftDelta } from "../../lib/format";
 import "./Watchlist.css";
@@ -42,6 +43,10 @@ export default function Watchlist() {
               : "Star a game from its detail page to add it here."}
           </p>
         </div>
+      </Reveal>
+
+      <Reveal delay={0.05}>
+        <WishlistImport />
       </Reveal>
 
       {watchedGames.length ? (

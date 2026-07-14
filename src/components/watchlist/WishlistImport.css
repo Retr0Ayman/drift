@@ -1,0 +1,76 @@
+.wishlist-import {
+  padding: 20px 22px;
+  margin-bottom: 28px;
+}
+
+.wishlist-import-h {
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 12px;
+}
+
+.wishlist-import-row {
+  display: flex;
+  gap: 10px;
+}
+
+.wishlist-import-row input {
+  flex: 1;
+  height: 40px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-sm);
+  padding: 0 14px;
+  font-size: 0.88rem;
+  color: var(--ink);
+  outline: none;
+}
+
+.wishlist-import-row input:focus {
+  border-color: var(--glass-border-strong);
+}
+
+.wishlist-import-row button {
+  flex: none;
+  height: 40px;
+  padding: 0 18px;
+  border: none;
+  border-radius: var(--r-sm);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 700;
+  font-size: 0.86rem;
+  cursor: pointer;
+}
+
+.wishlist-import-row button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.wishlist-import-error {
+  margin-top: 12px;
+  font-size: 0.84rem;
+  color: var(--unc);
+}
+
+.wishlist-import-result {
+  margin-top: 14px;
+  font-size: 0.88rem;
+  color: var(--ink-2);
+}
+
+.wishlist-import-add {
+  margin-top: 10px;
+  border: none;
+  background: var(--accent-dim);
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 0.84rem;
+  padding: 8px 14px;
+  border-radius: var(--pill);
+  cursor: pointer;
+}
