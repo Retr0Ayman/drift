@@ -10,8 +10,9 @@ import "./Publishers.css";
 
 export default function PublishersDirectory() {
   const navigate = useNavigate();
-  const { games } = useCatalog();
+  const { games, hasMore } = useCatalog();
   const idx = publishersIndex(games);
+  const suffix = hasMore ? "+" : "";
   const [country, setCountry] = useState<string | null>(null);
   const [aaaOnly, setAaaOnly] = useState(false);
 
@@ -38,18 +39,24 @@ export default function PublishersDirectory() {
         <div className="publishers-hero">
           <div className="publishers-hero-main">
             <span className="publishers-eyebrow">Publishers</span>
-            <h1>Every publisher Orvyn is tracking</h1>
+            <h1>Every publisher orlaz is tracking</h1>
             <p className="publishers-lede">
               AAA publishers sort to the top and carry a distinct badge — a curated tier list, not a
               size/revenue API. Real icons where we have a verified company domain; a plain initials badge
               everywhere else — never a guessed image.
             </p>
+            {hasMore ? (
+              <p className="publishers-lede publishers-caveat">
+                Catalogue syncs in the background — counts below grow as more of it loads. Full accuracy lands
+                with the Phase 2 database.
+              </p>
+            ) : null}
           </div>
           <GlassPanel strong className="publishers-signal">
             <div className="publishers-signal-head">Directory signal</div>
             <div className="publishers-signal-grid">
               <div className="publishers-signal-stat">
-                <span className="publishers-signal-n">{idx.length || "—"}</span>
+                <span className="publishers-signal-n">{idx.length ? `${idx.length}${suffix}` : "—"}</span>
                 <span className="publishers-signal-l">Publishers tracked</span>
               </div>
               <div className="publishers-signal-stat">
@@ -98,7 +105,8 @@ export default function PublishersDirectory() {
       </Reveal>
 
       <div className="publishers-grid-head">
-        {visible.length} publisher{visible.length === 1 ? "" : "s"} shown
+        {visible.length}
+        {suffix} publisher{visible.length === 1 ? "" : "s"} shown
         {aaaOnly ? " · AAA only" : ""}
         {country ? ` · HQ: ${country}` : ""}
       </div>

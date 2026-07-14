@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, useScroll, useTransform } from "motion/react";
 import SearchBar from "../search/SearchBar";
+import DriftMark from "../ui/illustrations/DriftMark";
 import type { Game } from "../../types/game";
 import type { CatalogStatus } from "../../hooks/useLiveCatalog";
 import "./Navbar.css";
@@ -16,6 +17,7 @@ interface NavbarProps {
   games: Game[];
   status: CatalogStatus;
   onLiveGameResolved: (game: Game) => void;
+  revealBrandO: boolean;
 }
 
 /* Floating pill nav, Apple/Linear-marketing-site style -- margin from every
@@ -25,17 +27,14 @@ interface NavbarProps {
    shadow/border intensity and a slight scale-down, not a 0->solid alpha
    ramp -- a floating element that's invisible at rest reads as broken, not
    restrained, the way a flush edge-to-edge bar could get away with. */
-export default function Navbar({ games, status, onLiveGameResolved }: NavbarProps) {
+export default function Navbar({ games, status, onLiveGameResolved, revealBrandO }: NavbarProps) {
   const { scrollY } = useScroll();
   const scrollProgress = useTransform(scrollY, [0, 120], [0, 1]);
   const scale = useTransform(scrollProgress, [0, 1], [1, 0.985]);
-  const shadowAlpha = useTransform(scrollProgress, [0, 1], [0.14, 0.32]);
-  const borderAlpha = useTransform(scrollProgress, [0, 1], [0.22, 0.36]);
-  const boxShadow = useTransform(
-    shadowAlpha,
-    (a) => `0 24px 60px -18px rgba(0, 0, 0, ${a}), inset 0 1px 0 rgba(255,255,255,0.08)`,
-  );
-  const borderColor = useTransform(borderAlpha, (a) => `rgba(255, 255, 255, ${a})`);
+  const shadowAlpha = useTransform(scrollProgress, [0, 1], [0.05, 0.12]);
+  const borderAlpha = useTransform(scrollProgress, [0, 1], [0.12, 0.2]);
+  const boxShadow = useTransform(shadowAlpha, (a) => `0 8px 24px -8px rgba(23, 21, 15, ${a})`);
+  const borderColor = useTransform(borderAlpha, (a) => `rgba(23, 21, 15, ${a})`);
 
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -45,12 +44,12 @@ export default function Navbar({ games, status, onLiveGameResolved }: NavbarProp
         <div className="navbar-inner">
           <Link to="/" className="navbar-logo" onClick={() => setMenuOpen(false)}>
             <span className="navbar-mark">
-              <svg viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="7" stroke="currentColor" strokeWidth="2.2" />
-              </svg>
+              <DriftMark />
             </span>
             <span className="navbar-word">
-              <span className="navbar-title">Orvyn</span>
+              <span className="navbar-title">
+                {revealBrandO ? <motion.span layoutId="brand-o">o</motion.span> : <span>o</span>}rlaz
+              </span>
               <span className="navbar-sub">BY DAREALAYMAN</span>
             </span>
           </Link>

@@ -29,10 +29,7 @@
 }
 
 .dselect-content {
-  background: var(--bg-2);
-  background: linear-gradient(var(--glass-bg-strong), var(--glass-bg-strong)), var(--bg-2);
-  backdrop-filter: blur(var(--glass-blur-strong)) saturate(180%);
-  -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(180%);
+  background: var(--bg-1);
   border: 1px solid var(--glass-border-strong);
   border-radius: var(--r-sm);
   box-shadow: var(--glass-shadow-lg);

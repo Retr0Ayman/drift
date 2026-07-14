@@ -14,7 +14,7 @@ export default function GameGrid({ games, filters }: GameGridProps) {
     <section className="catalogue wrap">
       <Reveal className="catalogue-head">
         <span className="catalogue-eyebrow">The catalogue</span>
-        <h2 className="catalogue-title">Every title Orvyn is tracking</h2>
+        <h2 className="catalogue-title">Every title orlaz is tracking</h2>
       </Reveal>
       {filters}
       {games.length ? (

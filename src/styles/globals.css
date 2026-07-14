@@ -9,7 +9,7 @@
 }
 
 html {
-  color-scheme: dark;
+  color-scheme: light;
   -webkit-text-size-adjust: 100%;
 }
 
@@ -31,6 +31,11 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
+}
+
+h1,
+h2 {
+  font-family: var(--font-display);
 }
 
 a {
@@ -67,6 +72,36 @@ select {
 @media (max-width: 860px) {
   .page-content {
     padding-top: 96px;
+  }
+}
+
+/* Aura ring: reserved for the search bar and one hero stat panel per page.
+   --aura-radius is set per call site (defaults to the card radius). */
+.aura-ring {
+  --aura-radius: var(--r-lg);
+  display: block;
+  width: 100%;
+  border-radius: var(--aura-radius);
+  padding: 1.5px;
+  background: conic-gradient(from var(--aura-angle, 0deg), var(--aura-a), transparent 35%, var(--aura-b), transparent 75%);
+  animation: aura-spin 9s linear infinite;
+}
+
+@property --aura-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes aura-spin {
+  to {
+    --aura-angle: 360deg;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aura-ring {
+    animation: none;
   }
 }
 

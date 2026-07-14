@@ -13,12 +13,13 @@ type CategoryFilter = "all" | "p2p" | "scene";
 
 export default function GroupsDirectory() {
   const navigate = useNavigate();
-  const { games } = useCatalog();
+  const { games, hasMore } = useCatalog();
   const { summaries } = useStarredGroupSummaries();
   const idx = groupsIndex(games, summaries);
   const totalCracks = idx.reduce((s, e) => s + e.count, 0);
   const totalHv = idx.reduce((s, e) => s + e.hv, 0);
   const starredCount = idx.filter((e) => e.starred).length;
+  const suffix = hasMore ? "+" : "";
 
   const topByVolume = useMemo(() => [...idx].sort((a, b) => b.count - a.count)[0], [idx]);
 
@@ -46,21 +47,27 @@ export default function GroupsDirectory() {
         <div className="groups-hero">
           <div className="groups-hero-main">
             <span className="groups-eyebrow">Scene &amp; P2P groups</span>
-            <h1>Every group Orvyn is tracking</h1>
+            <h1>Every group orlaz is tracking</h1>
             <p className="groups-lede">
               Cracking groups seen across tracked titles, hypervisor and traditional alike. Starred groups are
               tracked directly since xREL has no way to browse their releases by category.
             </p>
+            {hasMore ? (
+              <p className="groups-lede groups-caveat">
+                Catalogue syncs in the background — counts below grow as more of it loads. Full accuracy lands
+                with the Phase 2 database.
+              </p>
+            ) : null}
           </div>
           <GlassPanel strong className="groups-signal">
             <div className="groups-signal-head">Directory signal</div>
             <div className="groups-signal-grid">
               <div className="groups-signal-stat">
-                <span className="groups-signal-n">{idx.length || "—"}</span>
+                <span className="groups-signal-n">{idx.length ? `${idx.length}${suffix}` : "—"}</span>
                 <span className="groups-signal-l">Groups tracked</span>
               </div>
               <div className="groups-signal-stat">
-                <span className="groups-signal-n">{totalCracks || "—"}</span>
+                <span className="groups-signal-n">{totalCracks ? `${totalCracks}${suffix}` : "—"}</span>
                 <span className="groups-signal-l">Cracks tracked</span>
               </div>
               <div className="groups-signal-stat">

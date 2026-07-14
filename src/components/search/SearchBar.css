@@ -1,8 +1,17 @@
+.searchbar-aura {
+  --aura-radius: var(--pill);
+  width: fit-content;
+}
+
 .searchbar {
   position: relative;
   display: flex;
   align-items: center;
   color: var(--ink-3);
+  border-radius: var(--pill);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(var(--aura-blur));
+  -webkit-backdrop-filter: blur(var(--aura-blur));
 }
 
 .searchbar svg {
@@ -16,8 +25,8 @@
 
 .searchbar input {
   height: 40px;
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
+  background: none;
+  border: none;
   border-radius: var(--pill);
   color: var(--ink);
   font-size: 0.9rem;
@@ -25,8 +34,7 @@
   padding: 0 16px 0 38px;
   width: 220px;
   outline: none;
-  transition: width var(--dur) var(--ease), border-color var(--dur) var(--ease), background var(--dur) var(--ease),
-    box-shadow var(--dur) var(--ease);
+  transition: width var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
 }
 
 .searchbar input::placeholder {
@@ -36,8 +44,6 @@
 
 .searchbar input:focus {
   width: 320px;
-  background: var(--glass-bg-strong);
-  border-color: var(--accent-dim-2);
   box-shadow: 0 0 0 4px var(--accent-dim);
 }
 
@@ -48,9 +54,7 @@
 
 .searchbar-popover {
   width: min(380px, 90vw);
-  background: linear-gradient(var(--glass-bg-strong), var(--glass-bg-strong)), var(--bg-2);
-  backdrop-filter: blur(var(--glass-blur-strong)) saturate(180%);
-  -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(180%);
+  background: var(--bg-1);
   border: 1px solid var(--glass-border-strong);
   border-radius: var(--r-md);
   box-shadow: var(--glass-shadow-lg);

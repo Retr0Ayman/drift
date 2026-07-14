@@ -1,69 +1,44 @@
-/* ==========================================================================
-   Orvyn design tokens — dark Liquid Glass
-   Deliberate commitment, not a default: near-black graphite base (never
-   pure #000, which flattens depth and reads generic), warm-white ink
-   inheriting the old palette's espresso/cream warmth just inverted, one
-   bright signal-cyan accent. The four functional status colors
-   (green/orange/purple/red) are reserved for crack-status meaning only --
-   never reused as UI chrome, so status always reads unambiguously. This is
-   the register real "Liquid Glass" lives in -- visionOS, iOS Control
-   Center, macOS -- glass only reads as glass with real light and motion
-   behind it, which a near-black ground makes far more legible than a pale
-   one ever could.
-   ========================================================================== */
+/* orlaz design tokens — light paper base, aura glass reserved for a few spots */
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 
-  /* -------- surfaces -------- */
-  --bg-0: #0a0b0f; /* page base -- deep graphite, not flat black */
-  --bg-1: #15161d; /* raised base, pre-glass */
-  --bg-2: #1c1e27; /* further raised */
+  --bg-0: #f7f5f0;
+  --bg-1: #ffffff;
+  --bg-2: #efece4;
 
-  /* -------- ink -------- */
-  --ink: #f4efe6; /* warm white -- the old --bg-0 cream, inverted to text */
-  --ink-2: rgba(244, 239, 230, 0.7);
-  --ink-3: rgba(244, 239, 230, 0.48);
-  --ink-4: rgba(244, 239, 230, 0.16);
+  --ink: #17150f;
+  --ink-2: rgba(23, 21, 15, 0.68);
+  --ink-3: rgba(23, 21, 15, 0.45);
+  --ink-4: rgba(23, 21, 15, 0.14);
 
-  /* -------- accent: signal cyan --------
-     Hue-distant from every functional status color on purpose -- it must
-     never be mistaken for a status. Brightened from the light-theme teal
-     for real glow on a near-black ground. Used sparingly: focus rings,
-     links, the live-sync pip, the odd highlighted number. */
-  --accent: #2de2d1;
-  --accent-ink: #06201c; /* text-on-accent, for solid accent buttons */
-  --accent-dim: rgba(45, 226, 209, 0.14);
-  --accent-dim-2: rgba(45, 226, 209, 0.26);
-  --accent-glow: rgba(45, 226, 209, 0.5);
+  --accent: #17150f;
+  --accent-ink: #f7f5f0;
+  --accent-dim: rgba(23, 21, 15, 0.06);
+  --accent-dim-2: rgba(23, 21, 15, 0.1);
 
-  /* -------- functional status colors (reserved, do not repurpose) --------
-     Brightened from the light-theme values for AA contrast against the
-     graphite base; same hues, same meaning. */
-  --hv: #b072f5; /* hypervisor */
-  --trad: #2de2d1; /* traditional crack -- shares the accent hue deliberately */
-  --dead: #3ddc97; /* cracked / bypassed */
-  --out: #ff9d4d; /* outdated */
-  --unc: #ff6f61; /* uncracked */
-  --unv: #a79c8c; /* unverified / unreleased -- warm-tinted grey, not cool */
+  /* functional status colors -- reserved, do not repurpose as chrome */
+  --hv: #6b4fa0;
+  --trad: #1f7a6c;
+  --dead: #2f7a4f;
+  --out: #b5602a;
+  --unc: #a13f34;
+  --unv: #7a7263;
 
-  /* -------- liquid glass --------
-     Light-tinted overlays on a dark ground (not the old warm-cream
-     overlays inverted, which would just look muddy) -- low alpha so the
-     moving ambient background genuinely shows through, real black shadows
-     for depth instead of the old warm-brown ones that made no sense once
-     the ground itself went dark. */
-  --glass-bg: rgba(255, 255, 255, 0.05);
-  --glass-bg-strong: rgba(255, 255, 255, 0.09);
-  --glass-border: rgba(255, 255, 255, 0.09);
-  --glass-border-strong: rgba(255, 255, 255, 0.17);
-  --glass-highlight: rgba(255, 255, 255, 0.16);
-  --glass-blur: 28px;
-  --glass-blur-strong: 42px;
-  --glass-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.07);
-  --glass-shadow-lg: 0 28px 70px -14px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.09);
+  /* flat card surfaces -- hairline border, minimal shadow, no blur */
+  --glass-bg: rgba(23, 21, 15, 0.04);
+  --glass-bg-strong: rgba(23, 21, 15, 0.07);
+  --glass-border: rgba(23, 21, 15, 0.12);
+  --glass-border-strong: rgba(23, 21, 15, 0.2);
+  --glass-shadow: 0 1px 2px rgba(23, 21, 15, 0.06);
+  --glass-shadow-lg: 0 2px 8px rgba(23, 21, 15, 0.08);
 
-  /* -------- type -------- */
-  --font: -apple-system, "SF Pro Display", "SF Pro Text", system-ui, Inter, "Segoe UI", sans-serif;
+  /* aura ring -- reserved for the search bar and one hero stat panel per page */
+  --aura-a: #6b4fa055;
+  --aura-b: #1f7a6c55;
+  --aura-blur: 10px;
+
+  --font-display: ui-serif, Georgia, "Iowan Old Style", "Times New Roman", serif;
+  --font: -apple-system, system-ui, Inter, "Segoe UI", sans-serif;
   --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
 
   --fs-hero: clamp(2.75rem, 3.2rem + 3.6vw, 6rem);
@@ -75,18 +50,15 @@
   --fs-xs: 0.75rem;
   --fs-2xs: 0.6875rem;
 
-  /* -------- radii -------- */
-  --r-lg: 28px;
-  --r-md: 18px;
-  --r-sm: 13px;
+  --r-lg: 8px;
+  --r-md: 6px;
+  --r-sm: 4px;
   --pill: 999px;
 
-  /* -------- motion -------- */
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
   --dur-fast: 160ms;
   --dur: 280ms;
   --dur-slow: 480ms;
 
-  /* -------- layout -------- */
   --wrap: 1180px;
 }

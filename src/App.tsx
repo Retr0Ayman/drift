@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Routes, Route, Outlet } from "react-router-dom";
 import Navbar from "./components/layout/Navbar";
 import Footer from "./components/layout/Footer";
@@ -15,11 +16,13 @@ import type { CatalogContextValue } from "./hooks/useCatalog";
 
 function Layout() {
   const catalog = useLiveCatalog();
+  const [introDone, setIntroDone] = useState(false);
   const context: CatalogContextValue = {
     games: catalog.games,
     status: catalog.status,
     loading: catalog.loading,
     hasMore: catalog.hasMore,
+    totalPages: catalog.totalPages,
     loadMore: catalog.loadMore,
     mergeOne: catalog.mergeOne,
     archiveMonth: catalog.archiveMonth,
@@ -28,8 +31,13 @@ function Layout() {
 
   return (
     <>
-      <IntroAnimation />
-      <Navbar games={catalog.games} status={catalog.status} onLiveGameResolved={catalog.mergeOne} />
+      <IntroAnimation onDone={() => setIntroDone(true)} />
+      <Navbar
+        games={catalog.games}
+        status={catalog.status}
+        onLiveGameResolved={catalog.mergeOne}
+        revealBrandO={introDone}
+      />
       <main className="page-content">
         <Outlet context={context} />
       </main>

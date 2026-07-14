@@ -6,41 +6,27 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  /* Deliberately the deepest surface available, not tied 1:1 to --bg-0 --
-     the intro should always read as "darker than the page it reveals,"
-     which holds true under the current dark theme and would still hold if
-     the palette ever changes again. */
-  background: #050609;
+  background: var(--bg-0);
   cursor: pointer;
 }
 
-.intro-mark {
-  width: 120px;
-  height: 120px;
-  border-radius: 34px;
-  display: grid;
-  place-items: center;
-  background: var(--ink);
-  color: #050609;
-  box-shadow: 0 40px 80px -30px rgba(0, 0, 0, 0.7), 0 0 60px -10px var(--accent-glow);
-  will-change: transform;
+.intro-word-row {
+  display: flex;
+  align-items: baseline;
 }
 
-.intro-mark svg {
-  width: 64px;
-  height: 64px;
-}
-
-.intro-word {
-  margin-top: 30px;
+.intro-o,
+.intro-rest {
+  font-size: clamp(4rem, 3rem + 8vw, 9rem);
   font-weight: 800;
-  font-size: 2.6rem;
-  letter-spacing: 3px;
+  font-family: var(--font);
+  letter-spacing: -3px;
   color: var(--ink);
+  line-height: 1;
 }
 
 .intro-sub {
-  margin-top: 8px;
+  margin-top: 18px;
   font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 3px;
@@ -56,8 +42,8 @@
   font-weight: 600;
   letter-spacing: 0.4px;
   color: var(--ink-3);
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
   border-radius: var(--pill);
   padding: 8px 16px;
   cursor: pointer;
@@ -65,23 +51,13 @@
 }
 
 .intro-skip:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--glass-bg-strong);
   color: var(--ink);
 }
 
 @media (max-width: 520px) {
-  .intro-mark {
-    width: 92px;
-    height: 92px;
-    border-radius: 26px;
-  }
-
-  .intro-mark svg {
-    width: 48px;
-    height: 48px;
-  }
-
-  .intro-word {
-    font-size: 2rem;
+  .intro-o,
+  .intro-rest {
+    font-size: clamp(2.8rem, 2rem + 10vw, 5rem);
   }
 }

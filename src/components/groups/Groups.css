@@ -42,6 +42,12 @@
   line-height: 1.6;
 }
 
+.groups-caveat {
+  margin-top: 10px;
+  font-size: 0.84rem;
+  color: var(--ink-3);
+}
+
 .groups-signal {
   padding: 24px 26px;
 }
@@ -140,9 +146,9 @@
 }
 
 .group-card:hover {
-  transform: translateY(-8px) scale(1.015);
+  transform: translateY(-4px);
   border-color: var(--glass-border-strong);
-  box-shadow: 0 30px 60px -22px rgba(0, 0, 0, 0.65), 0 0 0 1px var(--accent-dim), var(--glass-shadow);
+  box-shadow: 0 14px 24px -10px rgba(23, 21, 15, 0.14), var(--glass-shadow-lg);
 }
 
 .group-card--starred {

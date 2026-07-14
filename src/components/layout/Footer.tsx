@@ -4,7 +4,7 @@ export default function Footer() {
   return (
     <footer className="footer wrap">
       <div>
-        Orvyn by DaRealAyman · status &amp; build tracker, not a mirror.
+        orlaz by DaRealAyman · status &amp; build tracker, not a mirror.
         <br />
         Metadata: Steam Store API · Groups: xREL API · Builds: SteamDB/steamcmd. News sources only — no
         downloads, files or manifests.

@@ -53,12 +53,9 @@ export default function Hero({ games }: { games: Game[] }) {
             <DriftMark />
           </motion.div>
           <motion.h1 className="hero-word" {...fadeUp(0.15)}>
-            Orvyn
+            orlaz
           </motion.h1>
-          <motion.p className="hero-tag" {...fadeUp(0.3)}>
-            Crack · build · version tracker
-          </motion.p>
-          <motion.p className="hero-desc" {...fadeUp(0.4)}>
+          <motion.p className="hero-desc" {...fadeUp(0.35)}>
             Live crack, build and version status for PC games — hypervisor and traditional cracks side by
             side, flagged the moment either falls behind the latest patch.
           </motion.p>
@@ -71,7 +68,7 @@ export default function Hero({ games }: { games: Game[] }) {
         </div>
 
         <motion.div className="hero-secondary" {...fadeUp(0.5)}>
-          <GlassPanel strong className="hero-signal">
+          <GlassPanel aura className="hero-signal">
             <DriftGlyph className="hero-signal-glyph" />
             <div className="hero-signal-head">Live signal</div>
             <div className="hero-signal-grid">

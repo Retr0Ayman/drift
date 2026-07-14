@@ -94,23 +94,25 @@ export default function SearchBar({ games, onLiveGameResolved }: SearchBarProps)
   return (
     <Popover.Root open={showPopover} onOpenChange={(o) => setOpen(o)}>
       <Popover.Anchor asChild>
-        <div className="searchbar">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="11" cy="11" r="7" />
-            <path d="m20 20-3.5-3.5" />
-          </svg>
-          <input
-            placeholder="Search titles, groups, publishers…"
-            aria-label="Search titles"
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setOpen(true);
-              setActiveIndex(-1);
-            }}
-            onFocus={() => setOpen(true)}
-            onKeyDown={onKeyDown}
-          />
+        <div className="aura-ring searchbar-aura">
+          <div className="searchbar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="11" cy="11" r="7" />
+              <path d="m20 20-3.5-3.5" />
+            </svg>
+            <input
+              placeholder="Search titles, groups, publishers…"
+              aria-label="Search titles"
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setOpen(true);
+                setActiveIndex(-1);
+              }}
+              onFocus={() => setOpen(true)}
+              onKeyDown={onKeyDown}
+            />
+          </div>
         </div>
       </Popover.Anchor>
       <Popover.Portal>

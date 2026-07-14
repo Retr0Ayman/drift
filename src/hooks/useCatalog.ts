@@ -7,6 +7,7 @@ export interface CatalogContextValue {
   status: CatalogStatus;
   loading: boolean;
   hasMore: boolean;
+  totalPages: number | null;
   loadMore: () => Promise<void>;
   mergeOne: (game: Game) => void;
   archiveMonth: string | null;

@@ -41,7 +41,6 @@
   z-index: -1;
   border-radius: var(--pill);
   background: var(--accent);
-  box-shadow: 0 4px 16px -4px var(--accent-glow);
 }
 
 .seg-label {

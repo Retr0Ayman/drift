@@ -10,11 +10,9 @@
   position: absolute;
   border-radius: 50%;
   will-change: transform;
-  /* Light-on-black, not paint-on-black -- screen blending lets overlapping
-     blobs brighten and mix into new hues (cyan+violet -> pale aqua-white)
-     the way real light sources would, instead of just stacking flat
-     translucent discs on top of a dark ground. */
-  mix-blend-mode: screen;
+  /* Multiply, not screen -- on paper-light this tints subtly toward the
+     aura hues instead of washing out to white. */
+  mix-blend-mode: multiply;
 }
 
 .ambient-blob--a {
@@ -22,7 +20,7 @@
   left: -12%;
   width: 62vmax;
   height: 62vmax;
-  background: radial-gradient(circle at 50% 50%, rgba(45, 226, 209, 0.3), rgba(45, 226, 209, 0) 70%);
+  background: radial-gradient(circle at 50% 50%, rgba(31, 122, 108, 0.05), rgba(31, 122, 108, 0) 70%);
   animation: ambient-drift-a 38s ease-in-out infinite;
 }
 
@@ -31,7 +29,7 @@
   right: -14%;
   width: 66vmax;
   height: 66vmax;
-  background: radial-gradient(circle at 50% 50%, rgba(176, 114, 245, 0.24), rgba(176, 114, 245, 0) 72%);
+  background: radial-gradient(circle at 50% 50%, rgba(107, 79, 160, 0.045), rgba(107, 79, 160, 0) 72%);
   animation: ambient-drift-b 44s ease-in-out infinite;
   animation-delay: -14s;
 }
@@ -41,7 +39,7 @@
   left: 38%;
   width: 48vmax;
   height: 48vmax;
-  background: radial-gradient(circle at 50% 50%, rgba(255, 157, 77, 0.14), rgba(255, 157, 77, 0) 70%);
+  background: radial-gradient(circle at 50% 50%, rgba(181, 96, 42, 0.035), rgba(181, 96, 42, 0) 70%);
   animation: ambient-drift-c 50s ease-in-out infinite;
   animation-delay: -27s;
 }
