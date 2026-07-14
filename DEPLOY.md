@@ -93,7 +93,41 @@ Anything under `/api/` that isn't one of the routes above returns a `404` JSON b
   touch secrets; the NFO route just 501s locally the same way it does in prod
   without secrets configured.
 
-## 5. Optional: curated build-id refresh (`status.json` path)
+## 5. Optional: Discord alerts on new releases
+
+`worker/scheduled.ts` runs on a Cron Trigger (`wrangler.jsonc` → `triggers.crons`,
+every 15 minutes) and posts a Discord embed for genuinely new cracks — the main
+Windows browse feed's first page plus each starred P2P group's full history,
+diffed against a `SEEN_RELEASES` KV namespace so the same release never gets
+re-posted. It's already deployed as code but **inert** until both of the
+following manual, non-scriptable steps are done — until then it silently no-ops
+every time the cron fires, it does not error.
+
+**A. Create the KV namespace** (needs a Cloudflare login):
+```
+wrangler kv namespace create SEEN_RELEASES
+```
+That prints an `id`. Add it to `wrangler.jsonc`:
+```jsonc
+"kv_namespaces": [{ "binding": "SEEN_RELEASES", "id": "<the id it printed>" }]
+```
+
+**B. Create a Discord webhook and set the secret:**
+1. In your Discord server: channel → Edit Channel → Integrations → Webhooks →
+   New Webhook → copy its URL.
+2. Dashboard → Workers & Pages → `drift` → Settings → Variables and Secrets → add
+   `DISCORD_WEBHOOK_URL` with that URL, marked **Secret**. Never committed to
+   git, never pasted in chat.
+
+Then `npm run deploy` again so the new `kv_namespaces` binding takes effect.
+
+The very first time the cron fires after both are configured, it seeds
+`SEEN_RELEASES` with everything currently visible **without** alerting on any
+of it — otherwise that first tick would post one alert per release already
+sitting in the catalog, which isn't "new." Every tick after that only alerts on
+releases it hasn't seen before.
+
+## 6. Optional: curated build-id refresh (`status.json` path)
 
 Unchanged, untouched by this migration, and not the primary data path (the live
 xREL feed is). Only relevant if the app is ever pointed at `STATUS_FEED` instead of
@@ -113,3 +147,4 @@ the live path:
 | xREL release list, search, P2P group lookup, drift detection | free, no key | none |
 | xREL NFO images | free | optional, needs an xREL-approved Consumer Key/Secret — skip it, ASCII `.nfo` is permanent |
 | build-id refresh (curated path) | free (GitHub Actions minutes) | none |
+| Discord new-release alerts | free (KV free tier) | one-time: create the KV namespace + a Discord webhook, set `DISCORD_WEBHOOK_URL` — see section 5 |

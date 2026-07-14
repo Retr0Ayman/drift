@@ -15,6 +15,7 @@ import { handleFaq } from "./routes/faq";
 import { handleFx } from "./routes/fx";
 import { handleSummary } from "./routes/summary";
 import { handleSearchAssist } from "./routes/searchAssist";
+import { runScheduledAlert } from "./scheduled";
 
 /* This is a Worker with static assets (wrangler.jsonc `main` + `assets`), not
    classic Cloudflare Pages -- confirmed live: the workers.dev domain and
@@ -55,5 +56,12 @@ export default {
     }
 
     return env.ASSETS.fetch(request);
+  },
+
+  // Discord new-release alerts (see wrangler.jsonc's `triggers.crons` and
+  // worker/scheduled.ts) -- waitUntil so the invocation doesn't get torn
+  // down before the KV writes and webhook POST finish.
+  async scheduled(_event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
+    ctx.waitUntil(runScheduledAlert(env));
   },
 };
