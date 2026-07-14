@@ -4,6 +4,7 @@ import type { Game } from "../../types/game";
 import { useCatalog } from "../../hooks/useCatalog";
 import Carousel from "./Carousel";
 import ReleaseCard from "./ReleaseCard";
+import VersionPicker from "./VersionPicker";
 import DlcRow from "./DlcRow";
 import FaqSection from "./FaqSection";
 import GameFact from "./GameFact";
@@ -278,6 +279,12 @@ export default function GameDetail() {
               </div>
             </div>
           </GlassPanel>
+
+          {releases.length ? (
+            <GlassPanel className="side-panel">
+              <VersionPicker releases={releases} />
+            </GlassPanel>
+          ) : null}
 
           <GlassPanel className="side-panel side-actions">
             <a className="btn btn--accent" href={steamLink(mergedGame)} target="_blank" rel="noopener noreferrer">
