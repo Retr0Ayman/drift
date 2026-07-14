@@ -52,7 +52,14 @@ export const handleXrelGroup: Handler = async ({ request }) => {
   async function fetchPage(page: number): Promise<Response> {
     const api =
       "https://api.xrel.to/v2/search/releases.json?q=" + enc(name) + "&scene=1&p2p=1&per_page=100&page=" + page;
-    const opts = { cf: { cacheTtl: 900, cacheEverything: true } } as RequestInit;
+    // Shorter than the 900s every other xREL route in this file's siblings
+    // uses -- deliberately, not an oversight. This is the only route P2P
+    // crack freshness depends on (P2P groups never appear in the browse/
+    // archive feeds those other routes serve), and a release showing up
+    // under an hour late defeats the point of a tracker whose whole job is
+    // "did this crack drop yet." 300s caps real-world staleness to 5
+    // minutes instead of 15, at a still-reasonable cost in upstream calls.
+    const opts = { cf: { cacheTtl: 300, cacheEverything: true } } as RequestInit;
     const first = await fetch(api, opts);
     if (first.ok) return first;
     await new Promise((res) => setTimeout(res, 400));
@@ -95,6 +102,8 @@ export const handleXrelGroup: Handler = async ({ request }) => {
   // request retries for real instead of replaying the same failure. A
   // genuinely empty result (upstream responded fine, just found nothing)
   // still caches normally -- that's real data, not a symptom of failure.
-  const maxage = upstreamFailed ? 20 : 900;
+  // Success TTL matches the shortened upstream cacheTtl above (300s) so the
+  // response callers receive is never staler than the fetch that built it.
+  const maxage = upstreamFailed ? 20 : 300;
   return json({ list: [...seen.values()] }, maxage);
 };
