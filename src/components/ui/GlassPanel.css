@@ -12,7 +12,7 @@
 
 .glass-panel--aura {
   border-radius: calc(var(--aura-radius) - 1.5px);
-  background: rgba(255, 255, 255, 0.85);
+  background: var(--aura-panel-bg);
   backdrop-filter: blur(var(--aura-blur));
   -webkit-backdrop-filter: blur(var(--aura-blur));
   border: none;
