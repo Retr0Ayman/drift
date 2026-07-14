@@ -76,18 +76,18 @@ export default function Hero({ games }: { games: Game[] }) {
             <div className="hero-signal-head">Live signal</div>
             <div className="hero-signal-grid">
               <div className="hero-signal-stat">
-                <span className="hero-signal-n">{stats.total || "—"}</span>
+                <span className="hero-signal-n">{stats.total ? stats.total : "—"}</span>
                 <span className="hero-signal-l">Titles tracked</span>
               </div>
               <div className="hero-signal-stat">
                 <span className="hero-signal-n" style={{ color: "var(--hv)" }}>
-                  {stats.hv || "—"}
+                  {stats.total ? stats.hv : "—"}
                 </span>
                 <span className="hero-signal-l">Hypervisor cracks</span>
               </div>
               <div className="hero-signal-stat">
                 <span className="hero-signal-n" style={{ color: "var(--out)" }}>
-                  {stats.outdated || "—"}
+                  {stats.total ? stats.outdated : "—"}
                 </span>
                 <span className="hero-signal-l">Currently outdated</span>
               </div>

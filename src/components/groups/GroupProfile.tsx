@@ -169,6 +169,7 @@ export default function GroupProfile() {
               kind="group"
               cacheKey={key || name}
               name={name}
+              ready={!loading}
               facts={{
                 "Releases tracked": rows.length,
                 Leaning: isRepackGroupProfile ? "Repack group" : `${leaning}-leaning`,

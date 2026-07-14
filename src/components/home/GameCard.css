@@ -95,6 +95,26 @@
   margin-top: 13px;
 }
 
+/* Real status dot, not a text glyph -- a bare "?" or "◆" character stuck
+   after the group name read as a typo at a glance, even with a tooltip.
+   This matches the same current/outdated/unverified dot language already
+   used in the release-card legend on the game detail page. */
+.method-status-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex: none;
+  font-style: normal;
+}
+
+.method-status-dot--out {
+  background: var(--out);
+}
+
+.method-status-dot--unv {
+  background: var(--unv);
+}
+
 .game-card-crack {
   display: flex;
   justify-content: space-between;

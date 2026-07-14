@@ -13,6 +13,7 @@ import { handleXrelGroup } from "./routes/xrel/group";
 import { handleFaq } from "./routes/faq";
 import { handleFx } from "./routes/fx";
 import { handleSummary } from "./routes/summary";
+import { handleSearchAssist } from "./routes/searchAssist";
 
 /* This is a Worker with static assets (wrangler.jsonc `main` + `assets`), not
    classic Cloudflare Pages -- confirmed live: the workers.dev domain and
@@ -33,6 +34,7 @@ const ROUTES: Record<string, Handler> = {
   "/api/faq": handleFaq,
   "/api/fx": handleFx,
   "/api/summary": handleSummary,
+  "/api/search-assist": handleSearchAssist,
 };
 
 export default {

@@ -27,6 +27,7 @@ export default function PublishersDirectory() {
   const visible = country ? aaaFiltered.filter((e) => e.country === country) : aaaFiltered;
   const taggedCount = idx.filter((e) => e.country).length;
   const aaaCount = idx.filter((e) => e.aaa).length;
+  const topByVolume = idx[0];
 
   return (
     <div className="wrap publishers-page">
@@ -34,15 +35,39 @@ export default function PublishersDirectory() {
         ‹ All titles
       </button>
       <Reveal>
-        <div className="publishers-head">
-          <span className="publishers-eyebrow">Publishers</span>
-          <h1>Every publisher Orvyn is tracking</h1>
-          <p className="publishers-lede">
-            AAA publishers sort to the top and carry a distinct badge — a curated tier list, not a size/revenue
-            API. Real icons where we have a verified company domain; a plain initials badge everywhere else —
-            never a guessed image. Region tags are a curated HQ mapping too: a publisher either has a confirmed
-            HQ country below, or it's plainly marked "region unknown" — it never gets guessed onto the map.
-          </p>
+        <div className="publishers-hero">
+          <div className="publishers-hero-main">
+            <span className="publishers-eyebrow">Publishers</span>
+            <h1>Every publisher Orvyn is tracking</h1>
+            <p className="publishers-lede">
+              AAA publishers sort to the top and carry a distinct badge — a curated tier list, not a
+              size/revenue API. Real icons where we have a verified company domain; a plain initials badge
+              everywhere else — never a guessed image.
+            </p>
+          </div>
+          <GlassPanel strong className="publishers-signal">
+            <div className="publishers-signal-head">Directory signal</div>
+            <div className="publishers-signal-grid">
+              <div className="publishers-signal-stat">
+                <span className="publishers-signal-n">{idx.length || "—"}</span>
+                <span className="publishers-signal-l">Publishers tracked</span>
+              </div>
+              <div className="publishers-signal-stat">
+                <span className="publishers-signal-n" style={{ color: "var(--accent)" }}>
+                  {aaaCount || "—"}
+                </span>
+                <span className="publishers-signal-l">AAA tier</span>
+              </div>
+              <div className="publishers-signal-stat">
+                <span className="publishers-signal-n">{taggedCount || "—"}</span>
+                <span className="publishers-signal-l">Confirmed HQ region</span>
+              </div>
+              <div className="publishers-signal-stat">
+                <span className="publishers-signal-n publishers-signal-n--sm">{topByVolume?.name || "—"}</span>
+                <span className="publishers-signal-l">Most tracked</span>
+              </div>
+            </div>
+          </GlassPanel>
         </div>
       </Reveal>
 

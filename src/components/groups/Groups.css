@@ -2,9 +2,20 @@
   padding: 24px 24px 96px;
 }
 
-.groups-head {
-  margin-top: 12px;
-  max-width: 68ch;
+/* Asymmetric header, same register as the homepage hero -- big type on one
+   side, a real live-data panel on the other, instead of a centered block
+   of text sitting above a plain card grid. */
+.groups-hero {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 40px;
+  align-items: center;
+  margin-top: 20px;
+  margin-bottom: 40px;
+}
+
+.groups-hero-main {
+  max-width: 64ch;
 }
 
 .groups-eyebrow {
@@ -16,7 +27,7 @@
   text-transform: uppercase;
 }
 
-.groups-head h1 {
+.groups-hero-main h1 {
   font-size: var(--fs-h1);
   font-weight: 800;
   letter-spacing: -1.5px;
@@ -31,18 +42,67 @@
   line-height: 1.6;
 }
 
-.groups-scoped {
-  font-size: 0.78rem;
+.groups-signal {
+  padding: 24px 26px;
+}
+
+.groups-signal-head {
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
   color: var(--ink-3);
+  margin-bottom: 16px;
+}
+
+.groups-signal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px 16px;
+}
+
+.groups-signal-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.groups-signal-n {
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.groups-signal-l {
+  font-size: 0.66rem;
   font-weight: 600;
-  margin-top: 14px;
+  color: var(--ink-3);
+}
+
+.groups-signal-foot {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--glass-border);
+  font-size: 0.78rem;
+  color: var(--ink-2);
+}
+
+.groups-signal-foot strong {
+  color: var(--ink);
+}
+
+@media (max-width: 900px) {
+  .groups-hero {
+    grid-template-columns: 1fr;
+  }
 }
 
 .groups-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-  gap: 16px;
-  margin-top: 28px;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 18px;
 }
 
 .group-card {
@@ -99,14 +159,32 @@
 .group-count {
   font-size: 0.74rem;
   color: var(--ink-2);
-  margin-top: 12px;
+  margin-top: 3px;
   font-weight: 600;
+}
+
+/* Real HV/traditional method split for this group, not decoration -- a
+   thin two-tone bar (hv color fills its real percentage, the rest is the
+   card's own background showing through as "traditional"). */
+.group-mix {
+  height: 4px;
+  border-radius: var(--pill);
+  background: color-mix(in srgb, var(--trad) 22%, transparent);
+  margin-top: 14px;
+  overflow: hidden;
+}
+
+.group-mix-hv {
+  display: block;
+  height: 100%;
+  background: var(--hv);
+  border-radius: var(--pill);
 }
 
 .group-last {
   font-size: 0.68rem;
   color: var(--ink-3);
-  margin-top: 5px;
+  margin-top: 10px;
   font-weight: 500;
 }
 

@@ -31,17 +31,16 @@ export default function GameCard({ game }: { game: Game }) {
             {releases.length ? (
               releases.map((r, i) => {
                 const st = relStatus(game, r);
-                const marker = st === "out" ? " ◆" : st === "unv" ? " ?" : "";
                 const markerTitle =
                   st === "out"
                     ? "Outdated — this crack build trails the latest Steam build"
                     : st === "unv"
                       ? "Unverified — no confirmed crack build number for this release yet"
-                      : undefined;
+                      : "Current — matches or beats the latest Steam build";
                 return (
                   <Pill key={i} tone={r.method} title={markerTitle}>
                     {r.method === "hv" ? "HV" : "TRAD"} · {r.group}
-                    {marker}
+                    {st !== "cur" ? <i className={`method-status-dot method-status-dot--${st}`} /> : null}
                   </Pill>
                 );
               })

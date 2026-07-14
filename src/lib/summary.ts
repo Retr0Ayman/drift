@@ -1,4 +1,9 @@
-const CACHE_PREFIX = "drift.summary.";
+// v2: bumped to invalidate summaries generated before the ready-gating fix
+// (AiSummary used to fire on route-param-derived keys alone, so a group's
+// summary was frequently generated from a still-loading, artificially low
+// release count -- confirmed live on DenuvOwO). Old v1 entries are just
+// dead keys now, not actively cleaned up, but never read again.
+const CACHE_PREFIX = "drift.summary.v2.";
 
 export interface SummaryResult {
   summary: string | null;

@@ -43,15 +43,32 @@ export const handleXrelGroup: Handler = async ({ request }) => {
   if (!name) return json({ error: "pass ?name=<group>" }, 60, 400);
   const target = name.toLowerCase();
 
-  const seen = new Map<string, RawXrelRelease>();
-  for (let page = 1; page <= MAX_PAGES; page++) {
+  // Confirmed live: xREL's search intermittently returns a non-OK response
+  // under load -- this route gets hit far more often now that the catalog
+  // proactively seeds starred groups on every page load, not just when
+  // someone opens a group profile. One retry after a brief pause recovers
+  // most of these without meaningfully slowing down the common case (only
+  // the failing page pays the extra round trip).
+  async function fetchPage(page: number): Promise<Response> {
     const api =
-      "https://api.xrel.to/v2/search/releases.json?q=" +
-      enc(name) +
-      "&scene=1&p2p=1&per_page=100&page=" +
-      page;
-    const r = await fetch(api, { cf: { cacheTtl: 900, cacheEverything: true } } as RequestInit);
-    if (!r.ok) break;
+      "https://api.xrel.to/v2/search/releases.json?q=" + enc(name) + "&scene=1&p2p=1&per_page=100&page=" + page;
+    const opts = { cf: { cacheTtl: 900, cacheEverything: true } } as RequestInit;
+    const first = await fetch(api, opts);
+    if (first.ok) return first;
+    await new Promise((res) => setTimeout(res, 400));
+    return fetch(api, opts);
+  }
+
+  const seen = new Map<string, RawXrelRelease>();
+  let upstreamFailed = false;
+  for (let page = 1; page <= MAX_PAGES; page++) {
+    const r = await fetchPage(page);
+    if (!r.ok) {
+      // Page 1 failing must not be conflated with "this group genuinely has
+      // 0 releases" -- see the cache-TTL note below.
+      upstreamFailed = page === 1;
+      break;
+    }
     const data = (await r.json()) as SearchReleasesResponse;
     const pageItems = [...(data.results || []), ...(data.p2p_results || []).map(normalizeP2P)].filter(
       (rel) => (rel.group_name || "").toLowerCase() === target,
@@ -68,5 +85,16 @@ export const handleXrelGroup: Handler = async ({ request }) => {
     if (!addedNew) break;
   }
 
-  return json({ list: [...seen.values()] }, 900);
+  // FIX (confirmed live): this used to cache every response for 900s
+  // regardless of outcome, including a transient upstream failure that
+  // produces an empty list -- one xREL rate-limit hit would then get
+  // remembered as "this group has 0 releases" for the next 15 minutes,
+  // for every caller (both the group profile page and the catalog's
+  // background seed-merge), long after xREL itself had recovered. An empty
+  // result from a real upstream failure now gets a 20s TTL so the next
+  // request retries for real instead of replaying the same failure. A
+  // genuinely empty result (upstream responded fine, just found nothing)
+  // still caches normally -- that's real data, not a symptom of failure.
+  const maxage = upstreamFailed ? 20 : 900;
+  return json({ list: [...seen.values()] }, maxage);
 };

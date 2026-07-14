@@ -1,4 +1,4 @@
-import { useMemo, useState, type KeyboardEvent } from "react";
+import { useMemo, useState, type CSSProperties, type KeyboardEvent } from "react";
 import * as Popover from "@radix-ui/react-popover";
 import { useNavigate } from "react-router-dom";
 import { useAutocomplete, type Suggestion } from "../../hooks/useAutocomplete";
@@ -18,18 +18,20 @@ export default function SearchBar({ games, onLiveGameResolved }: SearchBarProps)
   const [activeIndex, setActiveIndex] = useState(-1);
   const [resolving, setResolving] = useState(false);
   const navigate = useNavigate();
-  const { results, loading } = useAutocomplete(query, games);
+  const { results, loading, assisted, assisting } = useAutocomplete(query, games);
   const intent = useMemo(() => parseSearchIntent(query), [query]);
-  const showPopover = open && (loading || resolving || results.length > 0 || !!intent);
+  const showPopover = open && (loading || resolving || assisting || results.length > 0 || !!intent || !!assisted);
 
   const localResults = results.filter((r) => r.kind === "local");
   const liveResults = results.filter((r) => r.kind === "live");
-  // Flat index across intent row + both groups, so arrow-key navigation
-  // still moves through every visible row in the order they're rendered.
+  const assistedResults = assisted?.results ?? [];
+  // Flat index across every visible row group, in render order, so
+  // arrow-key navigation moves through all of them in one sequence.
   const flat: Array<Suggestion | { kind: "intent" }> = [
     ...(intent ? [{ kind: "intent" as const }] : []),
     ...localResults,
     ...liveResults,
+    ...assistedResults,
   ];
 
   function closeAndReset() {
@@ -87,6 +89,7 @@ export default function SearchBar({ games, onLiveGameResolved }: SearchBarProps)
   }
 
   let rowCursor = -1;
+  let stagger = -1;
 
   return (
     <Popover.Root open={showPopover} onOpenChange={(o) => setOpen(o)}>
@@ -114,7 +117,10 @@ export default function SearchBar({ games, onLiveGameResolved }: SearchBarProps)
         {/* Open/close motion via Radix's own [data-state] CSS animation
             hooks (see SearchBar.css) -- Radix's Presence primitive already
             defers unmount until the exit animation finishes, no
-            forceMount/AnimatePresence wiring needed on top of it. */}
+            forceMount/AnimatePresence wiring needed on top of it. Each row
+            gets a small staggered fade-in (--i custom property driving a
+            per-row animation-delay) instead of the whole list popping in
+            as one flat block. */}
         <Popover.Content
           className="searchbar-popover"
           align="end"
@@ -123,7 +129,8 @@ export default function SearchBar({ games, onLiveGameResolved }: SearchBarProps)
         >
           {intent ? (
             <button
-              className={`searchbar-intent${(rowCursor += 1) === activeIndex ? " searchbar-item--active" : ""}`}
+              className={`searchbar-intent searchbar-row${(rowCursor += 1) === activeIndex ? " searchbar-item--active" : ""}`}
+              style={{ "--i": ++stagger } as CSSProperties}
               onMouseDown={(e) => e.preventDefault()}
               onClick={applyIntent}
             >
@@ -146,7 +153,8 @@ export default function SearchBar({ games, onLiveGameResolved }: SearchBarProps)
                 return (
                   <button
                     key={s.id}
-                    className={`searchbar-item${idx === activeIndex ? " searchbar-item--active" : ""}`}
+                    className={`searchbar-item searchbar-row${idx === activeIndex ? " searchbar-item--active" : ""}`}
+                    style={{ "--i": ++stagger } as CSSProperties}
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => selectSuggestion(s)}
                   >
@@ -167,7 +175,38 @@ export default function SearchBar({ games, onLiveGameResolved }: SearchBarProps)
                 return (
                   <button
                     key={s.id}
-                    className={`searchbar-item${idx === activeIndex ? " searchbar-item--active" : ""}`}
+                    className={`searchbar-item searchbar-row${idx === activeIndex ? " searchbar-item--active" : ""}`}
+                    style={{ "--i": ++stagger } as CSSProperties}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => selectSuggestion(s)}
+                  >
+                    <span className="searchbar-item-title">{s.title}</span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
+
+          {!loading && !resolving && assisting ? (
+            <div className="searchbar-status searchbar-status--thinking">
+              <span className="searchbar-thinking-dot" />
+              <span className="searchbar-thinking-dot" />
+              <span className="searchbar-thinking-dot" />
+              Thinking…
+            </div>
+          ) : null}
+
+          {!loading && !resolving && assisted && assistedResults.length ? (
+            <div className="searchbar-group">
+              <div className="searchbar-group-label">Did you mean “{assisted.label}”?</div>
+              {assistedResults.map((s) => {
+                rowCursor += 1;
+                const idx = rowCursor;
+                return (
+                  <button
+                    key={s.id}
+                    className={`searchbar-item searchbar-row${idx === activeIndex ? " searchbar-item--active" : ""}`}
+                    style={{ "--i": ++stagger } as CSSProperties}
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => selectSuggestion(s)}
                   >
