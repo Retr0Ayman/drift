@@ -16,6 +16,7 @@ import { handleFx } from "./routes/fx";
 import { handleSummary } from "./routes/summary";
 import { handleFact } from "./routes/fact";
 import { handleSearchAssist } from "./routes/searchAssist";
+import { handleSitemap } from "./routes/sitemap";
 import { runScheduledAlert } from "./scheduled";
 
 /* This is a Worker with static assets (wrangler.jsonc `main` + `assets`), not
@@ -56,6 +57,8 @@ export default {
         headers: { ...CORS, "Content-Type": "application/json" },
       });
     }
+
+    if (path === "/sitemap.xml") return handleSitemap({ request, env });
 
     return env.ASSETS.fetch(request);
   },

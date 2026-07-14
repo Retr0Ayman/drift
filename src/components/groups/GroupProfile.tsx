@@ -9,6 +9,7 @@ import GlassPanel from "../ui/GlassPanel";
 import Pill from "../ui/Pill";
 import Reveal from "../ui/Reveal";
 import AiSummary from "../ui/AiSummary";
+import { usePageMeta } from "../../hooks/usePageMeta";
 import "./Groups.css";
 
 interface DisplayRow {
@@ -106,6 +107,13 @@ export default function GroupProfile() {
 
   const rows = [...seedRows, ...liveExtraRows].sort((a, b) => b.ts - a.ts);
   const months = useMemo(() => groupByMonth(rows), [rows]);
+
+  usePageMeta({
+    title: displayName || "Group",
+    description: displayName
+      ? `${rows.length} tracked crack release${rows.length === 1 ? "" : "s"} from ${displayName}.`
+      : undefined,
+  });
 
   const [openMonths, setOpenMonths] = useState<Set<string>>(() => new Set([CURRENT_MONTH_KEY]));
   function toggleMonth(k: string) {

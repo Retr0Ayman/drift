@@ -6,6 +6,7 @@ import GlassPanel from "../ui/GlassPanel";
 import Reveal from "../ui/Reveal";
 import CompanyLogo from "./CompanyLogo";
 import WorldMap from "./WorldMap";
+import { usePageMeta } from "../../hooks/usePageMeta";
 import "./Publishers.css";
 
 export default function PublishersDirectory() {
@@ -13,6 +14,10 @@ export default function PublishersDirectory() {
   const { games, hasMore } = useCatalog();
   const idx = publishersIndex(games);
   const suffix = hasMore ? "+" : "";
+  usePageMeta({
+    title: "Publishers",
+    description: `${idx.length || "Every"}${suffix} publisher orlaz is tracking, AAA and indie alike.`,
+  });
   const [country, setCountry] = useState<string | null>(null);
   const [aaaOnly, setAaaOnly] = useState(false);
 

@@ -3,6 +3,7 @@ import { useCatalog } from "../../hooks/useCatalog";
 import { useWatchlist } from "../../hooks/useWatchlist";
 import GameCard from "../home/GameCard";
 import Reveal from "../ui/Reveal";
+import { usePageMeta } from "../../hooks/usePageMeta";
 import { anyOutdated, driftDelta } from "../../lib/format";
 import "./Watchlist.css";
 
@@ -18,6 +19,10 @@ export default function Watchlist() {
     .filter((g) => watched.includes(g.id))
     .sort((a, b) => Number(anyOutdated(b)) - Number(anyOutdated(a)));
   const outdatedCount = watchedGames.filter((g) => anyOutdated(g)).length;
+  usePageMeta({
+    title: "Your watchlist",
+    description: "Games you're tracking for crack/build drift, sorted with outdated ones first.",
+  });
 
   return (
     <div className="wrap watchlist-page">

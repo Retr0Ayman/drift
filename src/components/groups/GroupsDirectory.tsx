@@ -7,6 +7,7 @@ import { colorForName, fmtDateMs } from "../../lib/format";
 import GlassPanel from "../ui/GlassPanel";
 import Reveal from "../ui/Reveal";
 import SegmentedControl from "../ui/SegmentedControl";
+import { usePageMeta } from "../../hooks/usePageMeta";
 import "./Groups.css";
 
 type CategoryFilter = "all" | "p2p" | "scene";
@@ -16,6 +17,10 @@ export default function GroupsDirectory() {
   const { games, hasMore } = useCatalog();
   const { summaries } = useStarredGroupSummaries();
   const idx = groupsIndex(games, summaries);
+  usePageMeta({
+    title: "Scene & P2P groups",
+    description: `${idx.length || "Every"} cracking group orlaz is tracking, hypervisor and traditional alike.`,
+  });
   const totalCracks = idx.reduce((s, e) => s + e.count, 0);
   const totalHv = idx.reduce((s, e) => s + e.hv, 0);
   const starredCount = idx.filter((e) => e.starred).length;

@@ -6,12 +6,17 @@ import FilterBar from "./FilterBar";
 import Pagination from "../ui/Pagination";
 import { useCatalog } from "../../hooks/useCatalog";
 import { usePageSize } from "../../hooks/usePageSize";
+import { usePageMeta } from "../../hooks/usePageMeta";
 import { availableGenres, availableYears, passesFilters, sortGames, type SortKey, type StatusFilter } from "../../lib/filters";
 
 const VALID_STATUS: StatusFilter[] = ["all", "outdated", "hv", "trad", "uncracked", "unreleased"];
 
 export default function Home() {
   const { games, hasMore, loading, loadMore } = useCatalog();
+  usePageMeta({
+    title: "Crack, build & version tracker",
+    description: `Live crack and build status for ${games.length || "dozens of"} PC games — hypervisor and traditional cracks side by side.`,
+  });
   const [pageSize, setPageSize] = usePageSize(24);
   const [page, setPage] = useState(1);
   const [pendingPage, setPendingPage] = useState<number | null>(null);

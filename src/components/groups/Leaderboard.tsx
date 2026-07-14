@@ -4,6 +4,7 @@ import { useCatalog } from "../../hooks/useCatalog";
 import { buildLeaderboard } from "../../lib/leaderboard";
 import GlassPanel from "../ui/GlassPanel";
 import Reveal from "../ui/Reveal";
+import { usePageMeta } from "../../hooks/usePageMeta";
 import "./Leaderboard.css";
 
 type SortKey = "name" | "avg" | "fastest" | "count";
@@ -15,6 +16,10 @@ export default function Leaderboard() {
   const navigate = useNavigate();
   const { games } = useCatalog();
   const rows = useMemo(() => buildLeaderboard(games), [games]);
+  usePageMeta({
+    title: "Speed leaderboard — who cracks fastest",
+    description: "Cracking groups ranked by average days between a title's Steam release and their own crack.",
+  });
 
   // Fastest avg first by default -- ascending on avgDays, since a lower (or
   // more negative, an early leak) average is what "fastest" means here.

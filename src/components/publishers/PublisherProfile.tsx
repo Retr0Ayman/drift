@@ -6,6 +6,7 @@ import CompanyLogo from "./CompanyLogo";
 import Reveal from "../ui/Reveal";
 import AiSummary from "../ui/AiSummary";
 import GameCard from "../home/GameCard";
+import { usePageMeta } from "../../hooks/usePageMeta";
 import "./Publishers.css";
 
 export default function PublisherProfile() {
@@ -13,6 +14,13 @@ export default function PublisherProfile() {
   const navigate = useNavigate();
   const { games, status } = useCatalog();
   const matches = games.filter((g) => g.publisher && slugify(g.publisher) === key);
+
+  usePageMeta({
+    title: matches[0]?.publisher || "Publisher",
+    description: matches.length
+      ? `${matches.length} tracked title${matches.length === 1 ? "" : "s"} from ${matches[0].publisher}.`
+      : undefined,
+  });
 
   if (!matches.length) {
     return (

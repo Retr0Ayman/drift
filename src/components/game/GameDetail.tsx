@@ -11,6 +11,7 @@ import Pill from "../ui/Pill";
 import Reveal from "../ui/Reveal";
 import WatchToggle from "../ui/WatchToggle";
 import Tabs, { type TabDef } from "../ui/Tabs";
+import { usePageMeta } from "../../hooks/usePageMeta";
 import { bestBuild, driftDelta, fmtBuild, gStatus, sortReleasesByPriority, statusMeta, steamImg, steamLink, steamdbLink } from "../../lib/format";
 import "./GameDetail.css";
 
@@ -30,6 +31,12 @@ export default function GameDetail() {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [id]);
+
+  usePageMeta({
+    title: game?.title || "Title not found",
+    description: game?.desc || undefined,
+    image: game?.appid ? steamImg(game.appid, "header.jpg") : undefined,
+  });
 
   if (!game) {
     return (
