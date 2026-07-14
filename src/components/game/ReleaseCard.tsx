@@ -20,13 +20,6 @@ const FLAG_TONE: Record<string, PillTone> = {
   "likely-current": "dead",
   "likely-outdated": "unc",
 };
-const BUILD_COLOR: Record<string, string> = {
-  out: "var(--out)",
-  unv: "var(--unv)",
-  cur: "var(--accent)",
-  "likely-current": "var(--dead)",
-  "likely-outdated": "var(--unc)",
-};
 
 interface ReleaseCardProps {
   game: Game;
@@ -107,9 +100,15 @@ export default function ReleaseCard({ game, release, recencyStatus }: ReleaseCar
       <div className="release-data">
         <div className="release-datum">
           <span className="k">Crack build</span>
-          <span className="v" style={{ color: BUILD_COLOR[displayStatus] }}>
-            {fmtBuild(release.build)}
-          </span>
+          {/* A bare "—" here read as a rendering failure, not a real state --
+              most traditional scene dirnames never embed a Steam build id at
+              all (see parseBuildFromDirname's own comment), so build:null is
+              honest, common data, not missing data. Pill-styled to match the
+              "version label next to a build-number pill" reference look,
+              same tone the status pill above already uses for this state. */}
+          <Pill tone={FLAG_TONE[displayStatus]} className="release-build-pill">
+            {release.build != null ? fmtBuild(release.build) : "Unverified"}
+          </Pill>
         </div>
         <div className="release-datum">
           <span className="k">Version</span>
