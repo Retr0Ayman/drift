@@ -87,9 +87,19 @@ export function versionLabel(v?: string | null): string {
   return v;
 }
 
+/* FIX (confirmed live): this used to fold every release's build through
+   `|| 0` and take the max, so "no release has a confirmed build" (a real,
+   common case -- most traditional scene dirnames never embed a Steam build
+   id at all, see parseBuildFromDirname's own comment) came back as the
+   number 0 instead of null. fmtBuild(0) happens to render the same "—" as
+   fmtBuild(null) today, but it silently conflated two different states
+   ("we have releases, none with a known build" vs "no releases exist") --
+   callers that need to tell those apart (see GameDetail's "Best crack
+   build" row) couldn't, from this return value alone. */
 export function bestBuild(g: Game): number | null {
   if (!g.releases || !g.releases.length) return null;
-  return Math.max(...g.releases.map((r) => r.build || 0));
+  const known = g.releases.map((r) => r.build).filter((b): b is number => b != null);
+  return known.length ? Math.max(...known) : null;
 }
 
 export function driftDelta(g: Game): number {

@@ -31,7 +31,15 @@ const dateFromTs = (t?: number): string =>
    ElAmigos and voices38 entries). */
 function parseVersionFromDirname(dn?: string): string {
   if (!dn) return "";
-  const m = dn.match(/\b(v\d+(?:\.\d+)+|update\.?\d+|build\.?\d+|hotfix\.?\d+|patch\.?\d+)\b/i);
+  // FIX (confirmed live): the update/build/hotfix/patch branches only
+  // captured a single \d+ run, so "UPDATE.1.17.REAL.REPACK-CPY" (Watch Dogs
+  // 2's actual latest CPY dirname) matched just "UPDATE.1" and silently
+  // dropped the ".17" -- reading as a placeholder-looking "Update 1" on a
+  // release that really is v1.17. Every branch now allows repeated
+  // `.digits` groups, same as the v\d branch already did.
+  const m = dn.match(
+    /\b(v\d+(?:\.\d+)+|update\.?\d+(?:\.\d+)*|build\.?\d+(?:\.\d+)*|hotfix\.?\d+(?:\.\d+)*|patch\.?\d+(?:\.\d+)*)\b/i,
+  );
   return m ? m[0].replace(/\./g, " ").replace(/^\w/, (c) => c.toUpperCase()) : "";
 }
 

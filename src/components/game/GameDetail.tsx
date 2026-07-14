@@ -269,9 +269,22 @@ export default function GameDetail() {
               </div>
               <div className="build-row">
                 <span className="k">Best crack build</span>
-                <span className="v" style={{ color: drift > 0 ? "var(--out)" : "var(--accent)" }}>
-                  {fmtBuild(bd)}
-                </span>
+                {bd != null ? (
+                  <span className="v" style={{ color: drift > 0 ? "var(--out)" : "var(--accent)" }}>
+                    {fmtBuild(bd)}
+                  </span>
+                ) : releases.length ? (
+                  // A bare "—" here read as a rendering failure, not a real
+                  // state -- releases.length > 0 means we do have tracked
+                  // cracks, they just don't carry a confirmed Steam build id
+                  // (the common case for traditional scene dirnames). Same
+                  // language ReleaseCard already uses for this exact state.
+                  <span className="v" style={{ color: "var(--unv)" }}>
+                    Unverified
+                  </span>
+                ) : (
+                  <span className="v">—</span>
+                )}
               </div>
               <div className="build-row">
                 <span className="k">Survival</span>

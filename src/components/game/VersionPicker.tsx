@@ -14,6 +14,16 @@ function releaseKey(r: Release, i: number): string {
   return r.xrelId || `${r.group}-${r.date}-${i}`;
 }
 
+// FIX (confirmed live): a bare "—" in the build pill read as a rendering
+// failure on games like Watch Dogs 2 (7 tracked releases, none carrying a
+// confirmed Steam build id -- the common case for traditional scene
+// dirnames, see parseBuildFromDirname's own comment) rather than the
+// intentional "we tracked this, we just can't confirm an exact build"
+// state ReleaseCard's Unverified pill already communicates elsewhere.
+function buildPill(build: number | null): { tone: "neutral" | "unv"; text: string } {
+  return build != null ? { tone: "neutral", text: fmtBuild(build) } : { tone: "unv", text: "Unverified" };
+}
+
 /* Steam's own "choose a version" dropdown, same idea here: browse every
    tracked crack version for this title, with a checkmark on whichever's
    selected and a distinct "Latest" tag pinned to the most recently
@@ -49,8 +59,8 @@ export default function VersionPicker({ releases }: VersionPickerProps) {
             {selectedRelease ? (
               <span className="vpicker-trigger-inner">
                 <span className="vpicker-trigger-label">{selectedRelease.version || "Unversioned"}</span>
-                <Pill tone="neutral" className="vpicker-build">
-                  {fmtBuild(selectedRelease.build)}
+                <Pill tone={buildPill(selectedRelease.build).tone} className="vpicker-build">
+                  {buildPill(selectedRelease.build).text}
                 </Pill>
               </span>
             ) : (
@@ -80,8 +90,8 @@ export default function VersionPicker({ releases }: VersionPickerProps) {
                       <RadixSelect.ItemText>{r.version || "Unversioned"}</RadixSelect.ItemText>
                       {isLatest ? <span className="vpicker-latest">Latest</span> : null}
                     </span>
-                    <Pill tone="neutral" className="vpicker-build">
-                      {fmtBuild(r.build)}
+                    <Pill tone={buildPill(r.build).tone} className="vpicker-build">
+                      {buildPill(r.build).text}
                     </Pill>
                   </RadixSelect.Item>
                 );
