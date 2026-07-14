@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import type { Game } from "../../types/game";
 import { useCatalog } from "../../hooks/useCatalog";
@@ -35,6 +35,26 @@ const STATUS_RING: Record<string, { bg: string; label: string }> = {
   unc: { bg: "var(--unc)", label: "UNC" },
   unr: { bg: "var(--unv)", label: "N/A" },
 };
+
+/* An appid resolving doesn't guarantee every image size actually exists on
+   Steam's CDN -- confirmed live on Watch Dogs, missing one of the three
+   sizes this carousel requests. The old onError just hid the broken <img>
+   in place, leaving an empty box where a slide should be. Falls back to
+   the exact same placeholder treatment an unresolved game's slides already
+   get, per-slide, instead of rendering nothing. */
+function CarouselSlideImage({ appid, file, index }: { appid: number; file: string; index: number }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) {
+    return (
+      <div className="carousel-placeholder">
+        Screenshot {index + 1}
+        <br />
+        <span>streams from Steam when live</span>
+      </div>
+    );
+  }
+  return <img src={steamImg(appid, file)} alt="" onError={() => setFailed(true)} />;
+}
 
 export default function GameDetail() {
   const { id } = useParams();
@@ -84,8 +104,8 @@ export default function GameDetail() {
   // Images only -- no trailer slide (the YouTube-search trailer link was
   // flaky enough in practice not to be worth keeping).
   const slides = mergedGame.appid
-    ? ["library_hero.jpg", "header.jpg", "capsule_616x353.jpg"].map((f) => (
-        <img key={f} src={steamImg(mergedGame.appid as number, f)} alt="" onError={(e) => (e.currentTarget.style.display = "none")} />
+    ? ["library_hero.jpg", "header.jpg", "capsule_616x353.jpg"].map((f, i) => (
+        <CarouselSlideImage key={f} appid={mergedGame.appid as number} file={f} index={i} />
       ))
     : [0, 1, 2].map((i) => (
         <div className="carousel-placeholder" key={i}>
