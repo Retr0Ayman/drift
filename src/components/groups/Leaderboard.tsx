@@ -4,6 +4,7 @@ import { useCatalog } from "../../hooks/useCatalog";
 import { buildLeaderboard } from "../../lib/leaderboard";
 import GlassPanel from "../ui/GlassPanel";
 import Reveal from "../ui/Reveal";
+import CompareGroups from "./CompareGroups";
 import { usePageMeta } from "../../hooks/usePageMeta";
 import "./Leaderboard.css";
 
@@ -113,6 +114,10 @@ export default function Leaderboard() {
       ) : (
         <div className="leaderboard-empty">No releases with a comparable Steam release date yet.</div>
       )}
+
+      <Reveal delay={0.1}>
+        <CompareGroups rows={rows} />
+      </Reveal>
     </div>
   );
 }
