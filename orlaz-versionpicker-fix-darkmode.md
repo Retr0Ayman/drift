@@ -1,41 +1,47 @@
-# orlaz — version picker fix + dark mode
+# orlaz — revert version picker, fix build/version display, dark mode
 
-Two things from live review of `VersionPicker` (just shipped in `26c1f6f`) plus a new feature request.
-
----
-
-## 1. Version picker: build number showing "—", and it looks broken, not just unstyled
-
-Screenshot from the live Watch Dogs 2 page: the "Best crack build" row in the status panel reads "—", and the version picker trigger reads "Update 1 —" (dash where the build pill should be), despite the page claiming "7 crack options tracked." Below it, the actual release card shows a real traditional release from CPY, "Cracked in 466 days," "Updated 4x" — so there's real release data on this page, but neither the top summary nor the picker is surfacing a build number for any of it.
-
-**Investigate before styling anything** — this could be two different things and they need different fixes:
-
-- **A real bug**: `bestBuild()` (in `src/lib/format.ts`) isn't finding/returning a build from `mergedGame.releases` even though releases clearly exist, or `VersionPicker`'s own `fmtBuild(selectedRelease.build)` is being called on a release whose `build` field never got populated during parsing for this specific release (a CPY traditional release — check whether `parseReleaseRows`/the P2P merge path both reliably set `build` when xREL's dirname or metadata actually contains one). Compare against a game/release combo known to have a confirmed build number and confirm the field is actually being read correctly end to end.
-- **Or genuinely no build exists for this specific release** (CPY's own release truly has no confirmed build match) — in which case showing a bare "—" is technically honest but reads as broken UI, not "we don't know yet." If that's the case, the fix is presentation, not data: never render a bare dash for a build slot — use the same "Unverified" language/treatment the rest of the app already uses for unknown builds (see `relStatus`'s existing Pill treatment referenced in the accuracy brief's section 1b), so an unknown build reads as an intentional state, not a rendering failure.
-
-Check both. Whichever it turns out to be, "Update 1" as a version label is also suspicious for a game with 7 tracked releases across presumably multiple updates — confirm `parseVersionFromDirname()` is actually extracting real version strings for every group's dirname format, not just defaulting to a generic "Update N" placeholder when parsing fails silently.
+Correction on the previous round: the `VersionPicker` component (`26c1f6f`) was a misread of the original ask. The reference screenshot (Steam's "choose a version" list) was only ever meant to show the *formatting* — how a version label and build number should look together (label + build pill) — not a request to build an actual version-switching control. This site doesn't serve manifests or downloads, there's nothing for a user to actually "choose" — switching versions has no effect on anything. Revert it.
 
 ---
 
-## 2. Version picker layout: should be an open list, not a collapsed dropdown
+## 1. Revert VersionPicker entirely
 
-The reference screenshot (Steam's own "choose a version" — already shared) shows every tracked version as a visible row: version label, build-number pill, checkmark on the selected row, "Latest" tag on the newest — all visible at once, no click required to see what's tracked. What actually shipped is a Radix `Select` trigger that shows only the currently-picked row collapsed, and requires a click to open the rest — functionally fine, but it's not what was asked for and it's not what the reference showed.
-
-**Fix**: change `VersionPicker.tsx` from a `Select`-style single-value trigger to an always-open, inline scrollable list inside the sidebar panel — same data and same per-row rendering already built (`releaseKey`, `latestKey`, checkmark via `RadixSelect.ItemIndicator`-equivalent, build `Pill`), just rendered as a static list of rows instead of gated behind a collapsed trigger. Radix `Select` isn't the right primitive for "always visible" — either drop Radix here and render a plain list with a controlled "selected" row (click a row to select it, same as clicking a `RadixSelect.Item` does now), or use Radix `RadioGroup`/a plain button list styled to match. Keep the existing `VersionPicker.css` visual language (Pill, spacing) — this is a structural change (open list vs. collapsed dropdown), not a full restyle.
+- Remove `<VersionPicker releases={releases} />` and its wrapping `GlassPanel` from `GameDetail.tsx`'s sidebar — back to how the sidebar looked before `26c1f6f` (status panel, then straight to the action buttons: View on Steam / Build history / News source).
+- Delete `src/components/game/VersionPicker.tsx` and `VersionPicker.css` — don't leave them as dead unused files.
+- The only thing worth keeping from that work is the underlying data-correctness fixes if `813af25` already landed (see section 2) — those apply to `ReleaseCard`, not the picker, so they survive the revert regardless.
 
 ---
 
-## 3. Dark mode
+## 2. Version/build formatting — apply it to the release cards, where it actually belongs
 
-Auto, based on system preference (`prefers-color-scheme: dark`) — no manual toggle for this pass.
+What was actually wanted: each release already shown in the "Crack options" tab (`ReleaseCard.tsx`) should display its version and build number clearly formatted — version label next to a build-number pill, same clean look as the reference screenshot's rows — not a separate control. Confirm `ReleaseCard.tsx`'s existing `Version` / `Crack build` fields use that pill/badge treatment (it already renders both per the accuracy brief's section 1b, this is a formatting check, not new plumbing).
 
-- `src/styles/tokens.css` currently defines the Phase 1 light/paper palette as the only palette. Add a dark variant of every token currently defined there (background, text, border, the `--accent`/`--out`/`--unc`/`--dead`/`--unv`/`--hv` status colors, glass/aura gradient colors) inside a `@media (prefers-color-scheme: dark) { :root { ... } }` block (or the CSS custom-property pattern already in use, check how tokens.css structures light values first and mirror it) — every token needs a real dark-mode value, not just a handful, or parts of the site will silently stay light-only.
-- Status colors (`--accent`, `--out`, `--unc`, `--dead`, `--unv`, `--hv`) need to stay clearly distinguishable against a dark background — don't just reuse the light-mode hex values as-is, check contrast.
-- The Phase 1 "aura" conic-gradient treatment on the search bar and hero panels needs its own dark-mode variant too, not just the flat card colors — check `GlassPanel.css` for where that gradient is defined and give it a dark-appropriate version rather than leaving it looking washed-out or blown-out against a dark background.
-- Don't add a toggle UI for this pass — purely `prefers-color-scheme`-driven. If a toggle gets requested later, that's separate follow-up work (needs a persisted preference, `localStorage` + override logic).
+The underlying data bugs flagged last round still apply here regardless of the revert, since they affect every release display, not just the removed picker:
+
+- **Build showing "—" incorrectly**: if `813af25` isn't already committed, confirm `bestBuild()` (`src/lib/format.ts`) and `ReleaseCard`'s own build lookup actually find a real build when one exists in the release data, rather than defaulting to `0`/null and rendering a bare dash. Where a build is genuinely unknown, use the existing "Unverified" label/pill treatment instead of a bare dash — a dash alone reads as broken, not "unknown."
+- **Version label showing "Update 1" / generic placeholders**: confirm `parseVersionFromDirname()` correctly extracts real version strings (e.g. `"1.0.6"`) for every group's dirname format, not silently falling back to a generic "Update N" when parsing fails.
+
+If `813af25` already landed and both are confirmed fixed on `ReleaseCard`, this section is just a formatting/spacing check, not a data fix.
+
+---
+
+## 3. Dark mode — now with a manual toggle
+
+Originally scoped as system-preference-only; upgraded on request to a real toggle. Default to `prefers-color-scheme: dark` on first visit, but add a visible light/dark toggle (nav or header, wherever fits the existing layout without crowding it) that overrides the system default and persists the choice in `localStorage` (e.g. `orlaz:theme`, values `"light" | "dark" | "system"`). On load: read the stored preference if one exists, otherwise fall back to `prefers-color-scheme`.
+
+- `src/styles/tokens.css` currently defines the Phase 1 light/paper palette as the only palette. Add a full dark variant of every token currently defined there (background, text, border, the `--accent`/`--out`/`--unc`/`--dead`/`--unv`/`--hv` status colors, glass/aura gradient colors). Since this now needs a manual override, not just a media query, drive it with a `data-theme="dark"` attribute (or class) on `<html>`/`<body>` that a small hook sets/toggles — CSS then keys off `[data-theme="dark"] { ... }` for the overrides, with the `prefers-color-scheme` media query only used to pick the *initial* value before any stored preference exists.
+- Status colors need to stay clearly distinguishable against a dark background — don't just reuse the light-mode hex values as-is, check contrast.
+- The Phase 1 "aura" conic-gradient treatment on the search bar and hero panels needs its own dark-mode variant too — check `GlassPanel.css` for where that gradient is defined and give it a dark-appropriate version rather than leaving it washed-out or blown-out against a dark background.
+- Toggle UI: simple sun/moon icon button is fine, match existing icon-button patterns already in the codebase (e.g. `WatchToggle`) rather than inventing new button styling.
+
+---
+
+## 4. Carousel shows a blank box when a Steam image 404s
+
+Confirmed by reading `GameDetail.tsx`: when `mergedGame.appid` is truthy, the carousel unconditionally tries to load `library_hero.jpg`, `header.jpg`, and `capsule_616x353.jpg` from Steam's CDN for every game, and the only failure handling is `onError={(e) => (e.currentTarget.style.display = "none")}` — hiding the broken `<img>` with nothing to replace it. Older/less common titles (confirmed live on Watch Dogs, the original) don't have all three image sizes on Steam's CDN, so a slide renders as an empty grey box instead of content. Unresolved games (no `appid`) already get a proper `carousel-placeholder` div ("Screenshot N · streams from Steam when live") — resolved games with a missing specific image size should fall back to the same placeholder treatment for that slide instead of a blank box, or skip that slide from the carousel entirely rather than rendering nothing.
 
 ---
 
 ## What NOT to touch
 
-Don't touch the data-fetching logic in `usePlatformP2PIndex`/`worker/routes/xrel/group.ts` (verified working, item 4 from the last round) — this round is about what's already-fetched data renders as, not how it's fetched. Don't add a dark-mode toggle button in this pass, system-preference only.
+Don't touch the data-fetching logic in `usePlatformP2PIndex`/`worker/routes/xrel/group.ts` (verified working, item 4 from the last round) — this round is about what's already-fetched data renders as, not how it's fetched. Don't rebuild any version-switching control — the revert in section 1 is final, not a placeholder for a smaller version of the same idea.
