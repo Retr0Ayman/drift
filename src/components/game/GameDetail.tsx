@@ -5,6 +5,7 @@ import Carousel from "./Carousel";
 import ReleaseCard from "./ReleaseCard";
 import DlcRow from "./DlcRow";
 import FaqSection from "./FaqSection";
+import GameFact from "./GameFact";
 import GlassPanel from "../ui/GlassPanel";
 import Pill from "../ui/Pill";
 import Reveal from "../ui/Reveal";
@@ -102,12 +103,7 @@ export default function GameDetail() {
           <div className="detail-about">
             <p>{game.desc}</p>
           </div>
-          {game.fact ? (
-            <GlassPanel className="detail-factbox">
-              <div className="detail-factbox-h">Did you know</div>
-              <p>{game.fact}</p>
-            </GlassPanel>
-          ) : null}
+          <GameFact game={game} />
         </div>
       ),
     },

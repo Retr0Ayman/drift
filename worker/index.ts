@@ -14,6 +14,7 @@ import { handleXrelP2PGroup } from "./routes/xrel/p2pGroup";
 import { handleFaq } from "./routes/faq";
 import { handleFx } from "./routes/fx";
 import { handleSummary } from "./routes/summary";
+import { handleFact } from "./routes/fact";
 import { handleSearchAssist } from "./routes/searchAssist";
 import { runScheduledAlert } from "./scheduled";
 
@@ -37,6 +38,7 @@ const ROUTES: Record<string, Handler> = {
   "/api/faq": handleFaq,
   "/api/fx": handleFx,
   "/api/summary": handleSummary,
+  "/api/fact": handleFact,
   "/api/search-assist": handleSearchAssist,
 };
 

@@ -1,0 +1,39 @@
+# orlaz — Phase 2: quick wins (no database needed)
+
+Phase 2 of the roadmap (Phase 1 = rebrand/redesign, in review; Phase 3 = D1 database migration; Phase 4 = deep AI — chat/NL search, smarter repack detection — plus the drift-history timeline chart, both of which genuinely need Phase 3's data to be worth building). Everything in this phase is self-contained and doesn't depend on the database existing yet, so it can run before or after Phase 3 lands.
+
+One correction to the plan before this: **there's already real AI in this codebase**, more than assumed when "AI everywhere" first came up. `worker/shared/groq.ts` is a working Groq (`llama-3.3-70b-versatile`) client, and it's wired into three live features: `handleSearchAssist` (typo-correction in search), `handleFaq` (per-game FAQ tab — already rendering in `GameDetail.tsx` via `FaqSection`), and `handleSummary` (short AI blurb — already rendering on publisher pages via `AiSummary` in `PublisherProfile.tsx`). All of it strictly grounded (system prompts forbid inventing anything beyond facts handed in) and all of it fails honestly (missing `GROQ_API_KEY` → quiet no-op, never a fabricated-looking fallback). This is good infrastructure already in place — reuse it, don't rebuild it.
+
+That means two of the items below are tiny (wiring existing plumbing into one more place), not new builds.
+
+---
+
+## AI wiring gaps (do these first, ~10 minutes total)
+
+**1. `GroupProfile.tsx` is missing the AI summary `PublisherProfile.tsx` already has.** Compare the two files: `PublisherProfile.tsx` renders `<AiSummary kind="publisher" cacheKey={key} name={name} ready={status === "live"} facts={{...}} />` right under the publisher name. `GroupProfile.tsx` has no equivalent — same component, same backend route (`handleSummary` already accepts `kind: "group" | "publisher"`), just never wired in. Add it, mirroring the publisher page's usage: `facts` should cover release count, hv/trad leaning, starred/P2P status, and a few real tracked titles (same shape `buildFacts` in `worker/routes/summary.ts` expects). Gate `ready` on `!loading` (the group page's own `useGroupReleases` loading state) — `AiSummary`'s own doc comment explains exactly why that gate matters (a confirmed bug elsewhere: generating from partial data before it settles).
+
+**2. `game.fact` is a dead field.** `GameDetail.tsx`'s Overview tab already has a "Did you know" box wired up (`{game.fact ? <GlassPanel>...{game.fact}</GlassPanel> : null}`), but nothing in `src/lib/catalog.ts` ever sets `fact` to anything but `""` — so that box never renders. Add a small new worker route (same pattern as `summary.ts`/`faq.ts` — strictly grounded system prompt, single short sentence, uses `callGroq`) that generates one genuinely interesting one-line fact about a game from its real metadata (genre, developer, release year, franchise if `franchiseFor()` matches). Wire it into `GameDetail.tsx` the same way `AiSummary`/`FaqSection` are already wired — same "quiet no-op on failure, never a placeholder" discipline as the existing two features.
+
+---
+
+## The rest
+
+**3. SEO: per-page meta tags + sitemap.** `index.html` currently ships one static `<title>` for every route — no Open Graph tags, no per-game/group/publisher descriptions, nothing indexable as distinct pages despite each one being real unique content. Add per-route `<title>`/meta via whatever's idiomatic for this Vite+React-Router setup (react-helmet-async, or a small custom hook that sets `document.title`/meta tags on mount — check what's already a dependency in `package.json` before adding a new one). At minimum: real title + description per game/group/publisher page, using data already on hand (`game.title`/`game.desc`, group name + count, publisher name + count). A `sitemap.xml` covering known routes is a bonus — full accuracy needs the database (Phase 3) to know every game/group/publisher without a client-side crawl, so a best-effort version now (whatever's in the currently-loaded catalog) is fine, don't over-invest here before Phase 3 exists.
+
+**4. Embeddable status badge.** A new worker route, e.g. `worker/routes/badge.ts`, registered at `/api/badge` in `worker/index.ts`'s `ROUTES` map — takes a `?title=` (or `?appid=`), resolves it the same way `worker/routes/resolve.ts` already does server-side, cross-references tracked release data, and returns a small shields.io-style SVG (`Content-Type: image/svg+xml`) reading "CRACKED" / "OUTDATED" / "UNCRACKED" in the current status colors (`--dead`/`--out`/`--unc` from `tokens.css`). Cache it (same `cf: { cacheTtl }` pattern used throughout `worker/routes/**`) since it's meant to be embedded in READMEs/forum signatures, not hit constantly by the same viewer.
+
+**5. Cmd+K command palette.** Reuses existing infrastructure almost entirely: `useAutocomplete.ts` (local + live + AI-assisted search results) and `parseSearchIntent` from `src/lib/searchIntent.ts` (the deterministic status/year filter parser) already do the hard part — `SearchBar.tsx` is really just the popover UI around them. Add a global `keydown` listener (Cmd/Ctrl+K) that opens a full-screen/centered version of the same search experience, reusing `useAutocomplete` and `parseSearchIntent` directly rather than duplicating their logic. Radix's `Dialog` (already a dependency via `@radix-ui/react-popover`'s sibling packages, check `package.json`) is a natural fit for the overlay.
+
+**6. Steam wishlist import.** A new worker route (e.g. `worker/routes/wishlist.ts` → `/api/wishlist`) proxies `https://store.steampowered.com/wishlist/profiles/<steamid>/wishlistdata/` (public, unauthenticated, returns `{appid: {name, ...}}`) — same "just relay, don't fabricate" pattern as `appdetails.ts`. Frontend: a "paste your Steam profile URL/ID" input (maybe on the `/watchlist` page itself) that calls this route, cross-references returned appids against the loaded catalog by `appid`, and offers to bulk-add matches to `useWatchlist`. Handle the "profile is private" case honestly (Steam returns an error/empty response for private wishlists) — say so, don't silently show nothing.
+
+**7. RSS/Atom feed.** New worker route (`/api/feed.xml` or similar) returning `application/rss+xml` — iterate the same release data `worker/scheduled.ts` already collects for Discord alerts (reuse `collectCandidates`/`isAlertable` from that file rather than re-implementing the "what counts as a real release" filter a third time) and render as standard RSS items (title, link, pubDate, description). Gets meaningfully better once Phase 3's database exists (full history instead of whatever's in the current live pull), but a live-data version now is genuinely useful today.
+
+**8. Compare-groups tool.** Small addition to the leaderboard area — pick two groups, show their `LeaderboardRow` stats (from `src/lib/leaderboard.ts`, already built) side by side: avg days-to-crack, fastest, release count, hv/trad split. Pure frontend, no new data needed, `buildLeaderboard` already computes everything required per-group.
+
+**9. Shareable watchlist link.** `useWatchlist.ts` currently only persists to `localStorage` — add a "share" action that encodes the watched game IDs into a URL param (base64 or a simple comma-joined list, no backend needed), and a route that reads that param on load and offers "add these N games to your watchlist" rather than silently overwriting the visitor's own list.
+
+---
+
+## What NOT to touch
+
+No changes to `worker/scheduled.ts`'s actual Discord-alerting logic (the RSS feed in item 7 reuses its collection/filter functions, doesn't modify them), no changes to `tokens.css`/`GlassPanel.css` (Phase 1's redesign owns those), and nothing here should require the D1 database — if an idea on this list turns out to secretly need persistent storage to work honestly, flag it and skip it rather than half-building a workaround; it belongs in Phase 3 or 4 instead.
