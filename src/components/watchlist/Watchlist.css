@@ -58,6 +58,75 @@
   pointer-events: none;
 }
 
+.watchlist-share-row {
+  margin-top: 16px;
+}
+
+.watchlist-share-btn {
+  border: 1px solid var(--glass-border-strong);
+  background: var(--glass-bg);
+  color: var(--ink-2);
+  font-weight: 700;
+  font-size: 0.82rem;
+  padding: 8px 16px;
+  border-radius: var(--pill);
+  cursor: pointer;
+}
+
+.watchlist-share-btn:hover {
+  color: var(--ink);
+}
+
+.watchlist-shared-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  background: var(--accent-dim);
+  border: 1px solid var(--glass-border-strong);
+  border-radius: var(--r-md);
+}
+
+.watchlist-shared-banner p {
+  font-size: 0.9rem;
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.watchlist-shared-actions {
+  display: flex;
+  gap: 10px;
+  flex: none;
+}
+
+.watchlist-shared-add {
+  border: none;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 700;
+  font-size: 0.82rem;
+  padding: 8px 16px;
+  border-radius: var(--pill);
+  cursor: pointer;
+}
+
+.watchlist-shared-dismiss {
+  border: none;
+  background: none;
+  color: var(--ink-3);
+  font-weight: 600;
+  font-size: 0.82rem;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.watchlist-shared-dismiss:hover {
+  color: var(--ink);
+}
+
 .watchlist-empty {
   padding: 48px 28px;
   text-align: center;

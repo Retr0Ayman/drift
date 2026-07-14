@@ -1,9 +1,10 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useCatalog } from "../../hooks/useCatalog";
 import { useWatchlist } from "../../hooks/useWatchlist";
 import GameCard from "../home/GameCard";
 import Reveal from "../ui/Reveal";
 import WishlistImport from "./WishlistImport";
+import ShareWatchlistButton from "./ShareWatchlistButton";
 import { usePageMeta } from "../../hooks/usePageMeta";
 import { anyOutdated, driftDelta } from "../../lib/format";
 import "./Watchlist.css";
@@ -11,7 +12,25 @@ import "./Watchlist.css";
 export default function Watchlist() {
   const navigate = useNavigate();
   const { games } = useCatalog();
-  const { watched } = useWatchlist();
+  const { watched, toggle } = useWatchlist();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // A shared link never silently merges into the visitor's own list --
+  // only games not already watched are offered, and only on request.
+  const sharedIds = (searchParams.get("share") || "").split(",").filter(Boolean);
+  const sharedGames = sharedIds.length ? games.filter((g) => sharedIds.includes(g.id)) : [];
+  const sharedNewGames = sharedGames.filter((g) => !watched.includes(g.id));
+
+  function dismissShared() {
+    const next = new URLSearchParams(searchParams);
+    next.delete("share");
+    setSearchParams(next, { replace: true });
+  }
+
+  function addSharedGames() {
+    sharedNewGames.forEach((g) => toggle(g.id));
+    dismissShared();
+  }
 
   // Outdated-first, same "drift surfaces at the top" idea as the rest of the
   // app -- a watched game whose crack has fallen behind the current Steam
@@ -42,8 +61,35 @@ export default function Watchlist() {
                 }.`
               : "Star a game from its detail page to add it here."}
           </p>
+          <div className="watchlist-share-row">
+            <ShareWatchlistButton watched={watched} />
+          </div>
         </div>
       </Reveal>
+
+      {sharedGames.length ? (
+        <Reveal>
+          <div className="watchlist-shared-banner">
+            <p>
+              {sharedGames.length} game{sharedGames.length === 1 ? "" : "s"} shared with you
+              {sharedNewGames.length < sharedGames.length
+                ? ` (${sharedGames.length - sharedNewGames.length} already on your watchlist)`
+                : ""}
+              .
+            </p>
+            <div className="watchlist-shared-actions">
+              {sharedNewGames.length ? (
+                <button className="watchlist-shared-add" onClick={addSharedGames}>
+                  Add {sharedNewGames.length} to your watchlist
+                </button>
+              ) : null}
+              <button className="watchlist-shared-dismiss" onClick={dismissShared}>
+                Dismiss
+              </button>
+            </div>
+          </div>
+        </Reveal>
+      ) : null}
 
       <Reveal delay={0.05}>
         <WishlistImport />
