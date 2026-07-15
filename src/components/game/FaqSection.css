@@ -16,23 +16,112 @@
 }
 
 .faq-panel {
-  padding: 18px 20px;
+  padding: 4px 20px;
 }
 
 .faq-status {
+  padding: 16px 0;
   color: var(--ink-3);
   font-size: 0.86rem;
   font-weight: 500;
   line-height: 1.6;
 }
 
-.faq-body p {
+/* FIX: every Q&A pair used to render as plain stacked <p> text in one
+   continuous block -- confirmed live, read as one flat wall of text with
+   no separation. Real accordion rows now, each with its own divider,
+   click target, and padding -- collapsed apart from the first, matching
+   the same expand/collapse visual language GroupProfile's month sections
+   already use elsewhere (chevron rotates on open). */
+.faq-accordion {
+  display: flex;
+  flex-direction: column;
+}
+
+.faq-item {
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.faq-item:last-child {
+  border-bottom: none;
+}
+
+.faq-item-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+.faq-item-trigger:hover .faq-item-q {
+  color: var(--accent);
+}
+
+.faq-item-q {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--ink);
+  transition: color var(--dur) var(--ease);
+}
+
+.faq-item-chev {
+  flex: none;
+  font-size: 0.9rem;
+  color: var(--ink-3);
+  transition: transform var(--dur) var(--ease);
+}
+
+.faq-item-trigger[data-state="open"] .faq-item-chev {
+  transform: rotate(90deg);
+}
+
+.faq-item-content {
+  overflow: hidden;
+}
+
+.faq-item-content[data-state="open"] {
+  animation: faq-accordion-down var(--dur) var(--ease);
+}
+
+.faq-item-content[data-state="closed"] {
+  animation: faq-accordion-up var(--dur) var(--ease);
+}
+
+@keyframes faq-accordion-down {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--radix-accordion-content-height);
+  }
+}
+
+@keyframes faq-accordion-up {
+  from {
+    height: var(--radix-accordion-content-height);
+  }
+  to {
+    height: 0;
+  }
+}
+
+.faq-item-a {
   color: var(--ink-2);
   font-size: 0.9rem;
   line-height: 1.65;
   font-weight: 450;
+  padding-bottom: 16px;
 }
 
-.faq-body p + p {
-  margin-top: 10px;
+@media (prefers-reduced-motion: reduce) {
+  .faq-item-content[data-state="open"],
+  .faq-item-content[data-state="closed"] {
+    animation: none;
+  }
 }
