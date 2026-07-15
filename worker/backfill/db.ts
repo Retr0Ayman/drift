@@ -41,42 +41,74 @@ const UPSERT_RELEASE_SQL = `
   WHERE excluded.ts > releases.ts
 `;
 
+// Safely under D1's bound-parameter ceiling per statement (confirmed live
+// during the /api/catalog fix: 100 worked, 101 didn't) -- chunked so an
+// existence check never risks hitting that limit even on a large tick.
+const EXISTS_CHUNK = 50;
+
+async function existingGameIds(db: D1Database, ids: string[]): Promise<Set<string>> {
+  const found = new Set<string>();
+  for (let i = 0; i < ids.length; i += EXISTS_CHUNK) {
+    const chunk = ids.slice(i, i + EXISTS_CHUNK);
+    const placeholders = chunk.map(() => "?").join(",");
+    const rows = await db.prepare(`SELECT id FROM games WHERE id IN (${placeholders})`).bind(...chunk).all<{ id: string }>();
+    for (const r of rows.results || []) found.add(r.id);
+  }
+  return found;
+}
+
 /* Batches every game + release write for one backfill tick into a single
    D1 .batch() round trip, not one .run() per row -- a browse page can
    yield 60-90 distinct titles, each with 1-5 releases, and D1 (like any
    networked DB) pays a real per-round-trip cost that adds up fast at that
-   volume. Games with no resolved appid are skipped entirely -- same "never
-   insert an unresolved title" rule resolveAndEnrichBatch already applies,
-   enforced again here as the last line of defense. */
+   volume. A title that has never resolved a real Steam appid (not
+   enriched this tick AND not already in D1 from an earlier successful
+   one) is skipped entirely -- same "never insert an unresolved title"
+   rule resolveAndEnrichBatch already applies, enforced again here as the
+   last line of defense.
+
+   FIX: a game that's ALREADY in D1 from an earlier successful enrichment
+   no longer has its releases silently dropped just because THIS tick's
+   live Steam re-resolve happened to fail or rate-limit -- only the game
+   metadata refresh (desc/genres/build number) is skipped in that case,
+   not the release write. Previously both were gated on a fresh
+   successful enrichment every single tick, so a release update could go
+   missing indefinitely whenever that one extra external call had a bad
+   moment, with nothing about the release data itself being at fault. */
 export async function upsertGames(db: D1Database, games: ParsedGame[], enrichments: Map<string, Enrichment>): Promise<number> {
+  const unenrichedIds = games.filter((g) => !enrichments.has(g.title)).map((g) => g.id);
+  const alreadyKnown = unenrichedIds.length ? await existingGameIds(db, unenrichedIds) : new Set<string>();
+
   const statements: D1PreparedStatement[] = [];
   const now = Date.now();
 
   for (const game of games) {
     const enrichment = enrichments.get(game.title);
-    if (!enrichment) continue;
+    if (!enrichment && !alreadyKnown.has(game.id)) continue;
 
-    statements.push(
-      db.prepare(UPSERT_GAME_SQL).bind(
-        game.id,
-        game.xrel_key,
-        game.title,
-        enrichment.appid,
-        enrichment.year ?? game.year,
-        enrichment.released,
-        enrichment.developer,
-        enrichment.publisher,
-        JSON.stringify(enrichment.genres),
-        JSON.stringify(["Denuvo"]),
-        enrichment.currentBuild,
-        enrichment.desc,
-        null, // fact -- generated + cached client-side on demand, not backfilled
-        enrichment.metacritic,
-        "xREL",
-        "https://www.xrel.to/",
-        now,
-      ),
-    );
+    if (enrichment) {
+      statements.push(
+        db.prepare(UPSERT_GAME_SQL).bind(
+          game.id,
+          game.xrel_key,
+          game.title,
+          enrichment.appid,
+          enrichment.year ?? game.year,
+          enrichment.released,
+          enrichment.developer,
+          enrichment.publisher,
+          JSON.stringify(enrichment.genres),
+          JSON.stringify(["Denuvo"]),
+          enrichment.currentBuild,
+          enrichment.desc,
+          null, // fact -- generated + cached client-side on demand, not backfilled
+          enrichment.metacritic,
+          "xREL",
+          "https://www.xrel.to/",
+          now,
+        ),
+      );
+    }
 
     for (const r of game.releases) {
       statements.push(
