@@ -161,7 +161,6 @@ export default function GameDetail() {
           <div className="detail-about">
             <p>{mergedGame.desc}</p>
           </div>
-          <GameFact game={mergedGame} />
         </div>
       ),
     },
@@ -323,6 +322,8 @@ export default function GameDetail() {
               News source · {mergedGame.source.name}
             </a>
           </GlassPanel>
+
+          <GameFact game={mergedGame} />
         </aside>
       </div>
     </div>
