@@ -1,6 +1,7 @@
 import type { Env } from "./shared/env";
 import { handleXrelBrowse } from "./routes/xrel/browse";
 import { handleXrelGroup } from "./routes/xrel/group";
+import { handleXrelP2PGroup } from "./routes/xrel/p2pGroup";
 import type { RawXrelRelease } from "./shared/xrel";
 import { STARRED_GROUPS, methodForGroup, isRepackGroup, isAnonymousUpload, isWindowsRelease } from "./shared/constants";
 import { groupRowsByTitle } from "./backfill/parse";
@@ -14,12 +15,21 @@ interface ListResponse {
 const SEEDED_MARKER_KEY = "__seeded__";
 
 /* Pulls the same two sources the frontend's catalog relies on: page 1 of the
-   main Windows browse feed, plus each starred P2P group's full history via
-   the existing xrel/group.ts lookup (P2P groups never show up in /browse at
-   all -- see that file's own comment for why). Calls the route handlers
-   directly with a synthetic same-origin Request rather than a real
-   self-fetch back into this Worker -- identical logic and xREL-side
-   caching, no extra network hop. */
+   main Windows browse feed, plus each starred P2P group's full history (P2P
+   groups never show up in /browse at all -- see xrel/group.ts's own comment
+   for why). Calls the route handlers directly with a synthetic same-origin
+   Request rather than a real self-fetch back into this Worker -- identical
+   logic and xREL-side caching, no extra network hop.
+
+   Each starred group is upgraded from the capped/relevance-sorted search
+   baseline (xrel/group.ts) to the genuinely-paginated p2p/releases.json
+   source (xrel/p2pGroup.ts) whenever it turns up more -- same upgrade
+   worker/backfill/run.ts's processStarredGroup already does, and for the
+   same reason: the baseline's own doc comment admits its pagination is
+   dead (xREL replays page 1 for every page), so its "most recent" result
+   can sit weeks stale even though the group has posted more recently.
+   Without this upgrade here, every 15-minute alert/D1-sync tick was
+   checking a source that could already be stale on arrival. */
 export async function collectCandidates(env: Env): Promise<RawXrelRelease[]> {
   const seen = new Map<string, RawXrelRelease>();
 
@@ -37,9 +47,22 @@ export async function collectCandidates(env: Env): Promise<RawXrelRelease[]> {
       request: new Request(`https://internal.invalid/api/xrel/group?name=${encodeURIComponent(name)}`),
       env,
     });
-    if (!groupRes.ok) continue;
-    const data = (await groupRes.json()) as ListResponse;
-    for (const rel of data.list || []) seen.set(rel.id, rel);
+    let rows: RawXrelRelease[] = [];
+    if (groupRes.ok) rows = ((await groupRes.json()) as ListResponse).list || [];
+
+    const groupId = rows.find((r) => r.group_id)?.group_id;
+    if (groupId) {
+      const deepRes = await handleXrelP2PGroup({
+        request: new Request(`https://internal.invalid/api/xrel/p2p-group?group_id=${encodeURIComponent(groupId)}`),
+        env,
+      });
+      if (deepRes.ok) {
+        const deepRows = ((await deepRes.json()) as ListResponse).list || [];
+        if (deepRows.length > rows.length) rows = deepRows;
+      }
+    }
+
+    for (const rel of rows) seen.set(rel.id, rel);
   }
 
   return [...seen.values()];
