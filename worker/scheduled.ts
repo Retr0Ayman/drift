@@ -3,6 +3,9 @@ import { handleXrelBrowse } from "./routes/xrel/browse";
 import { handleXrelGroup } from "./routes/xrel/group";
 import type { RawXrelRelease } from "./shared/xrel";
 import { STARRED_GROUPS, methodForGroup, isRepackGroup, isAnonymousUpload, isWindowsRelease } from "./shared/constants";
+import { groupRowsByTitle } from "./backfill/parse";
+import { resolveAndEnrichBatch } from "./backfill/resolve";
+import { upsertGames } from "./backfill/db";
 
 interface ListResponse {
   list?: RawXrelRelease[];
@@ -118,4 +121,26 @@ export async function runScheduledAlert(env: Env): Promise<void> {
   for (let i = 0; i < newReleases.length; i += 10) {
     await postDiscordAlert(env.DISCORD_WEBHOOK_URL, newReleases.slice(i, i + 10));
   }
+}
+
+/* orlaz Phase 3: once the resumable backfill (worker/backfill/run.ts) has
+   walked the full catalog, this is what keeps D1 current from then on --
+   collectCandidates() already pulls exactly the "what's new right now"
+   slice (browse page 1 + every starred group) every 15 minutes for the
+   Discord alerts above; upserting that same slice into D1 too means no
+   second, separate ongoing crawl is needed. Runs every tick regardless of
+   backfill phase, not gated on it -- this is a small, cheap, idempotent
+   upsert (the ts-based WHERE clause in upsertGames' release upsert is a
+   no-op when nothing's actually changed), so there's no harm running it
+   in parallel with the slower historical backfill still working through
+   older pages in the background. Unlike runScheduledAlert, this doesn't
+   depend on the Discord webhook/KV being configured -- D1 is already
+   provisioned (see shared/env.ts), so this can run from the very first
+   deploy. */
+export async function runSteadyStateSync(env: Env): Promise<void> {
+  const candidates = await collectCandidates(env);
+  const grouped = groupRowsByTitle(candidates);
+  const titles = [...grouped.values()].map((g) => g.title);
+  const enrichments = await resolveAndEnrichBatch(env, titles);
+  await upsertGames(env.orlaz_catalog, [...grouped.values()], enrichments);
 }

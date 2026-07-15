@@ -12,7 +12,8 @@
 	},
 	"triggers": {
 		"crons": [
-			"*/15 * * * *"
+			"*/15 * * * *",
+			"*/2 * * * *"
 		]
 	},
 	"d1_databases": [
@@ -30,4 +31,15 @@
 	// DEPLOY.md section 6 for the exact block to add and where the ID comes
 	// from. Logic verified locally with a throwaway local-only KV binding +
 	// a mock webhook receiver, not committed.
+
+	// Second cron ("*/2 * * * *") is the resumable D1 backfill
+	// (worker/backfill/run.ts, see orlaz-phase3-database.md section 3) --
+	// deliberately separate from the original 15-minute trigger so the
+	// one-time historical crawl finishes in roughly an hour or two instead
+	// of half a day, without changing the Discord-alert cadence. Becomes a
+	// cheap no-op once backfill_state's phase reaches "done" in D1, so this
+	// trigger is safe to leave in place permanently rather than needing a
+	// follow-up deploy to remove it. worker/index.ts's scheduled() handler
+	// tells the two triggers apart via ScheduledEvent.cron (must match the
+	// BACKFILL_CRON constant there exactly).
 }

@@ -20,7 +20,8 @@ import { handleSitemap } from "./routes/sitemap";
 import { handleBadge } from "./routes/badge";
 import { handleWishlist } from "./routes/wishlist";
 import { handleFeed } from "./routes/feed";
-import { runScheduledAlert } from "./scheduled";
+import { runScheduledAlert, runSteadyStateSync } from "./scheduled";
+import { runBackfillTick } from "./backfill/run";
 
 /* This is a Worker with static assets (wrangler.jsonc `main` + `assets`), not
    classic Cloudflare Pages -- confirmed live: the workers.dev domain and
@@ -28,6 +29,11 @@ import { runScheduledAlert } from "./scheduled";
    Pages Functions does. So this fetch handler explicitly routes /api/* to the
    handlers below and falls back to env.ASSETS.fetch(request) for everything
    else (the built SPA + its static files). */
+// Must match the second entry in wrangler.jsonc's `triggers.crons` exactly
+// -- ScheduledEvent.cron is how the one scheduled() handler below tells
+// the two triggers apart.
+const BACKFILL_CRON = "*/2 * * * *";
+
 const ROUTES: Record<string, Handler> = {
   "/api/appdetails": handleAppdetails,
   "/api/resolve": handleResolve,
@@ -69,10 +75,21 @@ export default {
     return env.ASSETS.fetch(request);
   },
 
-  // Discord new-release alerts (see wrangler.jsonc's `triggers.crons` and
-  // worker/scheduled.ts) -- waitUntil so the invocation doesn't get torn
-  // down before the KV writes and webhook POST finish.
-  async scheduled(_event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
-    ctx.waitUntil(runScheduledAlert(env));
+  // Two cron patterns (see wrangler.jsonc's `triggers.crons`), dispatched by
+  // which one fired: the original 15-minute trigger runs the Discord
+  // alerts (worker/scheduled.ts) plus the small steady-state D1 sync
+  // alongside it; a separate, more frequent trigger drives the resumable
+  // historical backfill (worker/backfill/run.ts) until it completes, then
+  // becomes a cheap no-op forever after -- see that file's own comment for
+  // why this needs its own faster cadence instead of piggybacking on the
+  // 15-minute one. waitUntil so neither invocation gets torn down before
+  // its D1 writes (and, for the alert path, the KV writes/webhook POST)
+  // finish.
+  async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
+    if (event.cron === BACKFILL_CRON) {
+      ctx.waitUntil(runBackfillTick(env));
+      return;
+    }
+    ctx.waitUntil(Promise.all([runScheduledAlert(env), runSteadyStateSync(env)]));
   },
 };

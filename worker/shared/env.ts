@@ -25,4 +25,9 @@ export interface Env {
   // in-progress deploy just silently doesn't alert instead of erroring every
   // 15 minutes.
   DISCORD_WEBHOOK_URL?: string;
+  // D1 binding for the catalog database (orlaz-catalog), see
+  // wrangler.jsonc's `d1_databases` and orlaz-phase3-database.md. Unlike
+  // SEEN_RELEASES above, this one's already provisioned (a real
+  // database_id is in wrangler.jsonc) -- not optional at the type level.
+  orlaz_catalog: D1Database;
 }
