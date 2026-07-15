@@ -9,7 +9,7 @@ interface FaqRequest {
   genres?: string[];
   released?: string;
   protection?: string[];
-  releases?: Array<{ method: string; group: string; status: string }>;
+  releases?: Array<{ method: string; group: string; status: string; isRepack?: boolean; updateCount?: number }>;
 }
 
 /* Strictly grounded: the system prompt forbids inventing anything beyond
@@ -24,14 +24,35 @@ interface FaqRequest {
    reliable -- but the honesty rule doesn't change: a missing key or a failed
    call surfaces as a real "unavailable" response, never masked or silently
    retried into something that looks like success. */
+/* FIX (confirmed live): the previous version listed developer/publisher/
+   genres/released/protection as facts to draw questions from, and that's
+   exactly what it did -- every generated FAQ was "who made this / who
+   published it / what genre / when did it release / what DRM," all of
+   which are already sitting in GameDetail.tsx's header two seconds above
+   this section. Not wrong, just redundant padding. Those fields are still
+   sent below (a title alone isn't always enough context, and a game with
+   no crack data yet still needs *something* to ground a real answer in),
+   but the prompt now explicitly forbids making them the subject of a
+   question, and is steered toward what this specific site's data actually
+   adds: how many groups/methods have cracked it, whether the tracked
+   crack is still current, and repack implications. */
 const SYSTEM_PROMPT =
-  "You write short, factual FAQ answers about video games for a crack/build-status tracking site. " +
-  "You are STRICTLY grounded in the facts provided in the user message -- title, developer, publisher, " +
-  "genres, release date, DRM/protection type, and crack status/method. Never invent plot details, lore, " +
-  "sales figures, review scores, release dates, or any fact not explicitly given. If asked something the " +
-  "given facts don't cover, say the information isn't available rather than guessing. Write 4-6 short Q&A " +
-  "pairs as plain text (no markdown headers), each formatted as \"Q: ...\" then \"A: ...\" on the next line, " +
-  "each answer 1-2 sentences.";
+  "You write short, factual FAQ answers for a crack/build-status tracking site. The reader has already seen " +
+  "this game's developer, publisher, genre, release date, and DRM/protection type in the page header directly " +
+  "above this FAQ -- NEVER write a question whose answer just restates one of those fields (no \"who developed " +
+  "this\", \"who published this\", \"what genre is this\", \"when was this released\", \"what DRM/protection " +
+  "does this use\"). That information is background context only, not a topic. Instead focus on what this " +
+  "site's data actually adds: how many groups or crack methods have released a crack for this game and, if " +
+  "more than one exists, the practical difference between them (e.g. hypervisor vs. traditional reliability); " +
+  "whether the tracked crack has kept up with the game's own latest update, using the given crack status " +
+  "(current/outdated/unverified); and whether any tracked release is a repack rather than an original crack, " +
+  "and what that means for the user, only if repack data is given. If the given facts don't support one of " +
+  "those angles (e.g. nothing cracked yet, or only one release with no repack/method contrast to make), ask " +
+  "about whatever real crack-status information IS available instead of falling back to a bio-fact question -- " +
+  "you are STRICTLY grounded in the facts provided in the user message and must never invent plot details, " +
+  "lore, sales figures, review scores, or any fact not explicitly given; if the facts don't cover something, " +
+  "say so rather than guessing. Write 4-6 short Q&A pairs as plain text (no markdown headers), each formatted " +
+  "as \"Q: ...\" then \"A: ...\" on the next line, each answer 1-2 sentences.";
 
 function buildFacts(body: FaqRequest): string {
   const lines = [
@@ -41,10 +62,27 @@ function buildFacts(body: FaqRequest): string {
     body.genres?.length ? `Genres: ${body.genres.join(", ")}` : null,
     body.released ? `Released: ${body.released}` : null,
     body.protection?.length ? `Protection: ${body.protection.join(", ")}` : null,
-    body.releases?.length
-      ? `Crack status: ${body.releases.map((r) => `${r.method} crack by ${r.group} (${r.status})`).join("; ")}`
-      : "Crack status: not yet cracked as of this data",
   ];
+
+  if (body.releases?.length) {
+    const methods = [...new Set(body.releases.map((r) => r.method))];
+    lines.push(`Number of tracked crack releases: ${body.releases.length}`);
+    lines.push(`Crack method(s) tracked: ${methods.join(", ")}`);
+    lines.push(
+      "Crack releases: " +
+        body.releases
+          .map((r) => {
+            const bits = [`${r.method} crack by ${r.group}`, `status: ${r.status}`];
+            if (r.isRepack) bits.push("this is a repack, not an original crack");
+            if (r.updateCount && r.updateCount > 1) bits.push(`updated ${r.updateCount} times so far`);
+            return bits.join(", ");
+          })
+          .join("; "),
+    );
+  } else {
+    lines.push("Crack status: not yet cracked as of this data");
+  }
+
   return lines.filter(Boolean).join("\n");
 }
 

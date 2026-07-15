@@ -1,7 +1,12 @@
 import type { Game } from "../types/game";
 import { relStatus } from "./format";
 
-const CACHE_PREFIX = "drift.faq.";
+// v2: bumped after reworking what worker/routes/faq.ts asks Groq to
+// generate (crack-specific questions instead of bio facts already shown
+// in the page header) -- a v1 cache entry would otherwise keep showing
+// the old redundant questions forever, since this is cached once per game
+// and never regenerated on its own.
+const CACHE_PREFIX = "drift.faq.v2.";
 
 export interface FaqResult {
   faq: string | null;
@@ -34,6 +39,8 @@ export async function fetchFaq(game: Game): Promise<FaqResult> {
           method: rel.label,
           group: rel.group,
           status: FLAG_LABEL[relStatus(game, rel)],
+          isRepack: rel.isRepack,
+          updateCount: rel.updateCount,
         })),
       }),
     });
