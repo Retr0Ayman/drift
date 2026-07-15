@@ -41,12 +41,6 @@
   line-height: 1.6;
 }
 
-.publishers-caveat {
-  margin-top: 10px;
-  font-size: 0.84rem;
-  color: var(--ink-3);
-}
-
 .publishers-signal {
   padding: 24px 26px;
 }

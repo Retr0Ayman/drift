@@ -11,12 +11,11 @@ import "./Publishers.css";
 
 export default function PublishersDirectory() {
   const navigate = useNavigate();
-  const { games, hasMore } = useCatalog();
+  const { games } = useCatalog();
   const idx = publishersIndex(games);
-  const suffix = hasMore ? "+" : "";
   usePageMeta({
     title: "Publishers",
-    description: `${idx.length || "Every"}${suffix} publisher orlaz is tracking, AAA and indie alike.`,
+    description: `${idx.length || "Every"} publisher orlaz is tracking, AAA and indie alike.`,
   });
   const [country, setCountry] = useState<string | null>(null);
   const [aaaOnly, setAaaOnly] = useState(false);
@@ -50,18 +49,12 @@ export default function PublishersDirectory() {
               size/revenue API. Real icons where we have a verified company domain; a plain initials badge
               everywhere else — never a guessed image.
             </p>
-            {hasMore ? (
-              <p className="publishers-lede publishers-caveat">
-                Catalogue syncs in the background — counts below grow as more of it loads. Full accuracy lands
-                with the Phase 2 database.
-              </p>
-            ) : null}
           </div>
           <GlassPanel strong className="publishers-signal">
             <div className="publishers-signal-head">Directory signal</div>
             <div className="publishers-signal-grid">
               <div className="publishers-signal-stat">
-                <span className="publishers-signal-n">{idx.length ? `${idx.length}${suffix}` : "—"}</span>
+                <span className="publishers-signal-n">{idx.length || "—"}</span>
                 <span className="publishers-signal-l">Publishers tracked</span>
               </div>
               <div className="publishers-signal-stat">
@@ -110,8 +103,7 @@ export default function PublishersDirectory() {
       </Reveal>
 
       <div className="publishers-grid-head">
-        {visible.length}
-        {suffix} publisher{visible.length === 1 ? "" : "s"} shown
+        {visible.length} publisher{visible.length === 1 ? "" : "s"} shown
         {aaaOnly ? " · AAA only" : ""}
         {country ? ` · HQ: ${country}` : ""}
       </div>
