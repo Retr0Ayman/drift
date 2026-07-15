@@ -1,6 +1,13 @@
 .carousel {
   position: relative;
   padding: 0 !important;
+  /* FIX (confirmed live): the sliding track below holds every slide
+     full-width side by side and shifts via translateX -- without clipping
+     the carousel's own box, the off-screen slides aren't hidden, just
+     visually bleeding out past this element's edges into whatever's next
+     in the layout (the sidebar's status panel, on GameDetail). Standard
+     requirement for this exact sliding-track pattern, just missing. */
+  overflow: hidden;
 }
 
 .carousel-track {

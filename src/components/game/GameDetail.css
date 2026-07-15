@@ -14,6 +14,14 @@
   align-items: start;
 }
 
+/* Grid items default to min-width: auto, which lets a wide-enough
+   descendant (the carousel, before its own overflow:hidden fix) push this
+   column past its 1.55fr share instead of respecting it -- standard fix
+   for this exact class of grid overflow. */
+.detail-main {
+  min-width: 0;
+}
+
 @media (max-width: 880px) {
   .detail-grid {
     grid-template-columns: 1fr;
