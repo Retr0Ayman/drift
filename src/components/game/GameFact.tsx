@@ -3,6 +3,7 @@ import type { Game } from "../../types/game";
 import { fetchFact } from "../../lib/fact";
 import { franchiseFor } from "../../lib/companies";
 import GlassPanel from "../ui/GlassPanel";
+import AiTag from "../ui/AiTag";
 
 // Prefers a real, hand-curated seed fact when one exists (see
 // src/data/seedGames.ts) -- only calls the AI generator for games that
@@ -41,7 +42,7 @@ export default function GameFact({ game }: { game: Game }) {
     <GlassPanel className="detail-factbox">
       <div className="detail-factbox-h">
         Did you know
-        {aiGenerated ? <span className="detail-factbox-tag">AI</span> : null}
+        {aiGenerated ? <AiTag /> : null}
       </div>
       <p>{fact}</p>
     </GlassPanel>

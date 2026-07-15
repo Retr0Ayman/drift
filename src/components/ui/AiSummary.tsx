@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { fetchSummary, type SummaryFacts } from "../../lib/summary";
+import AiTag from "./AiTag";
 import "./AiSummary.css";
 
 interface AiSummaryProps {
@@ -51,7 +52,7 @@ export default function AiSummary({ kind, cacheKey, name, facts, ready = true }:
 
   return summary ? (
     <p className="ai-summary">
-      <span className="ai-summary-tag">AI summary</span>
+      <AiTag>AI summary</AiTag>
       {summary}
     </p>
   ) : null;

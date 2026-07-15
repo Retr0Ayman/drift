@@ -7,17 +7,7 @@
   max-width: 68ch;
 }
 
-.ai-summary-tag {
-  display: inline-block;
-  font-size: 0.6rem;
-  font-weight: 800;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  color: var(--accent);
-  background: var(--accent-dim);
-  padding: 2px 7px;
-  border-radius: var(--pill);
+.ai-summary .ai-tag-ring {
   margin-right: 8px;
-  vertical-align: middle;
   transform: translateY(-1px);
 }

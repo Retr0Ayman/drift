@@ -155,17 +155,8 @@
   text-transform: uppercase;
 }
 
-.detail-factbox-tag {
-  display: inline-block;
-  font-size: 0.55rem;
-  font-weight: 800;
-  letter-spacing: 0.5px;
-  color: var(--accent);
-  background: var(--accent-dim);
-  padding: 2px 7px;
-  border-radius: var(--pill);
+.detail-factbox-h .ai-tag-ring {
   margin-left: 8px;
-  vertical-align: middle;
 }
 
 .detail-factbox p {

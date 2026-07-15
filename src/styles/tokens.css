@@ -32,7 +32,10 @@
   --glass-shadow: 0 1px 2px rgba(23, 21, 15, 0.06);
   --glass-shadow-lg: 0 2px 8px rgba(23, 21, 15, 0.08);
 
-  /* aura ring -- reserved for the search bar and one hero stat panel per page */
+  /* aura ring -- reserved for the search bar, one hero stat panel per page,
+     and AI-generated-content tags (AiTag.tsx). That third one is a
+     deliberate, scoped extension of the original "search bar + one hero
+     panel" rule, not an oversight -- everywhere else, a plain grey Pill. */
   --aura-a: #6b4fa055;
   --aura-b: #1f7a6c55;
   --aura-blur: 10px;
