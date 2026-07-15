@@ -2,7 +2,15 @@
   display: inline-flex;
   vertical-align: middle;
   border-radius: var(--pill);
-  padding: 1.5px;
+  /* FIX (confirmed live): rendering correctly at 1.5px the whole time
+     (verified via computed backgroundImage -- a real conic-gradient, not
+     a flat color), but genuinely hard to perceive at normal viewing
+     scale/screenshot compression -- a thin ring is a much smaller colored
+     surface area than the full-size aura panels this technique was
+     designed for. Thickened, not re-colored: --aura-a/--aura-b stay
+     exactly as they are so the search bar/hero panel aura is untouched,
+     this is purely more of the same ring. */
+  padding: 2.5px;
   /* Same conic-gradient + --aura-angle custom property as .aura-ring
      (globals.css) -- both keyframes and the @property registration are
      already global, reused here rather than redeclared. */
