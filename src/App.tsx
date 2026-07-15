@@ -1,21 +1,29 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { Routes, Route, Outlet } from "react-router-dom";
 import Navbar from "./components/layout/Navbar";
 import Footer from "./components/layout/Footer";
 import IntroAnimation from "./components/layout/IntroAnimation";
 import CommandPalette from "./components/search/CommandPalette";
+import RouteFallback from "./components/layout/RouteFallback";
 import Home from "./components/home/Home";
-import GameDetail from "./components/game/GameDetail";
-import GroupsDirectory from "./components/groups/GroupsDirectory";
-import GroupProfile from "./components/groups/GroupProfile";
-import Leaderboard from "./components/groups/Leaderboard";
-import PublishersDirectory from "./components/publishers/PublishersDirectory";
-import PublisherProfile from "./components/publishers/PublisherProfile";
-import FranchiseProfile from "./components/publishers/FranchiseProfile";
-import Watchlist from "./components/watchlist/Watchlist";
 import { useLiveCatalog } from "./hooks/useLiveCatalog";
 import { useTheme } from "./hooks/useTheme";
 import type { CatalogContextValue } from "./hooks/useCatalog";
+
+// Home stays eager -- it's the landing page, almost always the first thing
+// loaded anyway, so lazy-loading it would just add a network round trip
+// with no benefit. Every other route is a deeper page most sessions never
+// visit, and every build this project has run has warned about a single
+// 500kB+ JS chunk -- splitting these out is a real, measurable first-load
+// win with no behavior change.
+const GameDetail = lazy(() => import("./components/game/GameDetail"));
+const GroupsDirectory = lazy(() => import("./components/groups/GroupsDirectory"));
+const GroupProfile = lazy(() => import("./components/groups/GroupProfile"));
+const Leaderboard = lazy(() => import("./components/groups/Leaderboard"));
+const PublishersDirectory = lazy(() => import("./components/publishers/PublishersDirectory"));
+const PublisherProfile = lazy(() => import("./components/publishers/PublisherProfile"));
+const FranchiseProfile = lazy(() => import("./components/publishers/FranchiseProfile"));
+const Watchlist = lazy(() => import("./components/watchlist/Watchlist"));
 
 function Layout() {
   const catalog = useLiveCatalog();
@@ -46,7 +54,9 @@ function Layout() {
       />
       <CommandPalette games={catalog.games} catalogStatus={catalog.status} onLiveGameResolved={catalog.mergeOne} />
       <main className="page-content">
-        <Outlet context={context} />
+        <Suspense fallback={<RouteFallback />}>
+          <Outlet context={context} />
+        </Suspense>
       </main>
       <Footer />
     </>
