@@ -81,10 +81,19 @@ export async function resolveAndEnrichBatch(
     const batch = titles.slice(i, i + RESOLVE_BATCH_SIZE);
     await Promise.all(
       batch.map(async (title) => {
-        const appid = await resolveTitle(env, title);
-        if (appid == null) return;
-        const enrichment = await enrichFromSteam(env, appid);
-        if (enrichment) out.set(title, enrichment);
+        try {
+          const appid = await resolveTitle(env, title);
+          if (appid == null) return;
+          const enrichment = await enrichFromSteam(env, appid);
+          if (enrichment) out.set(title, enrichment);
+        } catch {
+          // One title's resolve/enrich throwing (a malformed upstream
+          // response, a transient network error) must not lose the rest
+          // of this Promise.all batch's already-successful results --
+          // confirmed live as the actual cause of the backfill stalling
+          // completely on every tick since deploy (see appdetails.ts's own
+          // fix for the specific throw that triggered this).
+        }
       }),
     );
   }

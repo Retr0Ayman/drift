@@ -28,11 +28,26 @@ export const handleAppdetails: Handler = async ({ request }) => {
   const appid = url.searchParams.get("appid");
   if (!/^\d+$/.test(appid || "")) return json({ error: "pass ?appid=" }, 60, 400);
 
-  const r = await fetch(
-    `https://store.steampowered.com/api/appdetails?appids=${appid}&l=english&cc=us`,
-    { cf: { cacheTtl: 3600, cacheEverything: true } } as RequestInit,
-  );
-  const data = (await r.json()) as SteamAppDetailsResponse;
+  let data: SteamAppDetailsResponse;
+  try {
+    const r = await fetch(
+      `https://store.steampowered.com/api/appdetails?appids=${appid}&l=english&cc=us`,
+      { cf: { cacheTtl: 3600, cacheEverything: true } } as RequestInit,
+    );
+    data = (await r.json()) as SteamAppDetailsResponse;
+  } catch {
+    // FIX (confirmed live): Steam occasionally returns a non-JSON error/
+    // rate-limit page instead of the expected appdetails response --
+    // r.json() throwing here was uncaught, which crashed every caller all
+    // the way up. A client-side fetch().catch() always absorbed this
+    // fine, but the D1 backfill (worker/backfill/resolve.ts) calls this
+    // handler directly as a function, no HTTP-response boundary in
+    // between -- the throw took down the entire cron tick, silently
+    // stalling the backfill on every run since deploy. Short TTL so the
+    // next request retries instead of caching a transient failure as if
+    // it were a genuine "no such app" result.
+    return json({ appid: Number(appid), success: false }, 30);
+  }
   const node = data[appid as string];
   if (!node || !node.success) return json({ appid: Number(appid), success: false }, 600);
   const d = node.data;
