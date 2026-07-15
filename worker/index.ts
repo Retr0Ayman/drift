@@ -20,6 +20,7 @@ import { handleSitemap } from "./routes/sitemap";
 import { handleBadge } from "./routes/badge";
 import { handleWishlist } from "./routes/wishlist";
 import { handleFeed } from "./routes/feed";
+import { handleCatalog } from "./routes/catalog";
 import { runScheduledAlert, runSteadyStateSync } from "./scheduled";
 import { runBackfillTick } from "./backfill/run";
 
@@ -53,6 +54,7 @@ const ROUTES: Record<string, Handler> = {
   "/api/wishlist": handleWishlist,
   "/api/feed.xml": handleFeed,
   "/api/search-assist": handleSearchAssist,
+  "/api/catalog": handleCatalog,
 };
 
 export default {
