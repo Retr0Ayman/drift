@@ -1,7 +1,7 @@
 import type { Handler } from "../shared/types";
 import { json } from "../shared/http";
 
-interface GameRow {
+interface JoinedRow {
   id: string;
   xrel_key: string | null;
   title: string;
@@ -18,22 +18,19 @@ interface GameRow {
   metacritic: number | null;
   source_name: string | null;
   source_url: string | null;
-}
-
-interface ReleaseRow {
-  game_id: string;
-  method: string;
-  group_name: string;
-  build: number | null;
-  version: string | null;
-  date: string | null;
-  ts: number | null;
-  note: string | null;
-  xrel_id: string | null;
-  link_href: string | null;
-  is_repack: number;
-  is_anonymous: number;
-  update_count: number;
+  updated_at: number;
+  rel_method: string | null;
+  rel_group_name: string | null;
+  rel_build: number | null;
+  rel_version: string | null;
+  rel_date: string | null;
+  rel_ts: number | null;
+  rel_note: string | null;
+  rel_xrel_id: string | null;
+  rel_link_href: string | null;
+  rel_is_repack: number | null;
+  rel_is_anonymous: number | null;
+  rel_update_count: number | null;
 }
 
 const DEFAULT_PER_PAGE = 200;
@@ -52,6 +49,29 @@ const MAX_PER_PAGE = 500;
    succession), not a meaningful staleness window on its own. */
 const MAXAGE = 30;
 
+/* FIX (confirmed live): the first version of this route paginated games
+   with LIMIT/OFFSET, then fetched their releases with a second query using
+   a dynamically-built `WHERE game_id IN (?,?,?,...)` -- one bound
+   parameter per game on the page. That silently broke for any per_page
+   over ~100 (confirmed live: per_page=100 worked, 101 didn't) -- D1 caps
+   bound parameters per statement well under SQLite's own classic 999
+   limit, and the query throwing got swallowed by this handler's own
+   try/catch, returning an honest-looking-but-wrong empty page instead of
+   an error. A single query joining games to releases (LIMIT/OFFSET on a
+   subquery, so pagination still only binds 2 parameters no matter how
+   many releases a page's games have between them) sidesteps the limit
+   entirely instead of needing a lower page-size cap that could break
+   again the next time a game accumulates enough releases. */
+const QUERY = `
+  SELECT g.*, r.method as rel_method, r.group_name as rel_group_name, r.build as rel_build,
+    r.version as rel_version, r.date as rel_date, r.ts as rel_ts, r.note as rel_note,
+    r.xrel_id as rel_xrel_id, r.link_href as rel_link_href, r.is_repack as rel_is_repack,
+    r.is_anonymous as rel_is_anonymous, r.update_count as rel_update_count
+  FROM (SELECT * FROM games ORDER BY updated_at DESC LIMIT ? OFFSET ?) g
+  LEFT JOIN releases r ON r.game_id = g.id
+  ORDER BY g.updated_at DESC, r.ts DESC
+`;
+
 export const handleCatalog: Handler = async ({ request, env }) => {
   const url = new URL(request.url);
   const page = Math.max(1, Number(url.searchParams.get("page") || "1") || 1);
@@ -59,70 +79,63 @@ export const handleCatalog: Handler = async ({ request, env }) => {
   const offset = (page - 1) * perPage;
 
   try {
-    const [totalRow, gameRows] = await Promise.all([
+    const [totalRow, rows] = await Promise.all([
       env.orlaz_catalog.prepare("SELECT COUNT(*) as n FROM games").first<{ n: number }>(),
-      env.orlaz_catalog
-        .prepare("SELECT * FROM games ORDER BY updated_at DESC LIMIT ? OFFSET ?")
-        .bind(perPage, offset)
-        .all<GameRow>(),
+      env.orlaz_catalog.prepare(QUERY).bind(perPage, offset).all<JoinedRow>(),
     ]);
 
     const total = totalRow?.n ?? 0;
-    const games = gameRows.results || [];
-    if (!games.length) {
-      return json({ games: [], total, hasMore: false }, MAXAGE);
+    const byGame = new Map<string, { row: JoinedRow; releases: JoinedRow[] }>();
+    const order: string[] = [];
+    for (const row of rows.results || []) {
+      let entry = byGame.get(row.id);
+      if (!entry) {
+        entry = { row, releases: [] };
+        byGame.set(row.id, entry);
+        order.push(row.id);
+      }
+      if (row.rel_group_name) entry.releases.push(row);
     }
 
-    const ids = games.map((g) => g.id);
-    const placeholders = ids.map(() => "?").join(",");
-    const releaseRows = await env.orlaz_catalog
-      .prepare(`SELECT * FROM releases WHERE game_id IN (${placeholders}) ORDER BY ts DESC`)
-      .bind(...ids)
-      .all<ReleaseRow>();
+    const games = order.map((id) => {
+      const { row: g, releases } = byGame.get(id)!;
+      return {
+        id: g.id,
+        xrelKey: g.xrel_key || undefined,
+        title: g.title,
+        appid: g.appid,
+        year: g.year,
+        released: g.released || "",
+        developer: g.developer || "",
+        publisher: g.publisher || "",
+        genres: g.genres ? JSON.parse(g.genres) : [],
+        tags: g.tags ? JSON.parse(g.tags) : [],
+        currentBuild: g.current_build ?? 0,
+        survivalHrs: null,
+        desc: g.desc || "",
+        fact: g.fact || "",
+        dlc: [],
+        metacritic: g.metacritic ?? undefined,
+        source: { name: g.source_name || "xREL", url: g.source_url || "https://www.xrel.to/" },
+        releases: releases.map((r) => ({
+          method: r.rel_method as "hv" | "trad",
+          label: r.rel_method === "hv" ? "Hypervisor" : "Traditional",
+          group: r.rel_group_name as string,
+          build: r.rel_build,
+          version: r.rel_version || "",
+          date: r.rel_date || "",
+          ts: r.rel_ts || 0,
+          note: r.rel_note || "",
+          xrelId: r.rel_xrel_id || undefined,
+          link_href: r.rel_link_href || undefined,
+          isRepack: !!r.rel_is_repack,
+          isAnonymous: !!r.rel_is_anonymous,
+          updateCount: r.rel_update_count || 1,
+        })),
+      };
+    });
 
-    const releasesByGame = new Map<string, ReleaseRow[]>();
-    for (const r of releaseRows.results || []) {
-      const list = releasesByGame.get(r.game_id) || [];
-      list.push(r);
-      releasesByGame.set(r.game_id, list);
-    }
-
-    const out = games.map((g) => ({
-      id: g.id,
-      xrelKey: g.xrel_key || undefined,
-      title: g.title,
-      appid: g.appid,
-      year: g.year,
-      released: g.released || "",
-      developer: g.developer || "",
-      publisher: g.publisher || "",
-      genres: g.genres ? JSON.parse(g.genres) : [],
-      tags: g.tags ? JSON.parse(g.tags) : [],
-      currentBuild: g.current_build ?? 0,
-      survivalHrs: null,
-      desc: g.desc || "",
-      fact: g.fact || "",
-      dlc: [],
-      metacritic: g.metacritic ?? undefined,
-      source: { name: g.source_name || "xREL", url: g.source_url || "https://www.xrel.to/" },
-      releases: (releasesByGame.get(g.id) || []).map((r) => ({
-        method: r.method as "hv" | "trad",
-        label: r.method === "hv" ? "Hypervisor" : "Traditional",
-        group: r.group_name,
-        build: r.build,
-        version: r.version || "",
-        date: r.date || "",
-        ts: r.ts || 0,
-        note: r.note || "",
-        xrelId: r.xrel_id || undefined,
-        link_href: r.link_href || undefined,
-        isRepack: !!r.is_repack,
-        isAnonymous: !!r.is_anonymous,
-        updateCount: r.update_count,
-      })),
-    }));
-
-    return json({ games: out, total, hasMore: offset + games.length < total }, MAXAGE);
+    return json({ games, total, hasMore: offset + games.length < total }, MAXAGE);
   } catch {
     // Migrations not applied yet, or D1 genuinely unreachable -- an honest
     // "nothing here yet" empty page, not a 500. useLiveCatalog.ts falls
