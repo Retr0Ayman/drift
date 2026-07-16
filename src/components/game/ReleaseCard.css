@@ -132,6 +132,21 @@
   margin-top: 5px;
 }
 
+/* Two related but distinct facts, not two unrelated colors: the group's
+   real first-ever crack (the anchor achievement, --hv) vs. update activity
+   since then (a lesser, ongoing-maintenance claim, --trad) -- same two
+   hues this card's own left-edge method stripe already draws from,
+   deliberately, since both pairs are "two sides of one group's story" on
+   this card, not competing meanings. Always paired with an explicit text
+   label ("First cracked"/"Latest update"), never color alone. */
+.release-info .release-fact--first {
+  color: var(--hv);
+}
+
+.release-info .release-fact--latest {
+  color: var(--trad);
+}
+
 .release-group-link {
   color: var(--accent);
   cursor: pointer;

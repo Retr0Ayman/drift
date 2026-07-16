@@ -40,6 +40,16 @@ export default function ReleaseCard({ game, release, recencyStatus }: ReleaseCar
   const groupKey = slugify(release.group || "unknown");
   const cardVariant = release.isRepack || release.isAnonymous ? "neutral" : release.method;
 
+  // Two distinct facts, not one blended line: the group's real first-ever
+  // crack (firstSeenDate/Build, falling back to date/build for rows from
+  // before the backfill) vs. whatever this group's latest update landed
+  // (the already-mutable date/build). Only worth showing as a second,
+  // distinct fact when there's genuinely something to distinguish --
+  // update_count > 1 and the two dates actually differ, otherwise "First
+  // cracked" and "Latest update" would just repeat the same date twice.
+  const firstCrackDate = release.firstSeenDate || release.date;
+  const hasLatestUpdate = !!release.updateCount && release.updateCount > 1 && release.date && release.date !== firstCrackDate;
+
   return (
     <GlassPanel className={`release-card release-card--${cardVariant}`} frost>
       <div className="release-top">
@@ -92,9 +102,21 @@ export default function ReleaseCard({ game, release, recencyStatus }: ReleaseCar
           </div>
         </div>
         <div className="release-info">
-          <span className="k">Crack Date</span>
-          <span className="v">{release.date || "—"}</span>
+          <span className="k">First cracked</span>
+          <span className="v release-fact--first">
+            {firstCrackDate || "—"}
+            {release.firstSeenBuild ?? release.build ? ` · ${fmtBuild(release.firstSeenBuild ?? release.build)}` : ""}
+          </span>
         </div>
+        {hasLatestUpdate ? (
+          <div className="release-info">
+            <span className="k">Latest update</span>
+            <span className="v release-fact--latest">
+              {release.date}
+              {release.build != null ? ` · ${fmtBuild(release.build)}` : ""}
+            </span>
+          </div>
+        ) : null}
       </div>
 
       <div className="release-data">
