@@ -39,8 +39,8 @@ export default function AmbientWash({ gameId, primary, secondary }: AmbientWashP
       key={gameId}
       className="ambient-wash"
       style={style}
-      initial={{ opacity: 0.5, scale: 0.08 }}
-      animate={{ opacity: 0.22, scale: 1 }}
+      initial={{ opacity: 0.65, scale: 0.08 }}
+      animate={{ opacity: 0.42, scale: 1 }}
       transition={{ duration: 1.15, ease: [0.16, 1, 0.3, 1] }}
     />
   );

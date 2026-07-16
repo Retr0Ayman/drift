@@ -1,13 +1,20 @@
+/* FIX (confirmed live): the original opacity/blur/color-stop values read
+   as barely-there against the approved mockup's confident color presence
+   -- settled opacity roughly doubled, saturate() added (wasn't present at
+   all before), the gradient's transparent cutoff pushed out from 72% to
+   88% so more of the panel area actually carries visible color instead of
+   diluting to nothing well before the edges, and blur brought down
+   slightly so the color reads as present rather than maximally diffuse. */
 .ambient-wash {
   position: absolute;
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background: radial-gradient(circle at 20% 14%, var(--wash-a) 0%, var(--wash-b) 45%, transparent 72%);
-  filter: blur(70px);
+  background: radial-gradient(circle at 20% 14%, var(--wash-a) 0%, var(--wash-b) 50%, transparent 88%);
+  filter: blur(56px) saturate(1.7);
   transform-origin: 20% 14%;
 }
 
 .ambient-wash--settled {
-  opacity: 0.22;
+  opacity: 0.42;
 }
