@@ -43,8 +43,8 @@ export default function GroupsDirectory() {
         ‹ All titles
       </button>
 
-      <Link to="/leaderboard" className="groups-leaderboard-link">
-        Speed leaderboard — who cracks fastest ›
+      <Link to="/digest" className="groups-leaderboard-link">
+        AI digest — what's notable right now ›
       </Link>
 
       <Reveal>

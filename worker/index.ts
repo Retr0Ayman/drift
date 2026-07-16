@@ -14,6 +14,7 @@ import { handleXrelP2PGroup } from "./routes/xrel/p2pGroup";
 import { handleFaq } from "./routes/faq";
 import { handleFx } from "./routes/fx";
 import { handleSummary } from "./routes/summary";
+import { handleDigest } from "./routes/digest";
 import { handleFact } from "./routes/fact";
 import { handleSearchAssist } from "./routes/searchAssist";
 import { handleSitemap } from "./routes/sitemap";
@@ -53,6 +54,7 @@ const ROUTES: Record<string, Handler> = {
   "/api/faq": handleFaq,
   "/api/fx": handleFx,
   "/api/summary": handleSummary,
+  "/api/digest": handleDigest,
   "/api/fact": handleFact,
   "/api/badge": handleBadge,
   "/api/wishlist": handleWishlist,
@@ -65,20 +67,6 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     const path = url.pathname.replace(/\/+$/, "") || "/";
-
-    // TEMPORARY, one-off, READ-ONLY: progress check for the deep archive
-    // crawl (worker/backfill/archiveRun.ts) so a real remaining-time
-    // estimate can be given instead of a guess. Remove once checked.
-    if (path === "/api/admin/archive-progress" && request.method === "GET") {
-      const db = env.orlaz_catalog;
-      const [state, totalGames] = await Promise.all([
-        db.prepare("SELECT * FROM backfill_state WHERE key LIKE 'archive%'").all(),
-        db.prepare("SELECT COUNT(*) as n FROM games").first(),
-      ]);
-      return new Response(JSON.stringify({ state: state.results, totalGames }, null, 2), {
-        headers: { "Content-Type": "application/json" },
-      });
-    }
 
     if (path.startsWith("/api/")) {
       if (request.method === "OPTIONS") return new Response(null, { headers: CORS });

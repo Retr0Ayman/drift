@@ -20,12 +20,11 @@ import type { CatalogContextValue } from "./hooks/useCatalog";
 const GameDetail = lazy(() => import("./components/game/GameDetail"));
 const GroupsDirectory = lazy(() => import("./components/groups/GroupsDirectory"));
 const GroupProfile = lazy(() => import("./components/groups/GroupProfile"));
-const Leaderboard = lazy(() => import("./components/groups/Leaderboard"));
 const PublishersDirectory = lazy(() => import("./components/publishers/PublishersDirectory"));
 const PublisherProfile = lazy(() => import("./components/publishers/PublisherProfile"));
 const FranchiseProfile = lazy(() => import("./components/publishers/FranchiseProfile"));
 const Watchlist = lazy(() => import("./components/watchlist/Watchlist"));
-const Trends = lazy(() => import("./components/trends/Trends"));
+const Digest = lazy(() => import("./components/digest/Digest"));
 
 function Layout() {
   const catalog = useLiveCatalog();
@@ -84,12 +83,11 @@ export default function App() {
         <Route path="/game/:id" element={<GameDetail />} />
         <Route path="/groups" element={<GroupsDirectory />} />
         <Route path="/group/:key" element={<GroupProfile />} />
-        <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/publishers" element={<PublishersDirectory />} />
         <Route path="/publisher/:key" element={<PublisherProfile />} />
         <Route path="/franchise/:slug" element={<FranchiseProfile />} />
         <Route path="/watchlist" element={<Watchlist />} />
-        <Route path="/trends" element={<Trends />} />
+        <Route path="/digest" element={<Digest />} />
       </Route>
     </Routes>
   );
