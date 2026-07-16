@@ -5,6 +5,7 @@ import Footer from "./components/layout/Footer";
 import IntroAnimation from "./components/layout/IntroAnimation";
 import CommandPalette from "./components/search/CommandPalette";
 import RouteFallback from "./components/layout/RouteFallback";
+import PageTransition from "./components/layout/PageTransition";
 import Home from "./components/home/Home";
 import { useLiveCatalog } from "./hooks/useLiveCatalog";
 import { useTheme } from "./hooks/useTheme";
@@ -64,7 +65,9 @@ function Layout() {
       />
       <main className="page-content">
         <Suspense fallback={<RouteFallback />}>
-          <Outlet context={context} />
+          <PageTransition>
+            <Outlet context={context} />
+          </PageTransition>
         </Suspense>
       </main>
       <Footer />
