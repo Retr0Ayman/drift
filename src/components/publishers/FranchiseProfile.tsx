@@ -2,6 +2,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useCatalog } from "../../hooks/useCatalog";
 import { franchiseFor, franchiseNameForSlug } from "../../lib/companies";
 import Reveal from "../ui/Reveal";
+import GlassPanel from "../ui/GlassPanel";
 import GameCard from "../home/GameCard";
 import { usePageMeta } from "../../hooks/usePageMeta";
 import "./Publishers.css";
@@ -54,7 +55,7 @@ export default function FranchiseProfile() {
       </button>
 
       <Reveal>
-        <div className="publisherhead">
+        <GlassPanel className="publisherhead" frost>
           <div>
             <div className="publisherhead-tag">Franchise</div>
             <h1>{name}</h1>
@@ -62,7 +63,7 @@ export default function FranchiseProfile() {
               {matches.length} title{matches.length === 1 ? "" : "s"} tracked
             </div>
           </div>
-        </div>
+        </GlassPanel>
       </Reveal>
 
       <Reveal delay={0.05}>

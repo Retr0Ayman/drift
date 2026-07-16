@@ -18,3 +18,16 @@
   border: none;
   box-shadow: var(--glass-shadow-lg);
 }
+
+/* Static counterpart to .glass-panel--aura -- same translucent fill +
+   blur, saturate() added per the Stage 3 brief, and a thin border blended
+   from the same two aura hues instead of the spinning conic-gradient ring
+   (reserved for the search bar / hero panel / AI tags). Reuses the exact
+   --aura-* tokens, no new ones invented. */
+.glass-panel--frost {
+  background: var(--aura-panel-bg);
+  backdrop-filter: blur(var(--aura-blur)) saturate(1.4);
+  -webkit-backdrop-filter: blur(var(--aura-blur)) saturate(1.4);
+  border: 1px solid color-mix(in srgb, var(--aura-a), var(--aura-b));
+  box-shadow: var(--glass-shadow-lg);
+}

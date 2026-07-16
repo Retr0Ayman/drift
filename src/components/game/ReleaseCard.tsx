@@ -41,7 +41,7 @@ export default function ReleaseCard({ game, release, recencyStatus }: ReleaseCar
   const cardVariant = release.isRepack || release.isAnonymous ? "neutral" : release.method;
 
   return (
-    <GlassPanel className={`release-card release-card--${cardVariant}`}>
+    <GlassPanel className={`release-card release-card--${cardVariant}`} frost>
       <div className="release-top">
         <span className="release-method">{release.isRepack ? "Repack" : release.isAnonymous ? "Anonymous" : release.label}</span>
         <Pill tone={FLAG_TONE[displayStatus]}>{FLAG_LABEL[displayStatus]}</Pill>

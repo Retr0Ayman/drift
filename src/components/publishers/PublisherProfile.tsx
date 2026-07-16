@@ -4,6 +4,7 @@ import { publisherDomain, isAaaPublisher, publisherCountry, groupByFranchise } f
 import { slugify } from "../../lib/format";
 import CompanyLogo from "./CompanyLogo";
 import Reveal from "../ui/Reveal";
+import GlassPanel from "../ui/GlassPanel";
 import AiSummary from "../ui/AiSummary";
 import GameCard from "../home/GameCard";
 import { usePageMeta } from "../../hooks/usePageMeta";
@@ -48,7 +49,7 @@ export default function PublisherProfile() {
       </button>
 
       <Reveal>
-        <div className="publisherhead">
+        <GlassPanel className="publisherhead" frost>
           <CompanyLogo name={name} domain={domain} size={60} />
           <div>
             <div className="publisherhead-tag">Publisher</div>
@@ -70,7 +71,7 @@ export default function PublisherProfile() {
               }}
             />
           </div>
-        </div>
+        </GlassPanel>
       </Reveal>
 
       {franchises.map((f, i) => (

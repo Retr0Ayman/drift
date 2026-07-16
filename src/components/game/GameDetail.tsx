@@ -276,7 +276,7 @@ export default function GameDetail() {
         </div>
 
         <aside className="detail-side">
-          <GlassPanel className="side-panel">
+          <GlassPanel className="side-panel" frost>
             <div className="status-big">
               <div className="status-ring" style={{ background: ring.bg }}>
                 {ring.label}
@@ -319,7 +319,7 @@ export default function GameDetail() {
             </div>
           </GlassPanel>
 
-          <GlassPanel className="side-panel side-actions">
+          <GlassPanel className="side-panel side-actions" frost>
             <a className="btn btn--accent" href={steamLink(mergedGame)} target="_blank" rel="noopener noreferrer">
               View on Steam
             </a>

@@ -251,15 +251,15 @@ export default function GroupProfile() {
 
       <Reveal delay={0.05}>
         <div className="group-stats">
-          <GlassPanel className="group-stat">
+          <GlassPanel className="group-stat" frost>
             <div className="group-stat-n">{rows.length}</div>
             <div className="group-stat-l">Cracks tracked</div>
           </GlassPanel>
-          <GlassPanel className="group-stat">
+          <GlassPanel className="group-stat" frost>
             <div className="group-stat-n group-stat-n--sm">{fmtDateMs(lastTs)}</div>
             <div className="group-stat-l">Last active</div>
           </GlassPanel>
-          <GlassPanel className="group-stat">
+          <GlassPanel className="group-stat" frost>
             <div className="group-stat-n" style={{ color: "var(--out)" }}>
               {daysSince == null ? "—" : daysSince}
             </div>

@@ -32,15 +32,13 @@ export default function Navbar({ status, onOpenSearch, revealBrandO, theme, onTo
   const scrollProgress = useTransform(scrollY, [0, 120], [0, 1]);
   const scale = useTransform(scrollProgress, [0, 1], [1, 0.985]);
   const shadowAlpha = useTransform(scrollProgress, [0, 1], [0.05, 0.12]);
-  const borderAlpha = useTransform(scrollProgress, [0, 1], [0.12, 0.2]);
   const boxShadow = useTransform(shadowAlpha, (a) => `0 8px 24px -8px rgba(23, 21, 15, ${a})`);
-  const borderColor = useTransform(borderAlpha, (a) => `rgba(23, 21, 15, ${a})`);
 
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <div className="navbar-float">
-      <motion.nav className="navbar" style={{ scale, boxShadow, borderColor }}>
+      <motion.nav className="navbar" style={{ scale, boxShadow }}>
         <div className="navbar-inner">
           <Link to="/" className="navbar-logo" onClick={() => setMenuOpen(false)}>
             <span className="navbar-mark">
