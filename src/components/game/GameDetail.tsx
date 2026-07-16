@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import type { Game } from "../../types/game";
 import { useCatalog } from "../../hooks/useCatalog";
+import AmbientWash from "./AmbientWash";
 import Carousel from "./Carousel";
 import ReleaseCard from "./ReleaseCard";
 import DlcRow from "./DlcRow";
@@ -201,6 +202,7 @@ export default function GameDetail() {
 
   return (
     <div className="wrap detail">
+      <AmbientWash gameId={mergedGame.id} primary={mergedGame.accentColorPrimary} secondary={mergedGame.accentColorSecondary} />
       <button className="back-link" onClick={() => navigate(-1)}>
         ‹ All titles
       </button>

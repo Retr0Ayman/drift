@@ -1,0 +1,13 @@
+.ambient-wash {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(circle at 20% 14%, var(--wash-a) 0%, var(--wash-b) 45%, transparent 72%);
+  filter: blur(70px);
+  transform-origin: 20% 14%;
+}
+
+.ambient-wash--settled {
+  opacity: 0.22;
+}
