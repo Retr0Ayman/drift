@@ -14,7 +14,8 @@
 		"crons": [
 			"*/15 * * * *",
 			"*/2 * * * *",
-			"*/3 * * * *"
+			"*/3 * * * *",
+			"*/4 * * * *"
 		]
 	},
 	"d1_databases": [
@@ -56,4 +57,19 @@
 	// deep_seed_index) in the same backfill_state table, doesn't touch the
 	// original backfill's phase/browse_page/starred_group_index. Same
 	// "cheap no-op forever once done" pattern, safe to leave permanently.
+
+	// Fourth cron ("*/4 * * * *") is the deep archive crawl
+	// (worker/backfill/archiveRun.ts) -- xREL's release/latest.json?archive=
+	// endpoint goes month-by-month with no ~5000-result cap (confirmed live:
+	// a single month alone can report 20000+ total items across all
+	// categories), reaching real history the browse-feed backfill and the
+	// franchise-seeded deep backfill both structurally can't: any real
+	// crack from a title that isn't in the curated franchise map and is
+	// older than what browse_category.json serves. Walks backward 36 months
+	// from just before browse-feed coverage starts, filtered client-side to
+	// real Windows master_game releases (~4% of any given page, the rest is
+	// TV/movies/etc xREL also indexes). This is genuinely the largest of the
+	// four backfills -- expect it to run for days, not hours. Own progress
+	// markers (archive_month/archive_page/archive_months_walked/
+	// archive_phase), same "cheap no-op forever once done" pattern.
 }
