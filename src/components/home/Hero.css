@@ -48,15 +48,6 @@
   color: var(--ink);
 }
 
-.hero-desc {
-  margin-top: 22px;
-  color: var(--ink-2);
-  max-width: 50ch;
-  font-size: 1.05rem;
-  font-weight: 450;
-  line-height: 1.65;
-}
-
 .hero-scrollcue {
   margin-top: 44px;
   display: flex;

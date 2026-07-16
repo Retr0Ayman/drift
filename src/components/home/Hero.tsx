@@ -55,10 +55,6 @@ export default function Hero({ games }: { games: Game[] }) {
           <motion.h1 className="hero-word" {...fadeUp(0.15)}>
             orlaz
           </motion.h1>
-          <motion.p className="hero-desc" {...fadeUp(0.35)}>
-            Live crack, build and version status for PC games — hypervisor and traditional cracks side by
-            side, flagged the moment either falls behind the latest patch.
-          </motion.p>
           <motion.div className="hero-scrollcue" {...fadeUp(0.6)}>
             <span>The catalogue</span>
             <svg viewBox="0 0 16 16" fill="none">

@@ -13,7 +13,8 @@
 	"triggers": {
 		"crons": [
 			"*/15 * * * *",
-			"*/2 * * * *"
+			"*/2 * * * *",
+			"*/3 * * * *"
 		]
 	},
 	"d1_databases": [
@@ -42,4 +43,17 @@
 	// follow-up deploy to remove it. worker/index.ts's scheduled() handler
 	// tells the two triggers apart via ScheduledEvent.cron (must match the
 	// BACKFILL_CRON constant there exactly).
+
+	// Third cron ("*/3 * * * *") is the deep historical backfill
+	// (worker/backfill/deepRun.ts) -- the original browse-feed backfill only
+	// reaches back to what release/browse_category.json will serve (xREL
+	// itself caps that at 50 pages / ~5000 results, confirmed live to reach
+	// back about a year), so older titles (a franchise's earlier entries, a
+	// years-old game like Watch Dogs 2) are structurally invisible to it.
+	// This is a separate, one-time pass seeded from every title in
+	// worker/shared/franchiseSeeds.ts, searched via xREL's search-by-title
+	// endpoint (no date cap). Own progress markers (deep_phase/
+	// deep_seed_index) in the same backfill_state table, doesn't touch the
+	// original backfill's phase/browse_page/starred_group_index. Same
+	// "cheap no-op forever once done" pattern, safe to leave permanently.
 }
