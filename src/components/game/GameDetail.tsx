@@ -15,6 +15,7 @@ import WatchToggle from "../ui/WatchToggle";
 import Tabs, { type TabDef } from "../ui/Tabs";
 import { usePageMeta } from "../../hooks/usePageMeta";
 import { usePlatformP2PIndex } from "../../hooks/usePlatformP2PIndex";
+import { useGameScreenshots } from "../../hooks/useGameScreenshots";
 import { mergeP2PReleases } from "../../lib/catalog";
 import {
   bestBuild,
@@ -25,7 +26,6 @@ import {
   recencyStatusFor,
   sortReleasesByPriority,
   statusMeta,
-  steamImg,
   steamLink,
   steamdbLink,
 } from "../../lib/format";
@@ -79,6 +79,8 @@ export default function GameDetail() {
     return merged === game.releases ? game : { ...game, releases: merged };
   }, [game, p2pIndex]);
 
+  const screenshots = useGameScreenshots(game?.appid);
+
   // Scroll-to-top on navigation is PageTransition's job now (it fires
   // reliably on every real navigation via location.key, and goes through
   // Lenis's own API when the global smooth-scroll instance is active --
@@ -108,20 +110,21 @@ export default function GameDetail() {
   // Images only -- no trailer slide (the YouTube-search trailer link was
   // flaky enough in practice not to be worth keeping).
   //
-  // FIX (confirmed live): library_hero.jpg goes first now, not coverImg()'s
-  // header field -- header_image is a small, fixed 460x215 store-thumbnail
-  // size (confirmed: naturalWidth 460 in the rendered carousel), visibly
-  // blurry stretched across the full carousel width. library_hero.jpg is a
-  // real 1920px-wide asset when it exists, and a live sample of 30 real
-  // catalog games confirmed it resolves 29/30 (96.7%) -- reliable enough to
-  // lead with, and the existing per-slide placeholder fallback
-  // (CarouselSlideImage) already covers the rare miss cleanly. coverImg()
-  // (small but D1-authoritative) stays as the second slide, still reliable
-  // when it's the only real image a title has; capsule_616x353.jpg (guessed,
-  // medium-res) stays third. coverImg() itself is untouched -- card grids,
-  // list rows, and the social meta image (usePageMeta below) still want the
-  // small thumbnail, not this carousel-specific ordering.
-  const carouselSources = [steamImg(mergedGame.appid || 0, "library_hero.jpg"), coverImg(mergedGame), steamImg(mergedGame.appid || 0, "capsule_616x353.jpg")].filter(
+  // FIX (confirmed live): guessed CDN paths (library_hero.jpg,
+  // capsule_616x353.jpg) turned out genuinely unreliable, not just for old
+  // titles -- both 404 for EA Sports College Football 27, a current, real
+  // game. And coverImg()'s D1-backed header field, while reliable, is
+  // ALWAYS a fixed 460x215 store-thumbnail size no matter which CDN domain
+  // it's hosted on (confirmed: naturalWidth 460 in the rendered carousel),
+  // so leading with it can never actually fix the blur, only mask it.
+  // useGameScreenshots fetches the game's real screenshots (path_full,
+  // genuinely ~1920x1080) live -- reliable for any title with a real Steam
+  // store page, no guessing. Up to 2 real screenshots lead, coverImg stays
+  // as a fallback slide (and the only one shown before the live fetch
+  // resolves). coverImg() itself is untouched -- card grids, list rows,
+  // and the social meta image (usePageMeta below) still want the small
+  // thumbnail, not this carousel-specific ordering.
+  const carouselSources = [...screenshots.slice(0, 2), coverImg(mergedGame)].filter(
     (src, i, arr): src is string => !!src && arr.indexOf(src) === i,
   );
   const slides = mergedGame.appid
