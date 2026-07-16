@@ -13,8 +13,24 @@ export interface SummaryResult {
 
 export type SummaryFacts = Record<string, string | number | string[] | undefined>;
 
-/* Cached per group/publisher key in localStorage -- generated once, not
-   regenerated every page view. Same honesty rule as FAQ generation: a
+/* FIX (confirmed live): a permanent per-key cache read as visibly wrong --
+   DenuvOwO's AI summary said "25 tracked releases" while the page's own
+   stat card, reading live data, said 168. The backfill/archive work can
+   grow a group's or publisher's real count substantially after the first
+   summary was ever generated, and this cache had no way to notice. Folding
+   every numeric fact (release/title counts, the only figures that actually
+   signal "enough has changed to regenerate") into the cache key means a
+   real change busts it automatically -- same fix already applied to the
+   Digest page's own cache for the identical reason. */
+function factsSignature(facts: SummaryFacts): string {
+  return Object.values(facts)
+    .filter((v): v is number => typeof v === "number")
+    .join(".");
+}
+
+/* Cached per group/publisher key (+ that numeric signature) in localStorage
+   -- generated once per real state, not regenerated every page view, but
+   not frozen forever either. Same honesty rule as FAQ generation: a
    missing key or failed call surfaces as a real error, never masked. */
 export async function fetchSummary(
   kind: "group" | "publisher",
@@ -22,7 +38,7 @@ export async function fetchSummary(
   name: string,
   facts: SummaryFacts,
 ): Promise<SummaryResult> {
-  const cacheKey = CACHE_PREFIX + kind + "." + key;
+  const cacheKey = CACHE_PREFIX + kind + "." + key + "." + factsSignature(facts);
   const cached = localStorage.getItem(cacheKey);
   if (cached) return { summary: cached, error: null };
 
