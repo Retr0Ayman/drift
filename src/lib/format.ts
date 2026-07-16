@@ -111,7 +111,13 @@ export const fmtBuild = (n: number | null | undefined): string => (n ? "#" + n.t
 
 const STEAM_CDN = "https://cdn.cloudflare.steamstatic.com/steam/apps/";
 export const steamImg = (appid: number, file: string): string => `${STEAM_CDN}${appid}/${file}`;
-export const coverImg = (g: Game): string | null => (g.appid ? steamImg(g.appid, "header.jpg") : null);
+/* Prefers Steam's own real header_image URL (D1's `header` column, backfilled
+   via worker/backfill/resolve.ts) -- confirmed live that Steam has moved many
+   titles' header.jpg to a per-app hashed path under shared.akamai.steamstatic.com,
+   so the flat cdn.cloudflare.steamstatic.com guess below 404s for most
+   recently-added games. Only falls back to that guess for rows D1 hasn't
+   re-enriched with the real URL yet. */
+export const coverImg = (g: Game): string | null => g.header || (g.appid ? steamImg(g.appid, "header.jpg") : null);
 
 export const steamLink = (g: Game): string =>
   g.appid

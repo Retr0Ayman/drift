@@ -18,6 +18,11 @@ export interface Enrichment {
   currentBuild: number | null;
   desc: string;
   metacritic: number | null;
+  /* Steam's own authoritative header image URL (appdetails.ts's `header`
+     field, straight from Steam's header_image) -- not reconstructed from
+     appid client-side. See migrations/0002_add_header_image.sql for why
+     that reconstruction stopped being reliable. */
+  header: string | null;
 }
 
 /* Calls the route handlers directly with a synthetic same-origin Request,
@@ -51,6 +56,7 @@ export async function enrichFromSteam(env: Env, appid: number): Promise<Enrichme
     desc?: string;
     about?: string;
     metacritic?: number | null;
+    header?: string;
   };
   if (!d.appid) return null;
   return {
@@ -63,6 +69,7 @@ export async function enrichFromSteam(env: Env, appid: number): Promise<Enrichme
     currentBuild: d.currentBuild ?? null,
     desc: d.about || d.desc || "",
     metacritic: d.metacritic ?? null,
+    header: d.header || null,
   };
 }
 

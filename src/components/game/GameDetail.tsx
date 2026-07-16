@@ -17,6 +17,7 @@ import { usePlatformP2PIndex } from "../../hooks/usePlatformP2PIndex";
 import { mergeP2PReleases } from "../../lib/catalog";
 import {
   bestBuild,
+  coverImg,
   driftDelta,
   fmtBuild,
   gStatus,
@@ -42,7 +43,7 @@ const STATUS_RING: Record<string, { bg: string; label: string }> = {
    in place, leaving an empty box where a slide should be. Falls back to
    the exact same placeholder treatment an unresolved game's slides already
    get, per-slide, instead of rendering nothing. */
-function CarouselSlideImage({ appid, file, index }: { appid: number; file: string; index: number }) {
+function CarouselSlideImage({ src, index }: { src: string; index: number }) {
   const [failed, setFailed] = useState(false);
   if (failed) {
     return (
@@ -53,7 +54,7 @@ function CarouselSlideImage({ appid, file, index }: { appid: number; file: strin
       </div>
     );
   }
-  return <img src={steamImg(appid, file)} alt="" onError={() => setFailed(true)} />;
+  return <img src={src} alt="" onError={() => setFailed(true)} />;
 }
 
 export default function GameDetail() {
@@ -84,7 +85,7 @@ export default function GameDetail() {
   usePageMeta({
     title: game?.title || "Title not found",
     description: game?.desc || undefined,
-    image: game?.appid ? steamImg(game.appid, "header.jpg") : undefined,
+    image: game ? coverImg(game) || undefined : undefined,
   });
 
   if (!mergedGame) {
@@ -102,11 +103,16 @@ export default function GameDetail() {
   const drift = driftDelta(mergedGame);
 
   // Images only -- no trailer slide (the YouTube-search trailer link was
-  // flaky enough in practice not to be worth keeping).
+  // flaky enough in practice not to be worth keeping). Real header URL
+  // (Steam's own, when D1 has it) goes first -- it's authoritative, unlike
+  // the other two slides, which are still guessed CDN paths that 404 for
+  // any title Steam's moved to its newer hashed asset pipeline (see
+  // coverImg's own comment in lib/format.ts).
+  const carouselSources = [coverImg(mergedGame), steamImg(mergedGame.appid || 0, "library_hero.jpg"), steamImg(mergedGame.appid || 0, "capsule_616x353.jpg")].filter(
+    (src, i, arr): src is string => !!src && arr.indexOf(src) === i,
+  );
   const slides = mergedGame.appid
-    ? ["library_hero.jpg", "header.jpg", "capsule_616x353.jpg"].map((f, i) => (
-        <CarouselSlideImage key={f} appid={mergedGame.appid as number} file={f} index={i} />
-      ))
+    ? carouselSources.map((src, i) => <CarouselSlideImage key={src} src={src} index={i} />)
     : [0, 1, 2].map((i) => (
         <div className="carousel-placeholder" key={i}>
           Screenshot {i + 1}

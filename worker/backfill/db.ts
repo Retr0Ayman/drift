@@ -14,13 +14,13 @@ export async function setBackfillState(db: D1Database, key: string, value: strin
 }
 
 const UPSERT_GAME_SQL = `
-  INSERT INTO games (id, xrel_key, title, appid, year, released, developer, publisher, genres, tags, current_build, desc, fact, metacritic, source_name, source_url, updated_at)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  INSERT INTO games (id, xrel_key, title, appid, year, released, developer, publisher, genres, tags, current_build, desc, fact, metacritic, source_name, source_url, header, updated_at)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   ON CONFLICT(id) DO UPDATE SET
     xrel_key = excluded.xrel_key, title = excluded.title, appid = excluded.appid, year = excluded.year,
     released = excluded.released, developer = excluded.developer, publisher = excluded.publisher,
     genres = excluded.genres, current_build = excluded.current_build, desc = excluded.desc,
-    metacritic = excluded.metacritic, updated_at = excluded.updated_at
+    metacritic = excluded.metacritic, header = excluded.header, updated_at = excluded.updated_at
 `;
 
 // Same "collapse repeat releases from the same group down to their latest,
@@ -105,6 +105,7 @@ export async function upsertGames(db: D1Database, games: ParsedGame[], enrichmen
           enrichment.metacritic,
           "xREL",
           "https://www.xrel.to/",
+          enrichment.header,
           now,
         ),
       );

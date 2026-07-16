@@ -18,6 +18,7 @@ interface JoinedRow {
   metacritic: number | null;
   source_name: string | null;
   source_url: string | null;
+  header: string | null;
   updated_at: number;
   rel_method: string | null;
   rel_group_name: string | null;
@@ -104,6 +105,7 @@ export const handleCatalog: Handler = async ({ request, env }) => {
         xrelKey: g.xrel_key || undefined,
         title: g.title,
         appid: g.appid,
+        header: g.header || undefined,
         year: g.year,
         released: g.released || "",
         developer: g.developer || "",

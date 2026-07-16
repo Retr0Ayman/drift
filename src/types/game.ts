@@ -38,6 +38,13 @@ export interface Game {
   id: string;
   title: string;
   appid: number | null;
+  /* Steam's own authoritative header image URL, when D1 has it (backfilled
+     via worker/backfill/resolve.ts). Steam moved many titles' header image
+     to a per-app hashed CDN path, so guessing steamImg(appid, "header.jpg")
+     404s for most recently-added games -- coverImg() in lib/format.ts
+     prefers this real URL and only falls back to the guess for rows not
+     yet re-enriched. */
+  header?: string | null;
   year: number | null;
   released: string;
   developer?: string;
