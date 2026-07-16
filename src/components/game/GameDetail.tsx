@@ -106,12 +106,22 @@ export default function GameDetail() {
   const drift = driftDelta(mergedGame);
 
   // Images only -- no trailer slide (the YouTube-search trailer link was
-  // flaky enough in practice not to be worth keeping). Real header URL
-  // (Steam's own, when D1 has it) goes first -- it's authoritative, unlike
-  // the other two slides, which are still guessed CDN paths that 404 for
-  // any title Steam's moved to its newer hashed asset pipeline (see
-  // coverImg's own comment in lib/format.ts).
-  const carouselSources = [coverImg(mergedGame), steamImg(mergedGame.appid || 0, "library_hero.jpg"), steamImg(mergedGame.appid || 0, "capsule_616x353.jpg")].filter(
+  // flaky enough in practice not to be worth keeping).
+  //
+  // FIX (confirmed live): library_hero.jpg goes first now, not coverImg()'s
+  // header field -- header_image is a small, fixed 460x215 store-thumbnail
+  // size (confirmed: naturalWidth 460 in the rendered carousel), visibly
+  // blurry stretched across the full carousel width. library_hero.jpg is a
+  // real 1920px-wide asset when it exists, and a live sample of 30 real
+  // catalog games confirmed it resolves 29/30 (96.7%) -- reliable enough to
+  // lead with, and the existing per-slide placeholder fallback
+  // (CarouselSlideImage) already covers the rare miss cleanly. coverImg()
+  // (small but D1-authoritative) stays as the second slide, still reliable
+  // when it's the only real image a title has; capsule_616x353.jpg (guessed,
+  // medium-res) stays third. coverImg() itself is untouched -- card grids,
+  // list rows, and the social meta image (usePageMeta below) still want the
+  // small thumbnail, not this carousel-specific ordering.
+  const carouselSources = [steamImg(mergedGame.appid || 0, "library_hero.jpg"), coverImg(mergedGame), steamImg(mergedGame.appid || 0, "capsule_616x353.jpg")].filter(
     (src, i, arr): src is string => !!src && arr.indexOf(src) === i,
   );
   const slides = mergedGame.appid
