@@ -80,7 +80,22 @@ export const handleXrelGroup: Handler = async ({ request }) => {
     const pageItems = [...(data.results || []), ...(data.p2p_results || []).map(normalizeP2P)].filter(
       (rel) => (rel.group_name || "").toLowerCase() === target,
     );
-    if (!pageItems.length) break;
+    if (!pageItems.length) {
+      // FIX (confirmed live): xREL can also return a plain 200 OK on page 1
+      // with a body that filters down to zero matching items -- not a
+      // thrown/non-ok failure, so the check above never caught it, and it
+      // got cached as if "this starred group genuinely has 0 releases" for
+      // the full 300s. That's implausible for a curated, actively-cracking
+      // STARRED_GROUPS entry (confirmed live: caught this happening to
+      // DenuvOwO mid-investigation, poisoning collectCandidates() with an
+      // empty result for its cache window and silently dropping new
+      // releases like Persona 3 Reload from that sync cycle). Treated the
+      // same as a real upstream failure for caching purposes -- short TTL,
+      // not the normal 300s -- so the next request gets a genuine fresh
+      // shot instead of replaying this one response for 5 minutes.
+      upstreamFailed = page === 1;
+      break;
+    }
 
     let addedNew = false;
     for (const rel of pageItems) {
@@ -97,11 +112,14 @@ export const handleXrelGroup: Handler = async ({ request }) => {
   // produces an empty list -- one xREL rate-limit hit would then get
   // remembered as "this group has 0 releases" for the next 15 minutes,
   // for every caller (both the group profile page and the catalog's
-  // background seed-merge), long after xREL itself had recovered. An empty
-  // result from a real upstream failure now gets a 20s TTL so the next
-  // request retries for real instead of replaying the same failure. A
-  // genuinely empty result (upstream responded fine, just found nothing)
-  // still caches normally -- that's real data, not a symptom of failure.
+  // background seed-merge), long after xREL itself had recovered. Both a
+  // hard upstream failure AND a 200-but-zero-matching-items page 1 (see the
+  // upstreamFailed assignment above) now get a 20s TTL so the next request
+  // retries for real instead of replaying the same empty result -- neither
+  // is trustworthy enough to cache as "this starred group really has 0
+  // releases" for a curated, actively-cracking group. An empty result
+  // reached via later pages simply running out of new content (addedNew
+  // false) is real data and still caches normally.
   // Success TTL matches the shortened upstream cacheTtl above (300s) so the
   // response callers receive is never staler than the fetch that built it.
   const maxage = upstreamFailed ? 20 : 300;
