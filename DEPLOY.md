@@ -1,7 +1,7 @@
 # Orvyn — deploy (one Cloudflare Worker, static assets + API together)
 
 The app is branded "Orvyn"; the underlying Cloudflare Worker project, its
-`wrangler.jsonc` `name`, and the `drift.aymanestifanos9.workers.dev` URL are
+`wrangler.jsonc` `name`, and the `drift.orlaz.workers.dev` URL are
 unchanged on purpose (deployment identifiers, not visible branding) — every
 `drift`/`drift-api` reference below is that literal project/URL, not the
 product name.
@@ -12,7 +12,7 @@ routes `/api/*` to the ported route handlers under `worker/routes/**` and falls 
 to `env.ASSETS.fetch(request)` (the built Vite app) for everything else.
 
 This is **not** classic Cloudflare Pages — confirmed against the live deploy
-(`drift.aymanestifanos9.workers.dev`, a `workers.dev` domain): Pages Functions'
+(`drift.orlaz.workers.dev`, a `workers.dev` domain): Pages Functions'
 `functions/`-directory auto-routing simply doesn't apply to this model, which is why
 `/api/*` was silently falling through to the SPA's `index.html` before this fix.
 GitHub Pages and the old standalone `drift-api` Worker are retired; nothing to clean
@@ -70,14 +70,14 @@ client falls back to the ASCII `.nfo` — nothing breaks.
 Once deployed, hit these directly against the live host:
 
 ```
-https://drift.aymanestifanos9.workers.dev/api/appdetails?appid=2358720      -> {appid, title, desc, currentBuild, dlc:[appids], ...}
-https://drift.aymanestifanos9.workers.dev/api/resolve?title=Watch+Dogs       -> {appid:243470, matchedName:"Watch_Dogs™"}
-https://drift.aymanestifanos9.workers.dev/api/resolve?title=Watch+Dogs+2     -> {appid:447040, matchedName:"Watch_Dogs® 2"}
-https://drift.aymanestifanos9.workers.dev/api/build?appid=2358720            -> {appid, buildid}
-https://drift.aymanestifanos9.workers.dev/api/xrel?latest=1                  -> {list:[...]} (xREL releases, page 1 only)
-https://drift.aymanestifanos9.workers.dev/api/xrel/browse?page=1&per_page=60 -> {list:[...], total_count} — the main Windows-category catalog feed
-https://drift.aymanestifanos9.workers.dev/api/xrel/group?name=DenuvOwO       -> {list:[...]} — that group's real releases (P2P groups aren't in /browse at all, see worker/routes/xrel/group.ts)
-https://drift.aymanestifanos9.workers.dev/api/xrel/nfo?id=<relid>            -> PNG, or 501 if secrets unset
+https://drift.orlaz.workers.dev/api/appdetails?appid=2358720      -> {appid, title, desc, currentBuild, dlc:[appids], ...}
+https://drift.orlaz.workers.dev/api/resolve?title=Watch+Dogs       -> {appid:243470, matchedName:"Watch_Dogs™"}
+https://drift.orlaz.workers.dev/api/resolve?title=Watch+Dogs+2     -> {appid:447040, matchedName:"Watch_Dogs® 2"}
+https://drift.orlaz.workers.dev/api/build?appid=2358720            -> {appid, buildid}
+https://drift.orlaz.workers.dev/api/xrel?latest=1                  -> {list:[...]} (xREL releases, page 1 only)
+https://drift.orlaz.workers.dev/api/xrel/browse?page=1&per_page=60 -> {list:[...], total_count} — the main Windows-category catalog feed
+https://drift.orlaz.workers.dev/api/xrel/group?name=DenuvOwO       -> {list:[...]} — that group's real releases (P2P groups aren't in /browse at all, see worker/routes/xrel/group.ts)
+https://drift.orlaz.workers.dev/api/xrel/nfo?id=<relid>            -> PNG, or 501 if secrets unset
 ```
 
 Anything under `/api/` that isn't one of the routes above returns a `404` JSON body

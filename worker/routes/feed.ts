@@ -2,7 +2,7 @@ import type { Handler } from "../shared/types";
 import { collectCandidates, isAlertable } from "../scheduled";
 import { methodForGroup } from "../shared/constants";
 
-const BASE_URL = "https://drift.aymanestifanos9.workers.dev";
+const BASE_URL = "https://drift.orlaz.workers.dev";
 const SITE_TITLE = "orlaz — new cracks";
 const SITE_DESC = "New PC game crack releases, live from xREL.";
 

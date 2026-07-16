@@ -2,7 +2,7 @@ import type { Handler } from "../shared/types";
 import { handleXrelBrowse } from "./xrel/browse";
 import type { RawXrelRelease } from "../shared/xrel";
 
-const BASE_URL = "https://drift.aymanestifanos9.workers.dev";
+const BASE_URL = "https://drift.orlaz.workers.dev";
 const STATIC_ROUTES = ["/", "/#/groups", "/#/leaderboard", "/#/publishers", "/#/watchlist"];
 
 const slugify = (s: string): string =>
