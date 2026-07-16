@@ -25,6 +25,7 @@ const PublishersDirectory = lazy(() => import("./components/publishers/Publisher
 const PublisherProfile = lazy(() => import("./components/publishers/PublisherProfile"));
 const FranchiseProfile = lazy(() => import("./components/publishers/FranchiseProfile"));
 const Watchlist = lazy(() => import("./components/watchlist/Watchlist"));
+const Trends = lazy(() => import("./components/trends/Trends"));
 
 function Layout() {
   const catalog = useLiveCatalog();
@@ -88,6 +89,7 @@ export default function App() {
         <Route path="/publisher/:key" element={<PublisherProfile />} />
         <Route path="/franchise/:slug" element={<FranchiseProfile />} />
         <Route path="/watchlist" element={<Watchlist />} />
+        <Route path="/trends" element={<Trends />} />
       </Route>
     </Routes>
   );
