@@ -49,21 +49,32 @@ export const handleXrelGroup: Handler = async ({ request }) => {
   // someone opens a group profile. One retry after a brief pause recovers
   // most of these without meaningfully slowing down the common case (only
   // the failing page pays the extra round trip).
+  function apiUrl(page: number, bustCache: boolean): string {
+    return (
+      "https://api.xrel.to/v2/search/releases.json?q=" +
+      enc(name) +
+      "&scene=1&p2p=1&per_page=100&page=" +
+      page +
+      // Cloudflare's own edge cache (cacheEverything below) would otherwise
+      // just replay a bad-but-200 response for a same-URL retry too, since
+      // it's a "successful" status -- only used for the suspiciously-empty
+      // retry below, where a genuinely fresh upstream attempt matters.
+      (bustCache ? "&_r=" + Date.now() : "")
+    );
+  }
+
+  const fetchOpts = { cf: { cacheTtl: 300, cacheEverything: true } } as RequestInit;
   async function fetchPage(page: number): Promise<Response> {
-    const api =
-      "https://api.xrel.to/v2/search/releases.json?q=" + enc(name) + "&scene=1&p2p=1&per_page=100&page=" + page;
-    // Shorter than the 900s every other xREL route in this file's siblings
-    // uses -- deliberately, not an oversight. This is the only route P2P
-    // crack freshness depends on (P2P groups never appear in the browse/
-    // archive feeds those other routes serve), and a release showing up
-    // under an hour late defeats the point of a tracker whose whole job is
-    // "did this crack drop yet." 300s caps real-world staleness to 5
-    // minutes instead of 15, at a still-reasonable cost in upstream calls.
-    const opts = { cf: { cacheTtl: 300, cacheEverything: true } } as RequestInit;
-    const first = await fetch(api, opts);
+    const first = await fetch(apiUrl(page, false), fetchOpts);
     if (first.ok) return first;
     await new Promise((res) => setTimeout(res, 400));
-    return fetch(api, opts);
+    return fetch(apiUrl(page, false), fetchOpts);
+  }
+
+  function extractPageItems(data: SearchReleasesResponse): RawXrelRelease[] {
+    return [...(data.results || []), ...(data.p2p_results || []).map(normalizeP2P)].filter(
+      (rel) => (rel.group_name || "").toLowerCase() === target,
+    );
   }
 
   const seen = new Map<string, RawXrelRelease>();
@@ -76,23 +87,27 @@ export const handleXrelGroup: Handler = async ({ request }) => {
       upstreamFailed = page === 1;
       break;
     }
-    const data = (await r.json()) as SearchReleasesResponse;
-    const pageItems = [...(data.results || []), ...(data.p2p_results || []).map(normalizeP2P)].filter(
-      (rel) => (rel.group_name || "").toLowerCase() === target,
-    );
+    let pageItems = extractPageItems((await r.json()) as SearchReleasesResponse);
+
+    // FIX (confirmed live, repeatedly): xREL can also return a plain 200 OK
+    // on page 1 with a body that filters down to zero matching items -- not
+    // a thrown/non-ok failure, so the check above never catches it. That's
+    // implausible for a curated, actively-cracking STARRED_GROUPS entry
+    // (confirmed live: caught DenuvOwO returning empty then real data
+    // seconds apart on repeated identical requests -- this isn't rare).
+    // A real second attempt, not just a shorter cache TTL -- the earlier
+    // fix (see maxage below) only shortened how long a bad result gets
+    // remembered for *future* callers; it didn't give *this* call, the one
+    // steady-state sync itself is waiting on, any better odds of succeeding
+    // in the first place. Cache-busted so this doesn't just replay
+    // Cloudflare's own cached copy of the same empty response.
+    if (!pageItems.length && page === 1) {
+      await new Promise((res) => setTimeout(res, 500));
+      const retry = await fetch(apiUrl(1, true), fetchOpts);
+      if (retry.ok) pageItems = extractPageItems((await retry.json()) as SearchReleasesResponse);
+    }
+
     if (!pageItems.length) {
-      // FIX (confirmed live): xREL can also return a plain 200 OK on page 1
-      // with a body that filters down to zero matching items -- not a
-      // thrown/non-ok failure, so the check above never caught it, and it
-      // got cached as if "this starred group genuinely has 0 releases" for
-      // the full 300s. That's implausible for a curated, actively-cracking
-      // STARRED_GROUPS entry (confirmed live: caught this happening to
-      // DenuvOwO mid-investigation, poisoning collectCandidates() with an
-      // empty result for its cache window and silently dropping new
-      // releases like Persona 3 Reload from that sync cycle). Treated the
-      // same as a real upstream failure for caching purposes -- short TTL,
-      // not the normal 300s -- so the next request gets a genuine fresh
-      // shot instead of replaying this one response for 5 minutes.
       upstreamFailed = page === 1;
       break;
     }
