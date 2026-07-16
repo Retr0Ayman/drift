@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { motion, useScroll, useTransform } from "motion/react";
 import SearchBar from "../search/SearchBar";
 import DriftMark from "../ui/illustrations/DriftMark";
-import type { Game } from "../../types/game";
 import type { CatalogStatus } from "../../hooks/useLiveCatalog";
 import "./Navbar.css";
 
@@ -14,9 +13,8 @@ const STATUS_LABEL: Record<CatalogStatus, string> = {
 };
 
 interface NavbarProps {
-  games: Game[];
   status: CatalogStatus;
-  onLiveGameResolved: (game: Game) => void;
+  onOpenSearch: () => void;
   revealBrandO: boolean;
   theme: "light" | "dark";
   onToggleTheme: () => void;
@@ -29,7 +27,7 @@ interface NavbarProps {
    shadow/border intensity and a slight scale-down, not a 0->solid alpha
    ramp -- a floating element that's invisible at rest reads as broken, not
    restrained, the way a flush edge-to-edge bar could get away with. */
-export default function Navbar({ games, status, onLiveGameResolved, revealBrandO, theme, onToggleTheme }: NavbarProps) {
+export default function Navbar({ status, onOpenSearch, revealBrandO, theme, onToggleTheme }: NavbarProps) {
   const { scrollY } = useScroll();
   const scrollProgress = useTransform(scrollY, [0, 120], [0, 1]);
   const scale = useTransform(scrollProgress, [0, 1], [1, 0.985]);
@@ -76,7 +74,7 @@ export default function Navbar({ games, status, onLiveGameResolved, revealBrandO
           </div>
 
           <div className="navbar-search-slot">
-            <SearchBar games={games} onLiveGameResolved={onLiveGameResolved} />
+            <SearchBar onOpenSearch={onOpenSearch} />
           </div>
 
           <div className="navbar-live">

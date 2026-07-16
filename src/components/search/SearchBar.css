@@ -7,11 +7,23 @@
   position: relative;
   display: flex;
   align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 14px 0 38px;
+  border: none;
+  cursor: pointer;
   color: var(--ink-3);
   border-radius: var(--pill);
   background: var(--aura-panel-bg);
   backdrop-filter: blur(var(--aura-blur));
   -webkit-backdrop-filter: blur(var(--aura-blur));
+  transition: box-shadow var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+
+.searchbar:hover,
+.searchbar:focus-visible {
+  color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-dim);
 }
 
 .searchbar svg {
@@ -23,33 +35,20 @@
   transition: color var(--dur) var(--ease);
 }
 
-.searchbar input {
-  height: 40px;
-  background: none;
-  border: none;
-  border-radius: var(--pill);
-  color: var(--ink);
+.searchbar-placeholder {
   font-size: 0.9rem;
   font-weight: 500;
-  padding: 0 16px 0 38px;
-  width: 220px;
-  outline: none;
-  transition: width var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
-}
-
-.searchbar input::placeholder {
   color: var(--ink-3);
-  font-weight: 450;
-}
-
-.searchbar input:focus {
-  width: 320px;
-  box-shadow: 0 0 0 4px var(--accent-dim);
+  width: 220px;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .searchbar-kbd-hint {
   flex: none;
-  margin-right: 10px;
+  margin-left: auto;
   font-family: var(--mono);
   font-size: 0.62rem;
   font-weight: 700;
@@ -61,224 +60,12 @@
   pointer-events: none;
 }
 
-.searchbar input:focus ~ .searchbar-kbd-hint {
-  display: none;
-}
-
 @media (max-width: 720px) {
   .searchbar-kbd-hint {
     display: none;
   }
-}
 
-.searchbar input:focus + svg,
-.searchbar:focus-within svg {
-  color: var(--accent);
-}
-
-.searchbar-popover {
-  width: min(380px, 90vw);
-  background: var(--bg-1);
-  border: 1px solid var(--glass-border-strong);
-  border-radius: var(--r-md);
-  box-shadow: var(--glass-shadow-lg);
-  padding: 8px;
-  z-index: 90;
-  max-height: 64vh;
-  overflow-y: auto;
-  transform-origin: top right;
-  animation: searchbar-pop-in 0.16s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.searchbar-popover[data-state="closed"] {
-  animation: searchbar-pop-out 0.12s ease-in forwards;
-}
-
-@keyframes searchbar-pop-in {
-  from {
-    opacity: 0;
-    transform: translateY(-6px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-@keyframes searchbar-pop-out {
-  from {
-    opacity: 1;
-    transform: none;
-  }
-  to {
-    opacity: 0;
-    transform: translateY(-6px) scale(0.98);
-  }
-}
-
-.searchbar-status {
-  padding: 14px 14px;
-  font-size: 0.82rem;
-  color: var(--ink-3);
-  font-weight: 500;
-}
-
-.searchbar-group + .searchbar-group {
-  margin-top: 4px;
-  padding-top: 8px;
-  border-top: 1px solid var(--glass-border);
-}
-
-.searchbar-group-label {
-  padding: 8px 12px 4px;
-  font-size: 0.62rem;
-  font-weight: 800;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  color: var(--ink-3);
-}
-
-.searchbar-intent {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 12px 14px;
-  margin-bottom: 4px;
-  border: none;
-  border-radius: var(--r-sm);
-  background: var(--accent-dim);
-  color: var(--ink);
-  font-size: 0.86rem;
-  font-weight: 500;
-  cursor: pointer;
-  text-align: left;
-}
-
-.searchbar-intent strong {
-  color: var(--accent);
-}
-
-.searchbar-intent:hover,
-.searchbar-intent.searchbar-item--active {
-  background: var(--accent-dim-2);
-}
-
-.searchbar-intent-icon {
-  font-size: 1rem;
-  color: var(--accent);
-  flex: none;
-}
-
-.searchbar-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  width: 100%;
-  padding: 11px 12px;
-  border: none;
-  background: none;
-  border-radius: var(--r-sm);
-  font-size: 0.87rem;
-  font-weight: 600;
-  color: var(--ink-2);
-  cursor: pointer;
-  text-align: left;
-  transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
-}
-
-.searchbar-item:hover,
-.searchbar-item--active {
-  background: var(--glass-bg-strong);
-  color: var(--ink);
-}
-
-.searchbar-item-title {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.searchbar-item-year {
-  font-size: 0.72rem;
-  color: var(--ink-3);
-  font-weight: 600;
-  flex: none;
-}
-
-/* Each row fades/slides in with a small stagger driven by --i (set inline
-   per row in SearchBar.tsx) instead of the whole list popping in as one
-   flat block -- capped at 8 steps so a long result list doesn't visibly
-   trickle in one row at a time. */
-.searchbar-row {
-  animation: searchbar-row-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) backwards;
-  animation-delay: calc(min(var(--i, 0), 8) * 22ms);
-}
-
-@keyframes searchbar-row-in {
-  from {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-.searchbar-status--thinking {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-}
-
-.searchbar-thinking-dot {
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: var(--accent);
-  opacity: 0.35;
-  animation: searchbar-thinking-pulse 1.1s ease-in-out infinite;
-}
-
-.searchbar-thinking-dot:nth-child(2) {
-  animation-delay: 0.15s;
-}
-
-.searchbar-thinking-dot:nth-child(3) {
-  animation-delay: 0.3s;
-}
-
-@keyframes searchbar-thinking-pulse {
-  0%,
-  100% {
-    opacity: 0.25;
-    transform: scale(0.85);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.15);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .searchbar-row {
-    animation: none;
-  }
-
-  .searchbar-thinking-dot {
-    animation: none;
-    opacity: 0.6;
-  }
-}
-
-@media (max-width: 720px) {
-  .searchbar input {
+  .searchbar-placeholder {
     width: 140px;
-  }
-
-  .searchbar input:focus {
-    width: 180px;
   }
 }

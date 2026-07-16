@@ -14,13 +14,18 @@ interface CommandPaletteProps {
   games: Game[];
   catalogStatus: CatalogStatus;
   onLiveGameResolved: (game: Game) => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-// Global Cmd/Ctrl+K overlay -- reuses the exact same useAutocomplete +
-// parseSearchIntent that power SearchBar's popover, just in a full-screen
-// Dialog instead of a Popover anchored to the navbar input.
-export default function CommandPalette({ games, catalogStatus, onLiveGameResolved }: CommandPaletteProps) {
-  const [open, setOpen] = useState(false);
+// The one search surface for the whole app -- opened via Cmd/Ctrl+K or by
+// clicking the navbar's SearchBar pill (both drive the same open state,
+// lifted to Layout in App.tsx so the two triggers can share it). Used to be
+// paired with a second, separate inline popover living in SearchBar itself
+// with its own near-duplicate of this exact suggestion/intent/franchise
+// logic -- consolidated into just this one, since two divergent search UIs
+// was never an intentional design, just how the pieces landed over time.
+export default function CommandPalette({ games, catalogStatus, onLiveGameResolved, open, onOpenChange }: CommandPaletteProps) {
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(-1);
   const [resolving, setResolving] = useState(false);
@@ -33,12 +38,12 @@ export default function CommandPalette({ games, catalogStatus, onLiveGameResolve
     function onKey(e: globalThis.KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
-        setOpen((o) => !o);
+        onOpenChange(!open);
       }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [open, onOpenChange]);
 
   useEffect(() => {
     if (!open) {
@@ -59,7 +64,7 @@ export default function CommandPalette({ games, catalogStatus, onLiveGameResolve
   ];
 
   function close() {
-    setOpen(false);
+    onOpenChange(false);
   }
 
   function applyIntent() {
@@ -116,7 +121,7 @@ export default function CommandPalette({ games, catalogStatus, onLiveGameResolve
   let rowCursor = -1;
 
   return (
-    <Dialog.Root open={open} onOpenChange={setOpen}>
+    <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="cmdk-overlay" />
         <Dialog.Content className="cmdk-content" aria-describedby={undefined}>

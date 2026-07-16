@@ -29,6 +29,10 @@ function Layout() {
   const catalog = useLiveCatalog();
   const theme = useTheme();
   const [introDone, setIntroDone] = useState(false);
+  // Lifted here, not local to CommandPalette, so both triggers -- Cmd/Ctrl+K
+  // and clicking the navbar's SearchBar pill -- drive the same overlay
+  // instead of two separate search UIs.
+  const [searchOpen, setSearchOpen] = useState(false);
   const context: CatalogContextValue = {
     games: catalog.games,
     status: catalog.status,
@@ -45,14 +49,19 @@ function Layout() {
     <>
       <IntroAnimation onDone={() => setIntroDone(true)} />
       <Navbar
-        games={catalog.games}
         status={catalog.status}
-        onLiveGameResolved={catalog.mergeOne}
+        onOpenSearch={() => setSearchOpen(true)}
         revealBrandO={introDone}
         theme={theme.resolved}
         onToggleTheme={theme.toggle}
       />
-      <CommandPalette games={catalog.games} catalogStatus={catalog.status} onLiveGameResolved={catalog.mergeOne} />
+      <CommandPalette
+        games={catalog.games}
+        catalogStatus={catalog.status}
+        onLiveGameResolved={catalog.mergeOne}
+        open={searchOpen}
+        onOpenChange={setSearchOpen}
+      />
       <main className="page-content">
         <Suspense fallback={<RouteFallback />}>
           <Outlet context={context} />
