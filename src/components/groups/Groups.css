@@ -371,6 +371,42 @@
   cursor: pointer;
 }
 
+/* Same cover-image treatment as GameCard's .game-card-cover/-thumb/-code
+   (see src/components/home/GameCard.css) -- borrowed styling, not a new
+   design, so a release row here reads as the same visual language as every
+   other game cover on the site. */
+.group-rel-cover {
+  position: relative;
+  height: 150px;
+  border-radius: 20px;
+  overflow: hidden;
+  margin-bottom: 10px;
+  background: linear-gradient(135deg, var(--glass-bg-strong), var(--bg-2));
+}
+
+.group-rel-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.group-rel-card-wrap:hover .group-rel-thumb {
+  transform: scale(1.06);
+}
+
+.group-rel-code {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--ink-2);
+  letter-spacing: 1px;
+}
+
 .group-rel-card-title {
   font-size: 0.68rem;
   font-weight: 800;

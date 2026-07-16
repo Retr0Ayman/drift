@@ -5,7 +5,7 @@ import { useCatalog } from "../../hooks/useCatalog";
 import { useGroupReleases } from "../../hooks/useGroupReleases";
 import { usePlatformP2PIndex } from "../../hooks/usePlatformP2PIndex";
 import { allReleases } from "../../lib/groups";
-import { colorForName, fmtDateMs, recencyStatusFor, relOutdated, releaseTs, slugify } from "../../lib/format";
+import { colorForName, coverImg, fmtDateMs, recencyStatusFor, relOutdated, releaseTs, slugify } from "../../lib/format";
 import { STARRED_GROUPS } from "../../lib/constants";
 import { buildLiveGameFromRows, mergeP2PReleases, releaseFromRow } from "../../lib/catalog";
 import GlassPanel from "../ui/GlassPanel";
@@ -284,25 +284,39 @@ export default function GroupProfile() {
                 </button>
                 {isOpen ? (
                   <div className="group-rel-grid">
-                    {month.rows.map((row) => (
-                      <div
-                        key={row.key}
-                        className="group-rel-card-wrap"
-                        role="link"
-                        tabIndex={0}
-                        onClick={() => handleRowClick(row)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") handleRowClick(row);
-                        }}
-                      >
-                        <div className="group-rel-card-title">{row.game.title}</div>
-                        <ReleaseCard
-                          game={row.game}
-                          release={row.release}
-                          recencyStatus={recencyStatusFor(row.release, row.comparisonReleases)}
-                        />
-                      </div>
-                    ))}
+                    {month.rows.map((row) => {
+                      const img = coverImg(row.game);
+                      const code = row.game.title.split(/[:\s]/)[0].slice(0, 10).toUpperCase();
+                      return (
+                        <div
+                          key={row.key}
+                          className="group-rel-card-wrap"
+                          role="link"
+                          tabIndex={0}
+                          onClick={() => handleRowClick(row)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") handleRowClick(row);
+                          }}
+                        >
+                          {/* Same cover-image treatment GameCard uses (coverImg,
+                              code-fallback badge) -- these rows used to be bare
+                              text titles with no art at all. */}
+                          <div className="group-rel-cover">
+                            {img ? (
+                              <img className="group-rel-thumb" src={img} alt="" loading="lazy" onError={(e) => e.currentTarget.remove()} />
+                            ) : (
+                              <div className="group-rel-code">{code}</div>
+                            )}
+                          </div>
+                          <div className="group-rel-card-title">{row.game.title}</div>
+                          <ReleaseCard
+                            game={row.game}
+                            release={row.release}
+                            recencyStatus={recencyStatusFor(row.release, row.comparisonReleases)}
+                          />
+                        </div>
+                      );
+                    })}
                   </div>
                 ) : null}
               </div>
