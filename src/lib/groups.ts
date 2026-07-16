@@ -27,12 +27,20 @@ export function allReleases(games: Game[]): GameRelease[] {
   return list;
 }
 
-/* `extra` covers groups with zero presence in `games` right now -- notably
-   the starred P2P groups (DenuvOwO/voices38), which never appear in the
-   main Windows browse feed at all, so once live data replaces the seed
-   catalog there's nothing here to derive a card from without it. Entries
-   already derived from `games` take precedence (they have a real computed
-   `out` count); `extra` only fills gaps. */
+/* `extra` (from useStarredGroupSummaries) is a real, live full-history
+   count for the starred P2P groups -- the same deep fetch GroupProfile
+   itself uses, not a guess. Originally only used to fill in a group with
+   *zero* presence in `games` (P2P groups never appeared in the main
+   Windows browse feed at all, so before the backfill work there was
+   nothing here to derive a card from otherwise). FIX (confirmed live):
+   now that the backfill/archive work has given DenuvOwO *some* presence in
+   `games`, "extra only fills total gaps" started silently preferring
+   `games`'s own count even when it was a strict subset of the real one --
+   confirmed live, the directory showed 51 for a group GroupProfile's own
+   (correct, more complete) count put at 168. `games` is just whatever
+   slice of the catalog happened to load client-side; it was never meant to
+   be treated as more authoritative than a group's own real full-history
+   fetch. Now takes whichever count is actually larger. */
 export function groupsIndex(games: Game[], extra: GroupEntry[] = []): GroupEntry[] {
   const map: Record<string, GroupEntry> = {};
   allReleases(games).forEach(({ g, r }) => {
@@ -48,7 +56,8 @@ export function groupsIndex(games: Game[], extra: GroupEntry[] = []): GroupEntry
     if (ts && ts > map[key].lastTs) map[key].lastTs = ts;
   });
   extra.forEach((e) => {
-    if (!map[e.key]) map[e.key] = e;
+    const existing = map[e.key];
+    if (!existing || e.count > existing.count) map[e.key] = e;
   });
   return Object.values(map).sort((a, b) => {
     if (a.starred !== b.starred) return a.starred ? -1 : 1;

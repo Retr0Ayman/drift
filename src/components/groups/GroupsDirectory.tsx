@@ -15,7 +15,7 @@ type CategoryFilter = "all" | "p2p" | "scene";
 export default function GroupsDirectory() {
   const navigate = useNavigate();
   const { games } = useCatalog();
-  const { summaries } = useStarredGroupSummaries();
+  const { summaries } = useStarredGroupSummaries(games);
   const idx = groupsIndex(games, summaries);
   usePageMeta({
     title: "Scene & P2P groups",
