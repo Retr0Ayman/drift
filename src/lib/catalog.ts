@@ -67,19 +67,28 @@ function parseBuildFromDirname(dn?: string): number | null {
 export function releaseFromRow(rel: RawRelease): Release {
   const group = rel.group_name || "scene";
   const m = methodForGroup(group);
+  const build = parseBuildFromDirname(rel.dirname);
+  const date = dateFromTs(rel.time);
+  const ts = rel.time || 0;
   return {
     method: m,
     label: m === "hv" ? "Hypervisor" : "Traditional",
     group,
-    build: parseBuildFromDirname(rel.dirname),
+    build,
     version: parseVersionFromDirname(rel.dirname),
-    date: dateFromTs(rel.time),
-    ts: rel.time || 0,
+    date,
+    ts,
     note: rel.dirname || "",
     xrelId: rel.id,
     link_href: rel.link_href,
     isRepack: isRepackGroup(group),
     isAnonymous: isAnonymousUpload(group),
+    // Correct default for a single row in isolation -- dedupeReleasesByGroup
+    // below overwrites these with the group's real earliest row when more
+    // than one raw row for the same group is present in this batch.
+    firstSeenDate: date,
+    firstSeenBuild: build,
+    firstSeenTs: ts,
   };
 }
 
@@ -127,7 +136,18 @@ export function dedupeReleasesByGroup(releases: Release[]): Release[] {
   const out: Release[] = [];
   for (const group of byGroup.values()) {
     group.sort((a, b) => (b.ts || 0) - (a.ts || 0));
-    out.push({ ...group[0], updateCount: group.length });
+    // group[0] (latest) supplies the represented build/date/etc as before;
+    // the group's real EARLIEST row (last after the sort above) supplies
+    // firstSeen* -- this call's own best-effort read of the original crack,
+    // same reasoning as releaseFromRow's own comment.
+    const earliest = group[group.length - 1];
+    out.push({
+      ...group[0],
+      updateCount: group.length,
+      firstSeenDate: earliest.firstSeenDate,
+      firstSeenBuild: earliest.firstSeenBuild,
+      firstSeenTs: earliest.firstSeenTs,
+    });
   }
   return out.sort((a, b) => (b.ts || 0) - (a.ts || 0));
 }

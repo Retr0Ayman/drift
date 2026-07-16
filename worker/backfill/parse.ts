@@ -44,6 +44,15 @@ export interface ParsedRelease {
   is_repack: boolean;
   is_anonymous: boolean;
   update_count: number;
+  /* Best-effort within THIS tick's batch -- the SQL upsert (db.ts's
+     UPSERT_RELEASE_SQL) only ever applies these on a group's true
+     first-ever insert and never touches them again, so a later tick
+     computing a "first seen" that's actually just this tick's earliest
+     row is harmless: it's discarded unless this is genuinely the first
+     time D1 has seen this (game_id, group_name) pair. */
+  first_seen_date: string;
+  first_seen_build: number | null;
+  first_seen_ts: number;
 }
 
 export interface ParsedGame {
@@ -60,19 +69,28 @@ const yearFromTs = (t?: number): number | null => (t ? new Date(t * 1000).getFul
 
 function releaseFromRow(rel: RawXrelRelease): ParsedRelease {
   const group = rel.group_name || "scene";
+  const build = parseBuildFromDirname(rel.dirname);
+  const date = dateFromTs(rel.time);
+  const ts = rel.time || 0;
   return {
     method: methodForGroup(group),
     group_name: group,
-    build: parseBuildFromDirname(rel.dirname),
+    build,
     version: parseVersionFromDirname(rel.dirname),
-    date: dateFromTs(rel.time),
-    ts: rel.time || 0,
+    date,
+    ts,
     note: rel.dirname || "",
     xrel_id: rel.id,
     link_href: (rel.link_href as string) || null,
     is_repack: isRepackGroup(group),
     is_anonymous: isAnonymousUpload(group),
     update_count: 1,
+    // Correct default for a single row taken in isolation -- dedupeByGroup
+    // below overwrites these with the group's real earliest row when a
+    // tick's batch has more than one for the same group.
+    first_seen_date: date,
+    first_seen_build: build,
+    first_seen_ts: ts,
   };
 }
 
@@ -89,7 +107,18 @@ function dedupeByGroup(releases: ParsedRelease[]): ParsedRelease[] {
   const out: ParsedRelease[] = [];
   for (const group of byGroup.values()) {
     group.sort((a, b) => b.ts - a.ts);
-    out.push({ ...group[0], update_count: group.length });
+    // The latest row (group[0]) carries the represented build/date/etc as
+    // before; the group's real EARLIEST row (last after the sort above)
+    // supplies first_seen_* -- this tick's best-effort approximation of
+    // the original crack, same reasoning as releaseFromRow's own comment.
+    const earliest = group[group.length - 1];
+    out.push({
+      ...group[0],
+      update_count: group.length,
+      first_seen_date: earliest.first_seen_date,
+      first_seen_build: earliest.first_seen_build,
+      first_seen_ts: earliest.first_seen_ts,
+    });
   }
   return out.sort((a, b) => b.ts - a.ts);
 }

@@ -38,9 +38,15 @@ const UPSERT_GAME_SQL = `
 // re-processing the same top-of-feed rows every 15 minutes must not
 // re-insert or re-increment when nothing has actually changed for that
 // group since the last time this row was written).
+// first_seen_date/first_seen_build/first_seen_ts are deliberately absent
+// from the DO UPDATE SET clause -- they're written on INSERT (a group's
+// true first-ever row for this game) and never touched again, which is
+// exactly what preserves the real original crack date/build against every
+// later update overwriting date/build/ts (see migrations/0004's own
+// comment for the full reasoning).
 const UPSERT_RELEASE_SQL = `
-  INSERT INTO releases (game_id, method, group_name, build, version, date, ts, note, xrel_id, link_href, is_repack, is_anonymous, update_count)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  INSERT INTO releases (game_id, method, group_name, build, version, date, ts, note, xrel_id, link_href, is_repack, is_anonymous, update_count, first_seen_date, first_seen_build, first_seen_ts)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   ON CONFLICT(game_id, group_name) DO UPDATE SET
     method = excluded.method, build = excluded.build, version = excluded.version, date = excluded.date,
     ts = excluded.ts, note = excluded.note, xrel_id = excluded.xrel_id, link_href = excluded.link_href,
@@ -139,6 +145,9 @@ export async function upsertGames(db: D1Database, games: ParsedGame[], enrichmen
           r.is_repack ? 1 : 0,
           r.is_anonymous ? 1 : 0,
           r.update_count,
+          r.first_seen_date,
+          r.first_seen_build,
+          r.first_seen_ts,
         ),
       );
     }

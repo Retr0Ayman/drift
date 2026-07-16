@@ -34,6 +34,9 @@ interface JoinedRow {
   rel_is_repack: number | null;
   rel_is_anonymous: number | null;
   rel_update_count: number | null;
+  rel_first_seen_date: string | null;
+  rel_first_seen_build: number | null;
+  rel_first_seen_ts: number | null;
 }
 
 const DEFAULT_PER_PAGE = 200;
@@ -69,7 +72,9 @@ const QUERY = `
   SELECT g.*, r.method as rel_method, r.group_name as rel_group_name, r.build as rel_build,
     r.version as rel_version, r.date as rel_date, r.ts as rel_ts, r.note as rel_note,
     r.xrel_id as rel_xrel_id, r.link_href as rel_link_href, r.is_repack as rel_is_repack,
-    r.is_anonymous as rel_is_anonymous, r.update_count as rel_update_count
+    r.is_anonymous as rel_is_anonymous, r.update_count as rel_update_count,
+    r.first_seen_date as rel_first_seen_date, r.first_seen_build as rel_first_seen_build,
+    r.first_seen_ts as rel_first_seen_ts
   FROM (SELECT * FROM games ORDER BY updated_at DESC LIMIT ? OFFSET ?) g
   LEFT JOIN releases r ON r.game_id = g.id
   ORDER BY g.updated_at DESC, r.ts DESC
@@ -137,6 +142,9 @@ export const handleCatalog: Handler = async ({ request, env }) => {
           isRepack: !!r.rel_is_repack,
           isAnonymous: !!r.rel_is_anonymous,
           updateCount: r.rel_update_count || 1,
+          firstSeenDate: r.rel_first_seen_date || undefined,
+          firstSeenBuild: r.rel_first_seen_build,
+          firstSeenTs: r.rel_first_seen_ts || undefined,
         })),
       };
     });

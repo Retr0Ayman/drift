@@ -157,13 +157,30 @@ export function releaseTs(r: Release): number | null {
   return isNaN(t) ? null : t;
 }
 
+/* Same shape as releaseTs, but for the release's real FIRST-ever detected
+   moment (r.firstSeenTs/firstSeenDate) rather than its latest known state
+   (r.ts/date, which an ongoing crack's updates keep advancing). Falls back
+   to releaseTs itself when firstSeen* isn't populated -- older rows from
+   before the backfill, or a release that's never been updated, where
+   they're identical anyway. */
+export function firstSeenTs(r: Release): number | null {
+  if (r.firstSeenTs) return r.firstSeenTs * 1000;
+  const t = Date.parse(r.firstSeenDate || "");
+  if (!isNaN(t)) return t;
+  return releaseTs(r);
+}
+
 /* Shared math behind crackTimingLabel/dPlusNLabel/the leaderboard: how many
    days after (positive) or before (negative, an early leak) a game's Steam
-   release date a given release actually landed. Returns null (never a
-   fabricated 0) when either side can't be parsed. */
+   release date a given release actually landed. Uses the release's real
+   FIRST-seen moment, not its latest updated state -- otherwise a routine
+   patch-update's timing gets mislabeled as if it were the original crack
+   speed (confirmed live: this was measuring against the mutable `date`
+   field, which an ongoing crack's every subsequent update overwrites).
+   Returns null (never a fabricated 0) when either side can't be parsed. */
 export function crackTimingDays(g: Game, r: Release): number | null {
   const releaseTsVal = g.released ? Date.parse(g.released) : NaN;
-  const crackTsVal = releaseTs(r);
+  const crackTsVal = firstSeenTs(r);
   if (isNaN(releaseTsVal) || crackTsVal == null) return null;
   return Math.round((crackTsVal - releaseTsVal) / 86400000);
 }

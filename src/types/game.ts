@@ -26,6 +26,17 @@ export interface Release {
      into the single latest release instead of piling up as separate cards.
      1 when there was only ever one release from this group. */
   updateCount?: number;
+  /* The group's real FIRST-ever detected date/build/timestamp for this
+     game -- set once at first insert (worker/backfill/db.ts's
+     UPSERT_RELEASE_SQL never touches it again), distinct from date/build/
+     ts above which keep updating to the latest known state. Without this,
+     crackTimingDays (src/lib/format.ts) had no way to tell "the original
+     crack" apart from "the most recent routine update," and was silently
+     measuring the latter. Falls back to date/build/ts when absent (older
+     un-backfilled rows, or a release where they're identical anyway). */
+  firstSeenDate?: string;
+  firstSeenBuild?: number | null;
+  firstSeenTs?: number;
 }
 
 export interface Dlc {
