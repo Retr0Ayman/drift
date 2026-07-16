@@ -1,11 +1,24 @@
+/* macOS Spotlight is the explicit reference here: the desktop behind the
+   panel goes soft and dim, not just tinted -- backdrop-filter blur on the
+   overlay itself (not only the panel) is what actually sells that, since a
+   flat rgba tint alone leaves the page behind it perfectly sharp. */
 .cmdk-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(23, 21, 15, 0.35);
+  background: rgba(23, 21, 15, 0.25);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   z-index: 200;
   animation: cmdk-overlay-in 0.15s ease;
 }
 
+/* Reuses the same --aura-panel-bg frosted fill SearchBar's own pill and
+   AiTag already use (see tokens.css's "aura ring" block) for consistency --
+   but a full-screen floating panel needs a much stronger blur than that
+   10px token was ever tuned for (a small pill vs. this), so the blur/
+   saturation here is this component's own, not --aura-blur. Saturation
+   boost alongside the blur is what gives frosted macOS materials their
+   characteristic vibrancy rather than reading as plain fogged glass. */
 .cmdk-content {
   position: fixed;
   top: 14vh;
@@ -13,10 +26,12 @@
   transform: translateX(-50%);
   width: min(560px, 92vw);
   max-height: 60vh;
-  background: var(--bg-1);
+  background: var(--aura-panel-bg);
+  backdrop-filter: blur(38px) saturate(1.8);
+  -webkit-backdrop-filter: blur(38px) saturate(1.8);
   border: 1px solid var(--glass-border-strong);
-  border-radius: var(--r-md);
-  box-shadow: var(--glass-shadow-lg);
+  border-radius: 20px;
+  box-shadow: var(--glass-shadow-lg), 0 24px 60px -12px rgba(0, 0, 0, 0.35);
   z-index: 201;
   display: flex;
   flex-direction: column;
