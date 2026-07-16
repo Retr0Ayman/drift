@@ -66,6 +66,20 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname.replace(/\/+$/, "") || "/";
 
+    // TEMPORARY, one-off, READ-ONLY: progress check for the deep archive
+    // crawl (worker/backfill/archiveRun.ts) so a real remaining-time
+    // estimate can be given instead of a guess. Remove once checked.
+    if (path === "/api/admin/archive-progress" && request.method === "GET") {
+      const db = env.orlaz_catalog;
+      const [state, totalGames] = await Promise.all([
+        db.prepare("SELECT * FROM backfill_state WHERE key LIKE 'archive%'").all(),
+        db.prepare("SELECT COUNT(*) as n FROM games").first(),
+      ]);
+      return new Response(JSON.stringify({ state: state.results, totalGames }, null, 2), {
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
     if (path.startsWith("/api/")) {
       if (request.method === "OPTIONS") return new Response(null, { headers: CORS });
       const handler = ROUTES[path];
