@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import type { Game } from "../../types/game";
 import { useCatalog } from "../../hooks/useCatalog";
@@ -79,10 +79,12 @@ export default function GameDetail() {
     return merged === game.releases ? game : { ...game, releases: merged };
   }, [game, p2pIndex]);
 
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [id]);
-
+  // Scroll-to-top on navigation is PageTransition's job now (it fires
+  // reliably on every real navigation via location.key, and goes through
+  // Lenis's own API when the global smooth-scroll instance is active --
+  // see that file's own comment). A second, separate window.scrollTo here
+  // raced against Lenis's re-asserted position on its own animation frame
+  // instead of reinforcing it.
   usePageMeta({
     title: game?.title || "Title not found",
     description: game?.desc || undefined,
