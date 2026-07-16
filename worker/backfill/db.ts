@@ -1,5 +1,6 @@
 import type { ParsedGame } from "./parse";
 import type { Enrichment } from "./resolve";
+import { FALLBACK_PRIMARY, FALLBACK_SECONDARY } from "../shared/colorExtract";
 
 export async function getBackfillState(db: D1Database, key: string): Promise<string | null> {
   const row = await db.prepare("SELECT value FROM backfill_state WHERE key = ?").bind(key).first<{ value: string }>();
@@ -14,13 +15,20 @@ export async function setBackfillState(db: D1Database, key: string, value: strin
 }
 
 const UPSERT_GAME_SQL = `
-  INSERT INTO games (id, xrel_key, title, appid, year, released, developer, publisher, genres, tags, current_build, desc, fact, metacritic, source_name, source_url, header, updated_at)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  INSERT INTO games (id, xrel_key, title, appid, year, released, developer, publisher, genres, tags, current_build, desc, fact, metacritic, source_name, source_url, header, accent_color_primary, accent_color_secondary, updated_at)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   ON CONFLICT(id) DO UPDATE SET
     xrel_key = excluded.xrel_key, title = excluded.title, appid = excluded.appid, year = excluded.year,
     released = excluded.released, developer = excluded.developer, publisher = excluded.publisher,
     genres = excluded.genres, current_build = excluded.current_build, desc = excluded.desc,
-    metacritic = excluded.metacritic, header = excluded.header, updated_at = excluded.updated_at
+    metacritic = excluded.metacritic, header = excluded.header,
+    accent_color_primary = CASE
+      WHEN excluded.accent_color_primary != ? OR accent_color_primary IS NULL OR accent_color_primary = ''
+      THEN excluded.accent_color_primary ELSE accent_color_primary END,
+    accent_color_secondary = CASE
+      WHEN excluded.accent_color_secondary != ? OR accent_color_secondary IS NULL OR accent_color_secondary = ''
+      THEN excluded.accent_color_secondary ELSE accent_color_secondary END,
+    updated_at = excluded.updated_at
 `;
 
 // Same "collapse repeat releases from the same group down to their latest,
@@ -106,7 +114,11 @@ export async function upsertGames(db: D1Database, games: ParsedGame[], enrichmen
           "xREL",
           "https://www.xrel.to/",
           enrichment.header,
+          enrichment.accentColorPrimary,
+          enrichment.accentColorSecondary,
           now,
+          FALLBACK_PRIMARY,
+          FALLBACK_SECONDARY,
         ),
       );
     }

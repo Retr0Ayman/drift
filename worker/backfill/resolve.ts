@@ -1,6 +1,7 @@
 import type { Env } from "../shared/env";
 import { handleResolve } from "../routes/resolve";
 import { handleAppdetails } from "../routes/appdetails";
+import { extractAccentColors, FALLBACK_PRIMARY, FALLBACK_SECONDARY } from "../shared/colorExtract";
 
 // Same cap src/hooks/useLiveCatalog.ts already uses client-side -- confirmed
 // live there that firing more concurrent /resolve calls at once measurably
@@ -23,6 +24,12 @@ export interface Enrichment {
      appid client-side. See migrations/0002_add_header_image.sql for why
      that reconstruction stopped being reliable. */
   header: string | null;
+  /* Cover-art ambient wash colors (worker/shared/colorExtract.ts) --
+     extracted here, same point header itself is captured, so both the
+     backfill and steady-state sync paths get it for free without a
+     separate pass. */
+  accentColorPrimary: string;
+  accentColorSecondary: string;
 }
 
 /* Calls the route handlers directly with a synthetic same-origin Request,
@@ -59,6 +66,7 @@ export async function enrichFromSteam(env: Env, appid: number): Promise<Enrichme
     header?: string;
   };
   if (!d.appid) return null;
+  const accent = d.header ? await extractAccentColors(d.header) : null;
   return {
     appid: d.appid,
     year: d.year ?? null,
@@ -70,6 +78,8 @@ export async function enrichFromSteam(env: Env, appid: number): Promise<Enrichme
     desc: d.about || d.desc || "",
     metacritic: d.metacritic ?? null,
     header: d.header || null,
+    accentColorPrimary: accent?.primary ?? FALLBACK_PRIMARY,
+    accentColorSecondary: accent?.secondary ?? FALLBACK_SECONDARY,
   };
 }
 

@@ -19,6 +19,8 @@ interface JoinedRow {
   source_name: string | null;
   source_url: string | null;
   header: string | null;
+  accent_color_primary: string | null;
+  accent_color_secondary: string | null;
   updated_at: number;
   rel_method: string | null;
   rel_group_name: string | null;
@@ -106,6 +108,8 @@ export const handleCatalog: Handler = async ({ request, env }) => {
         title: g.title,
         appid: g.appid,
         header: g.header || undefined,
+        accentColorPrimary: g.accent_color_primary || undefined,
+        accentColorSecondary: g.accent_color_secondary || undefined,
         year: g.year,
         released: g.released || "",
         developer: g.developer || "",

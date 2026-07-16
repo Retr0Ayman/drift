@@ -45,6 +45,13 @@ export interface Game {
      prefers this real URL and only falls back to the guess for rows not
      yet re-enriched. */
   header?: string | null;
+  /* Cover-art derived ambient wash colors (worker/shared/colorExtract.ts),
+     backfilled alongside header. Fixed neutral pair when extraction never
+     ran or every candidate swatch failed the saturation gate -- never
+     undefined for a game D1 has already enriched, only for rows written
+     before this field existed. */
+  accentColorPrimary?: string | null;
+  accentColorSecondary?: string | null;
   year: number | null;
   released: string;
   developer?: string;
