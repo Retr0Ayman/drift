@@ -36,8 +36,27 @@ const SYSTEM_PROMPT =
   "meaningfully outdated, the build gap is usually the most useful thing to say first; if it's a repack, " +
   "that distinction matters more than currency; if it was cracked unusually fast or leaked early, that's " +
   "often the most interesting fact available. Use the real numbers given (build gap, day count) rather than " +
-  "vague words like \"recently\" or \"a while ago\" when a specific number is available. Plain text, no " +
-  "markdown, no preamble, no quotes.";
+  "vague words like \"recently\" or \"a while ago\" when a specific number is available.\n\n" +
+  "When no Protection fact is given below, you were not told what DRM or anti-cheat (if any) this game uses -- " +
+  "do not name or guess one (e.g. Denuvo, EAC/Easy Anti-Cheat, BattlEye, VMProtect, Arxan, SecuROM, StarForce, " +
+  "or any other specific product), even if a game like this typically has one. You may still freely describe " +
+  "the crack method (hypervisor vs. traditional) when that's given, since that's real data -- just never name " +
+  "what protection it bypasses unless a Protection fact is explicitly given. Plain text, no markdown, no " +
+  "preamble, no quotes.";
+
+/* Confirmed live on Ground Branch: page's own Protection field correctly showed
+   "--" (game.tags empty, so buildFacts below omits the Protection line entirely),
+   but the model still wrote that the crack bypasses "Denuvo protection" -- the
+   same fabrication class fact.ts hit with invented franchises, just defaulting to
+   Denuvo as its go-to guess instead. Prompt-only wasn't enough for fact.ts either,
+   so this is the same hard backstop: when no protection was given, any real DRM/
+   anti-cheat product name in the output means it was invented, not reported. */
+const DRM_LEAK =
+  /\b(denuvo|easy\s*anti-?cheat|\bEAC\b|battle\s*eye|vmprotect|arxan|securom|starforce|themida|enigma\s*protector|safedisc|tages|codemeter|cmactlicense|wibu(-|\s)?systems|pace\s*anti-?piracy|cactus\s*(protection\s*system)?|games?\s*for\s*windows\s*live|\bGFWL\b|ubisoft\s*connect|uplay)\b/i;
+
+function violatesGrounding(body: OutlookRequest, text: string): boolean {
+  return !body.protection?.length && DRM_LEAK.test(text);
+}
 
 function buildFacts(body: OutlookRequest): string {
   const lines = [
@@ -74,14 +93,27 @@ export const handleOutlook: Handler = async ({ request, env }) => {
   }
   if (!body.title || !body.status) return json({ error: "title and status required" }, 60, 400);
 
-  const { text, error } = await callGroq(
-    env,
-    [
-      { role: "system", content: SYSTEM_PROMPT },
-      { role: "user", content: buildFacts(body) },
-    ],
-    { maxTokens: 100 },
-  );
+  const messages = [
+    { role: "system" as const, content: SYSTEM_PROMPT },
+    { role: "user" as const, content: buildFacts(body) },
+  ];
+
+  let { text, error } = await callGroq(env, messages, { maxTokens: 100 });
+  if (text && violatesGrounding(body, text)) {
+    // One retry with the violating draft shown back and a blunt correction --
+    // cheaper and more honest than serving a fabricated DRM claim.
+    ({ text, error } = await callGroq(
+      env,
+      [
+        ...messages,
+        { role: "user" as const, content: `You wrote: "${text}"\nThat names a specific DRM/anti-cheat product that was never given. Rewrite it about the same game without naming or guessing any protection.` },
+      ],
+      { maxTokens: 100 },
+    ));
+    if (text && violatesGrounding(body, text)) {
+      return json({ error: "outlook generation could not stay grounded for this title" }, 30, 502);
+    }
+  }
   if (!text) return json({ error: error || "outlook generation unavailable" }, 30, 502);
   return json({ outlook: text }, 3600);
 };
