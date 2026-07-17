@@ -2,6 +2,7 @@ import type { Env } from "../shared/env";
 import { handleResolve } from "../routes/resolve";
 import { handleAppdetails } from "../routes/appdetails";
 import { extractAccentColors, FALLBACK_PRIMARY, FALLBACK_SECONDARY } from "../shared/colorExtract";
+import { lookupDrmForAppids } from "./pcgamingwiki";
 
 // Same cap src/hooks/useLiveCatalog.ts already uses client-side -- confirmed
 // live there that firing more concurrent /resolve calls at once measurably
@@ -30,6 +31,11 @@ export interface Enrichment {
      separate pass. */
   accentColorPrimary: string;
   accentColorSecondary: string;
+  /* Real DRM/protection tags from PCGamingWiki (worker/backfill/
+     pcgamingwiki.ts), looked up by this same appid -- empty array when no
+     match or a failed query, never a guessed fallback (see that file's own
+     comment for why title-based matching isn't used here). */
+  tags: string[];
 }
 
 /* Calls the route handlers directly with a synthetic same-origin Request,
@@ -67,6 +73,7 @@ export async function enrichFromSteam(env: Env, appid: number): Promise<Enrichme
   };
   if (!d.appid) return null;
   const accent = d.header ? await extractAccentColors(d.header) : null;
+  const drm = await lookupDrmForAppids([d.appid]);
   return {
     appid: d.appid,
     year: d.year ?? null,
@@ -80,6 +87,7 @@ export async function enrichFromSteam(env: Env, appid: number): Promise<Enrichme
     header: d.header || null,
     accentColorPrimary: accent?.primary ?? FALLBACK_PRIMARY,
     accentColorSecondary: accent?.secondary ?? FALLBACK_SECONDARY,
+    tags: drm.get(d.appid) ?? [],
   };
 }
 

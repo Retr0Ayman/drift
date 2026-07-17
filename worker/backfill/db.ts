@@ -115,11 +115,11 @@ export async function upsertGames(db: D1Database, games: ParsedGame[], enrichmen
           // FIX (confirmed live): this was a hardcoded JSON.stringify(["Denuvo"])
           // -- every single game ever written to D1 got tagged as Denuvo-protected
           // unconditionally, regardless of its real DRM, and ReleaseCard.tsx renders
-          // this under a field literally labeled "Protection". No per-game DRM lookup
-          // exists yet (see worker/backfill/resolve.ts), so an honest empty array is
-          // the only correct value here until one does -- a blank field beats a
-          // confident lie.
-          JSON.stringify([]),
+          // this under a field literally labeled "Protection". Now a real per-game
+          // lookup (worker/backfill/pcgamingwiki.ts, resolved by resolve.ts against
+          // this same appid) -- an empty array when it finds no match, never a
+          // guessed fallback.
+          JSON.stringify(enrichment.tags),
           enrichment.currentBuild,
           enrichment.desc,
           null, // fact -- generated + cached client-side on demand, not backfilled

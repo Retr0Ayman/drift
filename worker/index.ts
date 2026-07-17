@@ -27,6 +27,7 @@ import { runScheduledAlert, runSteadyStateSync } from "./scheduled";
 import { runBackfillTick } from "./backfill/run";
 import { runDeepBackfillTick } from "./backfill/deepRun";
 import { runArchiveBackfillTick } from "./backfill/archiveRun";
+import { runDrmBackfillTick } from "./backfill/drmBackfillRun";
 
 /* This is a Worker with static assets (wrangler.jsonc `main` + `assets`), not
    classic Cloudflare Pages -- confirmed live: the workers.dev domain and
@@ -34,12 +35,13 @@ import { runArchiveBackfillTick } from "./backfill/archiveRun";
    Pages Functions does. So this fetch handler explicitly routes /api/* to the
    handlers below and falls back to env.ASSETS.fetch(request) for everything
    else (the built SPA + its static files). */
-// Must match the second/third/fourth entries in wrangler.jsonc's
+// Must match the second/third/fourth/fifth entries in wrangler.jsonc's
 // `triggers.crons` exactly -- ScheduledEvent.cron is how the one scheduled()
-// handler below tells the four triggers apart.
+// handler below tells the five triggers apart.
 const BACKFILL_CRON = "*/2 * * * *";
 const DEEP_BACKFILL_CRON = "*/3 * * * *";
 const ARCHIVE_BACKFILL_CRON = "*/4 * * * *";
+const DRM_BACKFILL_CRON = "*/5 * * * *";
 
 const ROUTES: Record<string, Handler> = {
   "/api/appdetails": handleAppdetails,
@@ -85,7 +87,7 @@ export default {
     return env.ASSETS.fetch(request);
   },
 
-  // Four cron patterns (see wrangler.jsonc's `triggers.crons`), dispatched
+  // Five cron patterns (see wrangler.jsonc's `triggers.crons`), dispatched
   // by which one fired: the original 15-minute trigger runs the Discord
   // alerts (worker/scheduled.ts) plus the small steady-state D1 sync
   // alongside it; a separate, more frequent trigger drives the resumable
@@ -95,9 +97,14 @@ export default {
   // 15-minute one; a third drives the deep, search-by-title backfill for
   // older titles the browse-feed backfill structurally can't reach (see
   // worker/backfill/deepRun.ts); a fourth drives the deep archive crawl
-  // (worker/backfill/archiveRun.ts), the largest of the four -- expect it
-  // to run for days. waitUntil so none of these get torn down before their
-  // D1 writes (and, for the alert path, the KV writes/webhook POST) finish.
+  // (worker/backfill/archiveRun.ts), the largest of the five -- expect it
+  // to run for days; a fifth walks every existing games row exactly once to
+  // reconcile the false-Denuvo tag backlog against a real PCGamingWiki
+  // lookup (worker/backfill/drmBackfillRun.ts) -- a different traversal
+  // (every row, not just xREL-recent ones) than any of the other four, so
+  // it gets its own cadence rather than piggybacking on one of them.
+  // waitUntil so none of these get torn down before their D1 writes (and,
+  // for the alert path, the KV writes/webhook POST) finish.
   async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
     if (event.cron === BACKFILL_CRON) {
       ctx.waitUntil(runBackfillTick(env));
@@ -109,6 +116,10 @@ export default {
     }
     if (event.cron === ARCHIVE_BACKFILL_CRON) {
       ctx.waitUntil(runArchiveBackfillTick(env));
+      return;
+    }
+    if (event.cron === DRM_BACKFILL_CRON) {
+      ctx.waitUntil(runDrmBackfillTick(env));
       return;
     }
     ctx.waitUntil(Promise.all([runScheduledAlert(env), runSteadyStateSync(env)]));
