@@ -55,10 +55,11 @@ export const handleXrelGroup: Handler = async ({ request }) => {
       enc(name) +
       "&scene=1&p2p=1&per_page=100&page=" +
       page +
-      // Cloudflare's own edge cache (cacheEverything below) would otherwise
-      // just replay a bad-but-200 response for a same-URL retry too, since
-      // it's a "successful" status -- only used for the suspiciously-empty
-      // retry below, where a genuinely fresh upstream attempt matters.
+      // Cloudflare's own edge cache (cacheTtlByStatus below still caches a
+      // 2xx normally) would otherwise just replay a bad-but-200 response
+      // for a same-URL retry too, since it's a "successful" status --
+      // only used for the suspiciously-empty retry below, where a
+      // genuinely fresh upstream attempt matters.
       (bustCache ? "&_r=" + Date.now() : "")
     );
   }

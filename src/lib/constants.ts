@@ -72,8 +72,16 @@ export const isAnonymousUpload = (g: string): boolean => normGroup(g) === "p2p";
    this one group alone. cusa/ppsa (PS4/PS5) and bces/bcus/bles/blus/bcjs
    (PS3) are Sony's real, stable content-ID prefixes, not a guess -- always
    followed by digits in practice, matched as one token including the
-   digits since they aren't in the delimiter set. */
+   digits since they aren't in the delimiter set.
+
+   FIX (confirmed live, follow-up sweep): the same class of miss existed for
+   older Nintendo consoles too -- "Batman.Arkham.Origins.Blackgate.EUR.
+   3DS-CONTRAST" and "Call.of.Duty.Black.Ops.2.USA.WiiU-FAKE" (that group's
+   real name) were both tracked as Windows releases. Added the full set of
+   legacy Nintendo/Sony disc-scene platform tokens this same P2P scene is
+   evidently willing to dump -- a scene dumping PS3/PS4/PS5/3DS/WiiU under
+   one game's history is not going to stop at exactly those five. */
 const NON_WINDOWS_PLATFORM =
-  /(^|[._-])(nsw|switch|ps[2-5]|psvita|xbox(?:360|one|series)?|linux|mac[._-]?os|osx|cusa\d+|ppsa\d+|b[lc][eu]s\d+|bcjs\d+|cfw)([._-]|$)/i;
+  /(^|[._-])(nsw|switch|ps[2-5]|psvita|xbox(?:360|one|series)?|linux|mac[._-]?os|osx|cusa\d+|ppsa\d+|b[lc][eu]s\d+|bcjs\d+|cfw|wiiu|wii|3ds|n64|snes|nes|gba|gbc|nds|dsi|psx|ps1)([._-]|$)/i;
 
 export const isWindowsRelease = (dirname: string): boolean => !NON_WINDOWS_PLATFORM.test(dirname || "");

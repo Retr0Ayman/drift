@@ -45,8 +45,18 @@ export const isAnonymousUpload = (g: string): boolean => normGroup(g) === "p2p";
    guess -- always followed by digits in practice, so matched as one token
    with the digits included (the digits themselves aren't in the
    delimiter set, so a plain "cusa" alternative wouldn't reach the closing
-   boundary). */
+   boundary).
+
+   FIX (confirmed live, follow-up sweep after the above): the same class of
+   miss existed for older Nintendo consoles too -- "Batman.Arkham.Origins.
+   Blackgate.EUR.3DS-CONTRAST" and "Call.of.Duty.Black.Ops.2.USA.WiiU-FAKE"
+   (that group's real name, not a description) were both tracked as Windows
+   releases. Rather than wait for the next one-off report, added the full
+   set of legacy Nintendo/Sony disc-scene platform tokens this same P2P
+   scene is evidently willing to dump -- wii/wiiu/3ds/n64/snes/nes/gba/gbc/
+   nds/dsi/psx/ps1 -- since a scene that dumps PS3/PS4/PS5/3DS/WiiU under
+   one game's history is not going to stop at exactly those five. */
 const NON_WINDOWS_PLATFORM =
-  /(^|[._-])(nsw|switch|ps[2-5]|psvita|xbox(?:360|one|series)?|linux|mac[._-]?os|osx|cusa\d+|ppsa\d+|b[lc][eu]s\d+|bcjs\d+|cfw)([._-]|$)/i;
+  /(^|[._-])(nsw|switch|ps[2-5]|psvita|xbox(?:360|one|series)?|linux|mac[._-]?os|osx|cusa\d+|ppsa\d+|b[lc][eu]s\d+|bcjs\d+|cfw|wiiu|wii|3ds|n64|snes|nes|gba|gbc|nds|dsi|psx|ps1)([._-]|$)/i;
 
 export const isWindowsRelease = (dirname: string): boolean => !NON_WINDOWS_PLATFORM.test(dirname || "");
