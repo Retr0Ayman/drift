@@ -51,7 +51,15 @@ const SYSTEM_PROMPT =
   "about whatever real crack-status information IS available instead of falling back to a bio-fact question -- " +
   "you are STRICTLY grounded in the facts provided in the user message and must never invent plot details, " +
   "lore, sales figures, review scores, or any fact not explicitly given; if the facts don't cover something, " +
-  "say so rather than guessing. Write 4-6 short Q&A pairs as plain text (no markdown headers), each formatted " +
+  "say so rather than guessing.\n\n" +
+  "FIX (confirmed live): even with the redirect above, phrasing across different games still came out nearly " +
+  "verbatim -- \"How many groups have cracked X?\" / \"Is the crack for X still current?\" in the same order " +
+  "every time. Vary the actual wording and structure of the questions from game to game: don't reuse the same " +
+  "question shapes in the same order every time, don't open every question with the game's title, mix direct " +
+  "questions with practical framing (e.g. \"What should you know before installing this crack?\"), and let the " +
+  "specific facts given (release count, methods, repack or not, current/outdated) determine which questions " +
+  "actually make sense this time -- do not force variety by inventing an angle the given facts don't support. " +
+  "Write 4-6 short Q&A pairs as plain text (no markdown headers), each formatted " +
   "as \"Q: ...\" then \"A: ...\" on the next line, each answer 1-2 sentences.";
 
 function buildFacts(body: FaqRequest): string {
