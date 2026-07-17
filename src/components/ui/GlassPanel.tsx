@@ -14,9 +14,16 @@ interface GlassPanelProps extends HTMLAttributes<HTMLDivElement> {
      panels), which would read as gimmicky with a dozen spinning borders
      on one page. */
   frost?: boolean;
+  /* Stronger version of the same frost treatment -- more blur, more
+     saturate, more see-through -- for surfaces that need to visibly float
+     over the colorful metaball background instead of just reading as a
+     slightly-tinted card (GameCard and the other grid tiles, plus
+     release-card, see GlassPanel.css for the exact multiplier). Still
+     built from the same --aura-* tokens frost uses, not a new palette. */
+  frostStrong?: boolean;
 }
 
-export default function GlassPanel({ children, className = "", strong, aura, frost, ...rest }: GlassPanelProps) {
+export default function GlassPanel({ children, className = "", strong, aura, frost, frostStrong, ...rest }: GlassPanelProps) {
   if (aura) {
     return (
       <div className="aura-ring">
@@ -29,7 +36,7 @@ export default function GlassPanel({ children, className = "", strong, aura, fro
 
   return (
     <div
-      className={`glass-panel${strong ? " glass-panel--strong" : ""}${frost ? " glass-panel--frost" : ""}${className ? ` ${className}` : ""}`}
+      className={`glass-panel${strong ? " glass-panel--strong" : ""}${frostStrong ? " glass-panel--frost-strong" : frost ? " glass-panel--frost" : ""}${className ? ` ${className}` : ""}`}
       {...rest}
     >
       {children}

@@ -112,7 +112,7 @@ export default function PublishersDirectory() {
         {visible.map((e, i) => (
           <Reveal key={e.key} delay={Math.min(i, 8) * 0.04}>
             <Link to={`/publisher/${e.key}`}>
-              <GlassPanel className={`publisher-card${e.aaa ? " publisher-card--aaa" : ""}`}>
+              <GlassPanel className={`publisher-card${e.aaa ? " publisher-card--aaa" : ""}`} frostStrong>
                 <CompanyLogo name={e.name} domain={e.domain} size={40} />
                 <div>
                   <div className="publisher-name">

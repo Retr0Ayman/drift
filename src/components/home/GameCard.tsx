@@ -15,7 +15,7 @@ export default function GameCard({ game }: { game: Game }) {
 
   return (
     <Link to={`/game/${game.id}`} className="game-card-link">
-      <GlassPanel className="game-card">
+      <GlassPanel className="game-card" frostStrong>
         <div className="game-card-cover">
           {img ? (
             <img className="game-card-thumb" src={img} alt="" loading="lazy" onError={(e) => e.currentTarget.remove()} />

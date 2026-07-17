@@ -51,7 +51,7 @@ export default function ReleaseCard({ game, release, recencyStatus }: ReleaseCar
   const hasLatestUpdate = !!release.updateCount && release.updateCount > 1 && release.date && release.date !== firstCrackDate;
 
   return (
-    <GlassPanel className={`release-card release-card--${cardVariant}`} frost>
+    <GlassPanel className={`release-card release-card--${cardVariant}`} frostStrong>
       <div className="release-top">
         <span className="release-method">{release.isRepack ? "Repack" : release.isAnonymous ? "Anonymous" : release.label}</span>
         <Pill tone={FLAG_TONE[displayStatus]}>{FLAG_LABEL[displayStatus]}</Pill>

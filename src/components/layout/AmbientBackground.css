@@ -33,7 +33,17 @@
   width: clamp(200px, 20vw, 280px);
   height: clamp(200px, 20vw, 280px);
   filter: url(#ambient-goo);
-  opacity: 0.42;
+  /* FIX (requested live): 0.42 read as a flat, solid color fill rather
+     than tinted glass with real see-through depth. Lowered post-filter --
+     the pre-filter blobs themselves stay solid/near-full alpha (see
+     .ambient-blob's own comment: the goo filter's feColorMatrix needs real
+     alpha to threshold against, a translucent shape here would blur into
+     mush and the merge wouldn't read). Translucency belongs here, after
+     the filter, as a separate compositor step -- same reasoning as the
+     very first version of this component, just retuned lower. Verified via
+     pixel sampling, not eyeballing (see AmbientBackground.tsx's own commit
+     history for why that distinction matters here specifically). */
+  opacity: 0.26;
 }
 
 .ambient-blob {

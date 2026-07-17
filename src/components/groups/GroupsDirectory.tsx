@@ -116,7 +116,7 @@ export default function GroupsDirectory() {
           return (
             <Reveal key={e.key} delay={Math.min(i, 8) * 0.04}>
               <Link to={`/group/${e.key}`}>
-                <GlassPanel className={`group-card${e.starred ? " group-card--starred" : ""}`}>
+                <GlassPanel className={`group-card${e.starred ? " group-card--starred" : ""}`} frostStrong>
                   <div className="group-card-top">
                     <div className="group-badge" style={{ background: colorForName(e.name) }}>
                       {e.name.slice(0, 2).toUpperCase()}
