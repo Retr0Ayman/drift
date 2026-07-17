@@ -4,203 +4,128 @@
   z-index: 0;
   overflow: hidden;
   pointer-events: none;
-  /* Deliberately NOT declaring --ambient-primary/secondary here: an
-     element's own explicit custom-property declaration always shadows an
-     inherited value regardless of specificity, so a default set on this
-     rule would permanently hide whatever useAmbientAccent sets on :root's
-     inline style. The var(..., #hex) fallback on each blob below is the
-     only place these defaults live -- same fixed neutral pair
-     worker/shared/colorExtract.ts falls back to (FALLBACK_PRIMARY/
-     FALLBACK_SECONDARY), keep those two literals in sync with that file. */
+}
+
+/* Bounded cluster, not full-viewport -- see AmbientBackground.tsx's
+   top-level comment for why this specific size is a deliberate
+   performance decision, not an arbitrary one. clamp() caps the maximum
+   raster area regardless of monitor size (the same spirit as "cap pixel
+   ratio" for a canvas/WebGL approach, just expressed as a bounded CSS
+   size since there's no canvas here to set a ratio on). Anchored bleeding
+   off the top-left corner, echoing where the previous version's strongest
+   blob already sat.
+
+   Deliberately NOT declaring --ambient-primary/secondary here: an
+   element's own explicit custom-property declaration always shadows an
+   inherited value regardless of specificity, so a default set on this
+   rule would permanently hide whatever useAmbientAccent sets on :root's
+   inline style (see GameDetail.tsx/useAmbientAccent.ts). The var(...,
+   #hex) fallback on each blob below is the only place these defaults
+   live -- same fixed neutral pair worker/shared/colorExtract.ts falls
+   back to (FALLBACK_PRIMARY/FALLBACK_SECONDARY), keep those two literals
+   in sync with that file. */
+.ambient-goo {
+  position: absolute;
+  top: -12%;
+  left: -10%;
+  width: clamp(420px, 46vw, 620px);
+  height: clamp(420px, 46vw, 620px);
+  filter: url(#ambient-goo);
+  opacity: 0.6;
 }
 
 .ambient-blob {
   position: absolute;
   border-radius: 50%;
-  will-change: transform;
-  /* Two animations layered: drift (translate/scale -- compositor-only,
-     effectively free) plus wobble (border-radius, see below) so the
-     outline reads as an organically deforming "liquid" blob rather than a
-     perfect circle sliding around. */
+  /* Solid, near-full alpha -- the goo filter's feColorMatrix thresholds
+     against real alpha values; a translucent shape here would blur into a
+     soft gradient with nothing sharp enough to snap to fully-opaque, and
+     the merge effect wouldn't read. Overall intensity is toned down by
+     .ambient-goo's own opacity (applied AFTER the filter, as a normal
+     compositor step) instead of by making the blobs themselves faint. */
 }
 
-/* FIX (confirmed via measurement, same rAF-fps sampling as the wobble
-   note below): mix-blend-mode: multiply used to be on .ambient-blob here.
-   In isolation it cost ~28fps on the home page -- more than the wobble
-   animation itself -- almost certainly because it forces this fixed,
-   full-viewport layer and anything animating on top of it (page-load
-   intro animation, panel transitions) out of the fast GPU compositing
-   path onto software blending, every frame, for as long as anything
-   overlapping it moves. Removed.
-
-   FIX #2 (confirmed live): the follow-up claim that multiply and plain
-   alpha compositing look "visually indistinguishable" at these opacities
-   was wrong -- it was based on eyeballing a screenshot thumbnail, not
-   measuring. Pixel-sampled after shipping: near a blob's center the page
-   background (247,245,240) only shifted to ~(240,236,235), a ~3% delta --
-   below what's perceptible on a real monitor, i.e. the effect was
-   genuinely invisible in practice, not just subtle. multiply darkens
-   toward the blend color multiplicatively, which reads much stronger than
-   plain alpha compositing at the identical numeric opacity against a
-   light background -- removing it silently cost most of the visible
-   effect along with the fps. Fix is NOT re-adding multiply (still costs
-   the same ~28fps) -- opacity itself is compositor-cheap regardless of
-   value (confirmed in the same isolation test: static blobs at these
-   sizes cost ~4fps total with or without blend mode), so the values below
-   are raised roughly 3x to compensate, re-verified via pixel sampling
-   this time rather than a screenshot glance. Do not re-add multiply
-   without re-measuring the same way. */
-
-/* CONFIRMED via measurement (Playwright rAF-fps sampling, this element
-   present vs. removed, same page): unlike transform/opacity, animating
-   border-radius is NOT compositor-only -- it forces a full repaint of the
-   shape on every frame the value changes, and at these sizes (each blob is
-   comparable to or larger than the viewport) smooth ease-in-out
-   interpolation repainting 60x/sec measured a REAL ~40fps regression on
-   the home page (60fps -> 17fps) and ~13fps on a game detail page. steps()
-   turns that into a handful of discrete repaints per keyframe segment
-   instead of one every frame -- with a 20-30s wobble cycle even 8 steps
-   per segment is imperceptible as "jumpy" on a shape this large/blurred/
-   low-opacity, while cutting repaint frequency by roughly two orders of
-   magnitude. Re-verify with the same before/after fps sampling if these
-   durations or step counts change. */
 .ambient-blob--a {
-  top: -18%;
-  left: -12%;
-  width: 62vmax;
-  height: 62vmax;
-  background: radial-gradient(circle at 50% 50%, var(--ambient-primary, #6b4fa0), transparent 70%);
-  opacity: 0.16;
-  animation:
-    ambient-drift-a 38s ease-in-out infinite,
-    ambient-wobble-a 22s steps(8, jump-end) infinite;
+  top: 8%;
+  left: 10%;
+  width: 44%;
+  height: 44%;
+  background: var(--ambient-primary, #6b4fa0);
+  animation: ambient-drift-a 26s steps(10, jump-end) infinite;
 }
 
 .ambient-blob--b {
-  bottom: -22%;
-  right: -14%;
-  width: 66vmax;
-  height: 66vmax;
-  background: radial-gradient(circle at 50% 50%, var(--ambient-secondary, #4a3570), transparent 72%);
-  opacity: 0.14;
-  animation:
-    ambient-drift-b 44s ease-in-out infinite,
-    ambient-wobble-b 27s steps(8, jump-end) infinite;
-  animation-delay:
-    -14s,
-    -6s;
+  top: 30%;
+  left: 40%;
+  width: 40%;
+  height: 40%;
+  background: var(--ambient-secondary, #4a3570);
+  animation: ambient-drift-b 31s steps(10, jump-end) infinite;
+  animation-delay: -9s;
 }
 
 .ambient-blob--c {
-  top: 28%;
-  left: 38%;
-  width: 48vmax;
-  height: 48vmax;
+  top: 12%;
+  left: 46%;
+  width: 34%;
+  height: 34%;
   /* Third tone derived from the same two given colors (an even blend), not
-     a third invented hue -- keeps this to exactly the tokens the brief
-     calls for while still giving the three blobs some visual variety. */
-  background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--ambient-primary, #6b4fa0), var(--ambient-secondary, #4a3570)), transparent 70%);
-  opacity: 0.11;
-  animation:
-    ambient-drift-c 50s ease-in-out infinite,
-    ambient-wobble-c 31s steps(8, jump-end) infinite;
-  animation-delay:
-    -27s,
-    -11s;
+     a third invented hue -- same reasoning as the previous version. */
+  background: color-mix(in srgb, var(--ambient-primary, #6b4fa0), var(--ambient-secondary, #4a3570));
+  animation: ambient-drift-c 35s steps(10, jump-end) infinite;
+  animation-delay: -19s;
 }
 
 .ambient-bg--paused .ambient-blob {
   animation-play-state: paused;
 }
 
+/* CONFIRMED via measurement (same rAF-fps sampling methodology as the
+   previous version's border-radius fix): inside a filter: url(...)
+   ancestor, a child's transform is NOT compositor-only anymore -- moving
+   it changes the filtered subtree's content, forcing the browser to
+   re-rasterize and re-run the blur/color-matrix every time. steps(10,
+   jump-end) throttles that to 10 discrete repaints per keyframe segment
+   instead of one every frame, same fix, same reasoning, now applied to
+   transform instead of border-radius because the filter ancestor is what
+   changed the cost model. Re-verify with the same before/after fps
+   sampling if these durations or step counts change. Small px-range drift
+   (not vw/vh) because the container itself is now a few hundred px, not
+   viewport-sized -- these three ranges are tuned so the blobs' paths
+   actually cross near the container's center, which is the whole point:
+   no overlap, no visible merge. */
 @keyframes ambient-drift-a {
   0%,
   100% {
-    transform: translate(0, 0) scale(1);
+    transform: translate(0, 0);
   }
   33% {
-    transform: translate(6vw, 8vh) scale(1.08);
+    transform: translate(28px, 22px);
   }
   66% {
-    transform: translate(-4vw, 4vh) scale(0.95);
+    transform: translate(-16px, 30px);
   }
 }
 
 @keyframes ambient-drift-b {
   0%,
   100% {
-    transform: translate(0, 0) scale(1);
+    transform: translate(0, 0);
   }
   33% {
-    transform: translate(-7vw, -6vh) scale(1.1);
+    transform: translate(-24px, -18px);
   }
   66% {
-    transform: translate(4vw, -3vh) scale(0.94);
+    transform: translate(18px, -26px);
   }
 }
 
 @keyframes ambient-drift-c {
   0%,
   100% {
-    transform: translate(0, 0) scale(1);
+    transform: translate(0, 0);
   }
   50% {
-    transform: translate(5vw, -7vh) scale(1.12);
-  }
-}
-
-/* Each wobble cycles through asymmetric border-radius pairs (the standard
-   four-value/slash "CSS blob" shorthand) -- deliberately different corner
-   ratios and a period that doesn't evenly divide that blob's own drift
-   duration, so the two motions never repeat in lockstep and the shape
-   reads as loosely organic rather than a shape mechanically breathing in
-   and out. steps(8, jump-end) on the animation itself (see .ambient-blob--a
-   above) is what actually keeps this affordable -- these keyframes alone
-   would repaint every frame. */
-@keyframes ambient-wobble-a {
-  0%,
-  100% {
-    border-radius: 42% 58% 61% 39% / 45% 42% 58% 55%;
-  }
-  25% {
-    border-radius: 58% 42% 38% 62% / 60% 48% 52% 40%;
-  }
-  50% {
-    border-radius: 50% 50% 65% 35% / 40% 62% 38% 60%;
-  }
-  75% {
-    border-radius: 35% 65% 45% 55% / 55% 40% 60% 45%;
-  }
-}
-
-@keyframes ambient-wobble-b {
-  0%,
-  100% {
-    border-radius: 55% 45% 40% 60% / 50% 55% 45% 50%;
-  }
-  25% {
-    border-radius: 40% 60% 58% 42% / 62% 40% 60% 38%;
-  }
-  50% {
-    border-radius: 62% 38% 50% 50% / 42% 60% 40% 58%;
-  }
-  75% {
-    border-radius: 45% 55% 62% 38% / 58% 45% 55% 42%;
-  }
-}
-
-@keyframes ambient-wobble-c {
-  0%,
-  100% {
-    border-radius: 48% 52% 55% 45% / 55% 48% 52% 45%;
-  }
-  25% {
-    border-radius: 60% 40% 45% 55% / 42% 58% 42% 58%;
-  }
-  50% {
-    border-radius: 40% 60% 52% 48% / 58% 45% 55% 42%;
-  }
-  75% {
-    border-radius: 52% 48% 40% 60% / 45% 55% 48% 52%;
+    transform: translate(-22px, 24px);
   }
 }
