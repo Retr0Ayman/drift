@@ -17,6 +17,7 @@ import Tabs, { type TabDef } from "../ui/Tabs";
 import { usePageMeta } from "../../hooks/usePageMeta";
 import { usePlatformP2PIndex } from "../../hooks/usePlatformP2PIndex";
 import { useGameScreenshots } from "../../hooks/useGameScreenshots";
+import { useAmbientAccent } from "../../hooks/useAmbientAccent";
 import { mergeP2PReleases } from "../../lib/catalog";
 import {
   bestBuild,
@@ -81,6 +82,7 @@ export default function GameDetail() {
   }, [game, p2pIndex]);
 
   const screenshots = useGameScreenshots(game?.appid);
+  useAmbientAccent(mergedGame?.accentColorPrimary, mergedGame?.accentColorSecondary);
 
   // Scroll-to-top on navigation is PageTransition's job now (it fires
   // reliably on every real navigation via location.key, and goes through
