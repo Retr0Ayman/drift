@@ -31,10 +31,25 @@
    full-viewport layer and anything animating on top of it (page-load
    intro animation, panel transitions) out of the fast GPU compositing
    path onto software blending, every frame, for as long as anything
-   overlapping it moves. At these opacities (0.035-0.05) multiply and
-   plain alpha compositing are visually indistinguishable anyway --
-   confirmed by screenshot comparison -- so it bought nothing worth that
-   cost. Removed. Do not re-add without re-measuring the same way. */
+   overlapping it moves. Removed.
+
+   FIX #2 (confirmed live): the follow-up claim that multiply and plain
+   alpha compositing look "visually indistinguishable" at these opacities
+   was wrong -- it was based on eyeballing a screenshot thumbnail, not
+   measuring. Pixel-sampled after shipping: near a blob's center the page
+   background (247,245,240) only shifted to ~(240,236,235), a ~3% delta --
+   below what's perceptible on a real monitor, i.e. the effect was
+   genuinely invisible in practice, not just subtle. multiply darkens
+   toward the blend color multiplicatively, which reads much stronger than
+   plain alpha compositing at the identical numeric opacity against a
+   light background -- removing it silently cost most of the visible
+   effect along with the fps. Fix is NOT re-adding multiply (still costs
+   the same ~28fps) -- opacity itself is compositor-cheap regardless of
+   value (confirmed in the same isolation test: static blobs at these
+   sizes cost ~4fps total with or without blend mode), so the values below
+   are raised roughly 3x to compensate, re-verified via pixel sampling
+   this time rather than a screenshot glance. Do not re-add multiply
+   without re-measuring the same way. */
 
 /* CONFIRMED via measurement (Playwright rAF-fps sampling, this element
    present vs. removed, same page): unlike transform/opacity, animating
@@ -55,7 +70,7 @@
   width: 62vmax;
   height: 62vmax;
   background: radial-gradient(circle at 50% 50%, var(--ambient-primary, #6b4fa0), transparent 70%);
-  opacity: 0.05;
+  opacity: 0.16;
   animation:
     ambient-drift-a 38s ease-in-out infinite,
     ambient-wobble-a 22s steps(8, jump-end) infinite;
@@ -67,7 +82,7 @@
   width: 66vmax;
   height: 66vmax;
   background: radial-gradient(circle at 50% 50%, var(--ambient-secondary, #4a3570), transparent 72%);
-  opacity: 0.045;
+  opacity: 0.14;
   animation:
     ambient-drift-b 44s ease-in-out infinite,
     ambient-wobble-b 27s steps(8, jump-end) infinite;
@@ -85,7 +100,7 @@
      a third invented hue -- keeps this to exactly the tokens the brief
      calls for while still giving the three blobs some visual variety. */
   background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--ambient-primary, #6b4fa0), var(--ambient-secondary, #4a3570)), transparent 70%);
-  opacity: 0.035;
+  opacity: 0.11;
   animation:
     ambient-drift-c 50s ease-in-out infinite,
     ambient-wobble-c 31s steps(8, jump-end) infinite;
