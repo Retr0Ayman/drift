@@ -37,6 +37,12 @@ export interface Release {
   firstSeenDate?: string;
   firstSeenBuild?: number | null;
   firstSeenTs?: number;
+  /* False when firstSeenDate/Build/Ts is a known-flawed best-effort default
+     rather than a genuinely confirmed original crack moment -- see
+     migrations/0005_add_first_seen_verified.sql for the full history of
+     why this exists. src/lib/format.ts's crackTimingDays/crackTimingLabel
+     refuse to produce a "Cracked in N days" claim when this is false. */
+  firstSeenVerified?: boolean;
 }
 
 export interface Dlc {

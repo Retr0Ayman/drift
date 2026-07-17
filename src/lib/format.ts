@@ -177,8 +177,15 @@ export function firstSeenTs(r: Release): number | null {
    patch-update's timing gets mislabeled as if it were the original crack
    speed (confirmed live: this was measuring against the mutable `date`
    field, which an ongoing crack's every subsequent update overwrites).
-   Returns null (never a fabricated 0) when either side can't be parsed. */
+   Returns null (never a fabricated 0) when either side can't be parsed, and
+   also when r.firstSeenVerified is explicitly false -- that means this
+   release's first-seen moment is a known-flawed placeholder (a pre-
+   migrations/0005 row the reconciliation pass couldn't recover a real
+   original date for, see that migration's own comment), not a genuine
+   measurement, and showing a specific day-count built on it would read as
+   a confident fact when it's actually just noise. */
 export function crackTimingDays(g: Game, r: Release): number | null {
+  if (r.firstSeenVerified === false) return null;
   const releaseTsVal = g.released ? Date.parse(g.released) : NaN;
   const crackTsVal = firstSeenTs(r);
   if (isNaN(releaseTsVal) || crackTsVal == null) return null;

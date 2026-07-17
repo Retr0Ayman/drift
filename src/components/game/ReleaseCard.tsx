@@ -106,6 +106,12 @@ export default function ReleaseCard({ game, release, recencyStatus }: ReleaseCar
           <span className="v release-fact--first">
             {firstCrackDate || "—"}
             {release.firstSeenBuild ?? release.build ? ` · ${fmtBuild(release.firstSeenBuild ?? release.build)}` : ""}
+            {/* firstSeenVerified === false means this date is a known-flawed
+                placeholder (see migrations/0005's own comment), not a
+                genuinely confirmed original crack moment -- flagged as an
+                estimate rather than shown with the same confidence as a
+                real one. */}
+            {release.firstSeenVerified === false ? " (est.)" : ""}
           </span>
         </div>
         {hasLatestUpdate ? (
