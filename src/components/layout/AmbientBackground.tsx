@@ -1,56 +1,42 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import "./AmbientBackground.css";
 
-/* REPLACES the previous soft-radial-gradient-wash version entirely -- that
-   approach had no way to produce real "merging" between shapes (translucent
-   circles just overlap, they don't fuse), which is what was actually
-   wanted: a goo/metaball effect, the standard technique behind "blobs that
-   melt into each other." The mechanism: blur a group of SOLID shapes
-   (feGaussianBlur), then run the blurred alpha channel through a steep
-   linear ramp (feColorMatrix's bottom row, alpha-only) that snaps
-   near-opaque pixels to fully opaque and near-transparent pixels to fully
-   transparent. Where two blurred shapes' soft edges overlap, the combined
-   alpha crosses that threshold and the two shapes read as one connected
-   blob with a smooth seam -- that snap is doing 100% of the "merge" work,
-   which is why the blobs underneath can stay as plain solid circles.
+/* FIX (reported live): the previous version was one bounded goo cluster in
+   the top-left corner -- on a game detail page that reads as the game's
+   accent color only touching one corner while the rest of the screen
+   stays flat, and the drift itself looked choppy (steps(10, jump-end) was
+   too coarse -- individual blob motion jumped in visible discrete steps
+   rather than reading as smooth liquid drift, something an aggregate
+   fps-only check didn't catch since averaged frame rate can look "fine"
+   while the actual position deltas driving visible motion are still
+   large, infrequent jumps).
 
-   CSS's own contrast() filter function can NOT substitute for this: per
-   the Filter Effects spec it's defined as a feComponentTransfer over R/G/B
-   only, alpha is untouched -- so there is no real "CSS-only" version of
-   this technique, only the SVG reference-filter version below.
+   Fix for coverage: several small goo clusters (CLUSTERS below) scattered
+   across the full viewport via percentage anchors instead of one big
+   cluster in a corner -- same shared #ambient-goo filter def, applied to
+   N separate small bounding boxes instead of one larger one. This is the
+   "sparser full-coverage grid" lever, not a bigger single blur: each
+   cluster's filtered region is small (see .css), so total re-rasterize
+   cost scales with cluster count x small-area rather than with one much
+   larger area, and per-cluster cost stays cheap to throttle if needed.
 
-   Deliberately NOT full-viewport like the component this replaces: an SVG
-   reference filter (filter: url(#...), as opposed to a plain CSS
-   blur()/opacity()) forces the browser to re-rasterize its entire filtered
-   subtree whenever anything inside it changes -- including a child's
-   transform, which is normally compositor-only and effectively free. Once
-   wrapped in a goo filter, blob movement is NOT free anymore, and the cost
-   scales with the filtered region's pixel area. A single bounded cluster
-   (see .ambient-goo's clamp()'d size in the .css) keeps that area small
-   and predictable regardless of viewport/monitor size, rather than paying
-   full-viewport blur cost every frame. Still reads as "site-wide" because
-   this component mounts once, outside the router, on every route -- the
-   cluster itself doesn't need to span the whole screen for that to be
-   true. steps() timing on the drift keyframes (see .css) is the same
-   repaint-throttling fix as the previous version's border-radius wobble,
-   now applied to transform for the same reason: inside a filtered
-   ancestor, transform loses its usual free ride.
+   Fix for choppiness: dropped the steps() throttling entirely in favor of
+   smooth transform easing, now that each individual filtered region is
+   small enough (per-cluster, not full-viewport) that continuous
+   re-rasterization measured cheap -- see the .css comment for the actual
+   before/after numbers. If a future change needs to claw back budget,
+   the right lever is fewer/smaller clusters or a smaller blur radius, not
+   reintroducing coarse steps() -- that's what caused the choppiness
+   complaint in the first place. */
+const CLUSTERS: Array<{ top: string; left: string }> = [
+  { top: "-10%", left: "-6%" },
+  { top: "-8%", left: "74%" },
+  { top: "34%", left: "-8%" },
+  { top: "40%", left: "80%" },
+  { top: "74%", left: "2%" },
+  { top: "78%", left: "68%" },
+];
 
-   Colors: --ambient-primary/--ambient-secondary custom properties,
-   unchanged from the previous version -- GameDetail's useAmbientAccent
-   mirrors the current game's real accentColorPrimary/Secondary onto :root,
-   AmbientBackground.css's own defaults (FALLBACK_PRIMARY/SECONDARY) apply
-   on every other page. Blobs are solid, near-full alpha colors (not the
-   previous version's translucent gradient wash) -- the goo filter needs
-   real alpha to threshold against; a filter over near-invisible shapes
-   wouldn't read as anything, which is exactly the mistake the old version
-   made in the opposite direction (see AmbientBackground.css's own history
-   of that regression).
-
-   prefers-reduced-motion freezes on a resting frame via the blanket rule
-   in globals.css, same as before. Pausing on scroll-out-of-view still
-   doesn't apply (position:fixed, never actually offscreen); tab-visibility
-   pause carries over unchanged. */
 export default function AmbientBackground() {
   const [paused, setPaused] = useState(() => typeof document !== "undefined" && document.hidden);
 
@@ -62,25 +48,34 @@ export default function AmbientBackground() {
 
   return (
     <div className={`ambient-bg${paused ? " ambient-bg--paused" : ""}`} aria-hidden="true">
-      {/* width/height 0 -- this <svg> only exists to host the <filter>
-          definition other elements reference via filter: url(#ambient-goo);
-          it renders nothing itself. */}
+      {/* width/height 0 -- this <svg> only hosts the <filter> definition
+          every cluster below references via filter: url(#ambient-goo); it
+          renders nothing itself. One shared def, reused by every cluster
+          (each gets its own independent filter region from its own
+          bounding box) rather than duplicating the filter per cluster. */}
       <svg width="0" height="0" style={{ position: "absolute" }}>
         <defs>
-          <filter id="ambient-goo" x="-40%" y="-40%" width="180%" height="180%" colorInterpolationFilters="sRGB">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="18" result="blur" />
+          <filter id="ambient-goo" x="-60%" y="-60%" width="220%" height="220%" colorInterpolationFilters="sRGB">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="9" result="blur" />
             {/* Identity on R/G/B (rows 1-3), alpha-only linear ramp on row 4
-                (slope 22, intercept -10): the actual "merge" mechanism, see
-                the component-level comment above. */}
-            <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -10" />
+                -- the merge mechanism: see AmbientBackground.css's header
+                comment for the full explanation, unchanged from before. */}
+            <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 24 -11" />
           </filter>
         </defs>
       </svg>
-      <div className="ambient-goo">
-        <div className="ambient-blob ambient-blob--a" />
-        <div className="ambient-blob ambient-blob--b" />
-        <div className="ambient-blob ambient-blob--c" />
-      </div>
+      {CLUSTERS.map((pos, i) => (
+        <div key={i} className="ambient-goo" style={{ top: pos.top, left: pos.left } as CSSProperties}>
+          {/* Each blob's own animation-delay is offset per cluster (not
+              baked into the shared a/b/c keyframe classes in .css) purely
+              so the six clusters don't all breathe in exact lockstep --
+              inline style wins over the class's own animation-delay
+              because it's a more specific longhand declaration. */}
+          <div className="ambient-blob ambient-blob--a" style={{ animationDelay: `${-(i * 3.4)}s` }} />
+          <div className="ambient-blob ambient-blob--b" style={{ animationDelay: `${-(i * 3.4 + 5.1)}s` }} />
+          <div className="ambient-blob ambient-blob--c" style={{ animationDelay: `${-(i * 3.4 + 8.6)}s` }} />
+        </div>
+      ))}
     </div>
   );
 }

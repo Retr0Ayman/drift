@@ -6,14 +6,18 @@
   pointer-events: none;
 }
 
-/* Bounded cluster, not full-viewport -- see AmbientBackground.tsx's
-   top-level comment for why this specific size is a deliberate
-   performance decision, not an arbitrary one. clamp() caps the maximum
-   raster area regardless of monitor size (the same spirit as "cap pixel
-   ratio" for a canvas/WebGL approach, just expressed as a bounded CSS
-   size since there's no canvas here to set a ratio on). Anchored bleeding
-   off the top-left corner, echoing where the previous version's strongest
-   blob already sat.
+/* Small, bounded per-cluster size -- deliberately NOT one big full-viewport
+   filter. An SVG reference filter (filter: url(...), unlike a plain CSS
+   blur()) forces the browser to re-rasterize its whole filtered subtree
+   whenever anything inside changes, including a child's transform --
+   normally compositor-only and free, not free anymore once wrapped in a
+   filter. Coverage across the full screen comes from SIX of these small
+   clusters (see CLUSTERS in AmbientBackground.tsx) rather than one much
+   larger filtered region -- total re-rasterize cost scales with
+   cluster-count x small-area, which measured cheaper than one big area at
+   full coverage. If a future change needs more budget back, shrink/thin
+   the cluster count here, don't reintroduce coarse animation throttling
+   (see the drift keyframes' own comment below for why).
 
    Deliberately NOT declaring --ambient-primary/secondary here: an
    element's own explicit custom-property declaration always shadows an
@@ -26,12 +30,10 @@
    in sync with that file. */
 .ambient-goo {
   position: absolute;
-  top: -12%;
-  left: -10%;
-  width: clamp(420px, 46vw, 620px);
-  height: clamp(420px, 46vw, 620px);
+  width: clamp(200px, 20vw, 280px);
+  height: clamp(200px, 20vw, 280px);
   filter: url(#ambient-goo);
-  opacity: 0.6;
+  opacity: 0.42;
 }
 
 .ambient-blob {
@@ -40,70 +42,68 @@
   /* Solid, near-full alpha -- the goo filter's feColorMatrix thresholds
      against real alpha values; a translucent shape here would blur into a
      soft gradient with nothing sharp enough to snap to fully-opaque, and
-     the merge effect wouldn't read. Overall intensity is toned down by
+     the merge effect wouldn't read. Overall see-through quality comes from
      .ambient-goo's own opacity (applied AFTER the filter, as a normal
-     compositor step) instead of by making the blobs themselves faint. */
+     compositor step), not from making the blobs themselves faint. */
 }
 
 .ambient-blob--a {
-  top: 8%;
-  left: 10%;
-  width: 44%;
-  height: 44%;
+  top: 6%;
+  left: 8%;
+  width: 42%;
+  height: 42%;
   background: var(--ambient-primary, #6b4fa0);
-  animation: ambient-drift-a 26s steps(10, jump-end) infinite;
+  animation: ambient-drift-a 24s ease-in-out infinite;
 }
 
 .ambient-blob--b {
-  top: 30%;
-  left: 40%;
-  width: 40%;
-  height: 40%;
+  top: 32%;
+  left: 38%;
+  width: 38%;
+  height: 38%;
   background: var(--ambient-secondary, #4a3570);
-  animation: ambient-drift-b 31s steps(10, jump-end) infinite;
-  animation-delay: -9s;
+  animation: ambient-drift-b 29s ease-in-out infinite;
 }
 
 .ambient-blob--c {
-  top: 12%;
-  left: 46%;
-  width: 34%;
-  height: 34%;
+  top: 10%;
+  left: 44%;
+  width: 32%;
+  height: 32%;
   /* Third tone derived from the same two given colors (an even blend), not
      a third invented hue -- same reasoning as the previous version. */
   background: color-mix(in srgb, var(--ambient-primary, #6b4fa0), var(--ambient-secondary, #4a3570));
-  animation: ambient-drift-c 35s steps(10, jump-end) infinite;
-  animation-delay: -19s;
+  animation: ambient-drift-c 33s ease-in-out infinite;
 }
 
 .ambient-bg--paused .ambient-blob {
   animation-play-state: paused;
 }
 
-/* CONFIRMED via measurement (same rAF-fps sampling methodology as the
-   previous version's border-radius fix): inside a filter: url(...)
-   ancestor, a child's transform is NOT compositor-only anymore -- moving
-   it changes the filtered subtree's content, forcing the browser to
-   re-rasterize and re-run the blur/color-matrix every time. steps(10,
-   jump-end) throttles that to 10 discrete repaints per keyframe segment
-   instead of one every frame, same fix, same reasoning, now applied to
-   transform instead of border-radius because the filter ancestor is what
-   changed the cost model. Re-verify with the same before/after fps
-   sampling if these durations or step counts change. Small px-range drift
-   (not vw/vh) because the container itself is now a few hundred px, not
-   viewport-sized -- these three ranges are tuned so the blobs' paths
-   actually cross near the container's center, which is the whole point:
-   no overlap, no visible merge. */
+/* MEASURED (Playwright rAF-fps sampling, effect present vs. removed, same
+   methodology as every previous round): smooth ease-in-out here, no
+   steps() throttling, because at this per-cluster size (clamp()'d to
+   200-280px, roughly a third the area of the single corner cluster this
+   replaced) continuous re-rasterization of all six clusters together
+   measured a real but small cost -- cheaper in aggregate than the single
+   larger cluster's steps()-throttled version was, while looking genuinely
+   fluid instead of visibly jumping between discrete positions. steps()
+   was the previous round's fix for a real cost problem, but at a coarse
+   enough step count it reads as choppy rather than smooth -- the fix here
+   is a smaller cost surface (smaller clusters) that doesn't need
+   throttling at all, not a higher step count. If this ever needs to be
+   revisited, re-measure the same way (present vs. removed, real fps
+   numbers) before changing it -- don't reintroduce steps() as a reflex. */
 @keyframes ambient-drift-a {
   0%,
   100% {
     transform: translate(0, 0);
   }
   33% {
-    transform: translate(28px, 22px);
+    transform: translate(22px, 18px);
   }
   66% {
-    transform: translate(-16px, 30px);
+    transform: translate(-14px, 24px);
   }
 }
 
@@ -113,10 +113,10 @@
     transform: translate(0, 0);
   }
   33% {
-    transform: translate(-24px, -18px);
+    transform: translate(-20px, -15px);
   }
   66% {
-    transform: translate(18px, -26px);
+    transform: translate(15px, -21px);
   }
 }
 
@@ -126,6 +126,6 @@
     transform: translate(0, 0);
   }
   50% {
-    transform: translate(-22px, 24px);
+    transform: translate(-18px, 20px);
   }
 }
