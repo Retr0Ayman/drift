@@ -27,7 +27,25 @@ interface StoreSearchResponse {
    on both sides: for titles where xREL *does* include the brand (confirmed
    live for "EA Sports FC 26", which matches Steam's "EA SPORTS FC™ 26"
    verbatim) stripping it from both leaves the same shorter string equal on
-   both sides, so it doesn't break that case either. */
+   both sides, so it doesn't break that case either.
+
+   THIRD FIX (confirmed live): Steam's real listing for Assassin's Creed
+   Shadows is "Assassin’s Creed Shadows" -- a Unicode right single
+   quotation mark (U+2019), not the ASCII apostrophe (U+0027) xREL's own
+   ext_info.title uses. The old character class here only stripped the
+   ASCII one, so the Steam side kept its curly quote through
+   normalization while the xREL side lost its straight one entirely --
+   "assassin's creed shadows" vs "assassin's creed shadows" never matched,
+   /resolve returned appid:null despite the correct item genuinely being
+   in Steam's results, and this silently starved worker/backfill/
+   deepRun.ts's resolve step for this exact seed title (found the release
+   group via xREL search, failed to resolve every retry, gave up for
+   good -- see that file's own comment on why a failed resolve isn't
+   retried past the seed pass completing). Any other title with a
+   possessive apostrophe where Steam uses proper typography would hit the
+   identical failure; the curly apostrophe is common enough on Steam's
+   side that this is worth a real character-class fix, not a one-off
+   special case for this title. */
 function norm(s?: string | null): string {
   return (s || "")
     .replace(/[™®©]/g, "")
@@ -37,7 +55,7 @@ function norm(s?: string | null): string {
       /\b(game of the year|goty|definitive|deluxe|ultimate|enhanced|complete|remastered|remake|director'?s cut|gold|standard|digital)\s*(edition)?\b/gi,
       "",
     )
-    .replace(/[:\-–—'".!]/g, " ")
+    .replace(/[:\-–—'’‘".!]/g, " ")
     .replace(/\s+/g, " ")
     .trim()
     .toLowerCase();
