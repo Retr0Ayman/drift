@@ -28,13 +28,31 @@ import "./AmbientBackground.css";
    the right lever is fewer/smaller clusters or a smaller blur radius, not
    reintroducing coarse steps() -- that's what caused the choppiness
    complaint in the first place. */
+/* FIX (reported live): the previous six clusters all sat at edges/corners --
+   top/left values only ever near 0%/100% on either axis, so the true
+   center of the viewport and the area behind the right sidebar panels
+   (visible at every height on a game detail page, not just the one
+   ~40%-top point the old right column touched) stayed genuinely flat.
+   Widened to a jittered 4-column x 3-row grid (12 clusters) spanning the
+   full 0-100% range on both axes -- columns include a true ~50% center
+   column, and the right column now has coverage at three different
+   heights (top/mid/bottom) instead of one, since a game detail page's
+   sidebar spans much of the viewport's height. Same per-cluster
+   size/opacity/blur/motion as before (see .css) -- this only changes
+   distribution, not intensity or the drift/merge mechanics. */
 const CLUSTERS: Array<{ top: string; left: string }> = [
   { top: "-10%", left: "-6%" },
-  { top: "-8%", left: "74%" },
+  { top: "-6%", left: "23%" },
+  { top: "-12%", left: "52%" },
+  { top: "-8%", left: "78%" },
   { top: "34%", left: "-8%" },
-  { top: "40%", left: "80%" },
+  { top: "40%", left: "24%" },
+  { top: "36%", left: "50%" },
+  { top: "42%", left: "80%" },
   { top: "74%", left: "2%" },
-  { top: "78%", left: "68%" },
+  { top: "80%", left: "26%" },
+  { top: "76%", left: "54%" },
+  { top: "78%", left: "76%" },
 ];
 
 export default function AmbientBackground() {
@@ -68,7 +86,7 @@ export default function AmbientBackground() {
         <div key={i} className="ambient-goo" style={{ top: pos.top, left: pos.left } as CSSProperties}>
           {/* Each blob's own animation-delay is offset per cluster (not
               baked into the shared a/b/c keyframe classes in .css) purely
-              so the six clusters don't all breathe in exact lockstep --
+              so the clusters don't all breathe in exact lockstep --
               inline style wins over the class's own animation-delay
               because it's a more specific longhand declaration. */}
           <div className="ambient-blob ambient-blob--a" style={{ animationDelay: `${-(i * 3.4)}s` }} />
