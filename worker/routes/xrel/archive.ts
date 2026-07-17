@@ -17,6 +17,9 @@ export const handleXrelArchive: Handler = async ({ request }) => {
     enc(url.searchParams.get("page") || "1") +
     "&per_page=" +
     enc(url.searchParams.get("per_page") || "100");
-  const r = await fetch(api, { cf: { cacheTtl: 900, cacheEverything: true } } as RequestInit);
+  // Same fix as browse.ts: cacheTtlByStatus never caches an error status,
+  // so a transient xREL failure retries next request instead of getting
+  // stuck for the full TTL.
+  const r = await fetch(api, { cf: { cacheTtlByStatus: { "200-299": 900, "300-599": 0 } } } as RequestInit);
   return relay(r);
 };

@@ -4,8 +4,12 @@ interface SteamCmdInfo {
 
 export async function buildId(appid: string): Promise<number | null> {
   try {
+    // FIX (confirmed live, QA sweep): cacheEverything caches ANY status
+    // code for the full cacheTtl -- a transient steamcmd.net failure could
+    // get replayed as "no build id" for a full hour. cacheTtlByStatus
+    // caches a real 2xx the same as before but never caches an error.
     const r = await fetch(`https://api.steamcmd.net/v1/info/${appid}`, {
-      cf: { cacheTtl: 3600, cacheEverything: true },
+      cf: { cacheTtlByStatus: { "200-299": 3600, "300-599": 0 } },
     } as RequestInit);
     const jn = (await r.json()) as SteamCmdInfo;
     const b = jn.data?.[appid]?.depots?.branches?.public?.buildid;

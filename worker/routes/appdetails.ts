@@ -30,10 +30,14 @@ export const handleAppdetails: Handler = async ({ request }) => {
 
   let data: SteamAppDetailsResponse;
   try {
-    const r = await fetch(
-      `https://store.steampowered.com/api/appdetails?appids=${appid}&l=english&cc=us`,
-      { cf: { cacheTtl: 3600, cacheEverything: true } } as RequestInit,
-    );
+    // FIX (confirmed live, QA sweep): cacheEverything caches ANY status
+    // code for the full cacheTtl, including a transient Steam rate-limit/
+    // error response -- a single bad moment could get replayed as "success:
+    // false" for every caller for a full hour. cacheTtlByStatus caches a
+    // real 2xx the same as before but never caches an error status.
+    const r = await fetch(`https://store.steampowered.com/api/appdetails?appids=${appid}&l=english&cc=us`, {
+      cf: { cacheTtlByStatus: { "200-299": 3600, "300-599": 0 } },
+    } as RequestInit);
     data = (await r.json()) as SteamAppDetailsResponse;
   } catch {
     // FIX (confirmed live): Steam occasionally returns a non-JSON error/

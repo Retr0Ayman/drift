@@ -63,7 +63,16 @@ export const handleXrelGroup: Handler = async ({ request }) => {
     );
   }
 
-  const fetchOpts = { cf: { cacheTtl: 300, cacheEverything: true } } as RequestInit;
+  // FIX (confirmed live, QA sweep): cacheEverything caches ANY status code
+  // for the full cacheTtl, including a 429 -- this is likely exactly what
+  // was observed during the crack-timing reconciliation work, where this
+  // route kept returning 0 rows for every group (not just recently-empty
+  // ones) for an extended stretch even though direct upstream calls
+  // succeeded throughout. The busted-retry above only covers a 200-but-
+  // empty body; a genuine non-200 status was still getting cached as-is
+  // for 5 minutes per attempt. cacheTtlByStatus never caches an error
+  // status, so a 429 self-heals on the very next request instead.
+  const fetchOpts = { cf: { cacheTtlByStatus: { "200-299": 300, "300-599": 0 } } } as RequestInit;
   async function fetchPage(page: number): Promise<Response> {
     const first = await fetch(apiUrl(page, false), fetchOpts);
     if (first.ok) return first;

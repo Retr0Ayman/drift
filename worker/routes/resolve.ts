@@ -48,12 +48,16 @@ export const handleResolve: Handler = async ({ request }) => {
   const title = url.searchParams.get("title");
   if (!title) return json({ error: "pass ?title=" }, 60, 400);
   try {
-    // No cf.cacheEverything on purpose: a bad/empty Steam response must not get
-    // stuck cached at the edge for a full hour. Successful resolutions are
-    // memoized client-side; a failure just gets a short TTL and retries later.
-    const r = await fetch(
-      "https://store.steampowered.com/api/storesearch/?term=" + enc(title) + "&l=english&cc=us",
-    );
+    // FIX (QA sweep): this used to skip caching entirely -- cf.cacheEverything
+    // would have let a bad/empty Steam response get stuck cached at the edge
+    // for a full hour, so the safe fix at the time was no caching at all.
+    // cacheTtlByStatus gets the caching benefit back for a real 2xx (this
+    // route is hit constantly during backfill/enrichment) while still never
+    // caching an error status, so a bad response still just retries later
+    // instead of getting stuck.
+    const r = await fetch("https://store.steampowered.com/api/storesearch/?term=" + enc(title) + "&l=english&cc=us", {
+      cf: { cacheTtlByStatus: { "200-299": 3600, "300-599": 0 } },
+    } as RequestInit);
     if (!r.ok) return json({ query: title, appid: null }, 30);
     const data = (await r.json()) as StoreSearchResponse;
     const items = data.items || [];

@@ -52,7 +52,10 @@ export const handleXrelP2PGroup: Handler = async ({ request }) => {
       PER_PAGE +
       "&page=" +
       page;
-    const r = await fetch(api, { cf: { cacheTtl: 900, cacheEverything: true } } as RequestInit);
+    // FIX (confirmed live, QA sweep): cacheEverything caches ANY status
+    // code for the full cacheTtl, including a 429 -- same root cause as
+    // group.ts's own fix. cacheTtlByStatus never caches an error status.
+    const r = await fetch(api, { cf: { cacheTtlByStatus: { "200-299": 900, "300-599": 0 } } } as RequestInit);
     if (!r.ok) {
       upstreamFailed = page === 1;
       break;

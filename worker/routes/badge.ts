@@ -36,11 +36,14 @@ async function resolveAppid(title: string): Promise<number | null> {
   // transient/empty Steam storesearch response get cached at the edge for
   // the full cacheTtl (an hour), after which every request replayed that
   // same stuck empty result -- resolve.ts's handleResolve hits the exact
-  // same endpoint but deliberately omits cacheEverything for this precise
-  // reason (see that file's own comment), and was unaffected. No caching
-  // here either now -- a bad response just retries next request instead of
-  // getting stuck.
-  const r = await fetch("https://store.steampowered.com/api/storesearch/?term=" + enc(title) + "&l=english&cc=us");
+  // same endpoint but deliberately omits any caching for this precise
+  // reason (see that file's own comment). cacheTtlByStatus restores the
+  // caching benefit for a real 2xx response while never caching an error
+  // status, so a bad response retries next request instead of getting
+  // stuck for the old full-hour TTL.
+  const r = await fetch("https://store.steampowered.com/api/storesearch/?term=" + enc(title) + "&l=english&cc=us", {
+    cf: { cacheTtlByStatus: { "200-299": 3600, "300-599": 0 } },
+  } as RequestInit);
   if (!r.ok) return null;
   const data = (await r.json()) as StoreSearchResponse;
   const target = norm(title);
@@ -121,9 +124,12 @@ export const handleBadge: Handler = async ({ request }) => {
 
   const currentBuild = await buildId(String(appid));
 
-  // Same fix as resolveAppid above -- no cacheEverything, so a bad/empty
-  // xREL response can't get stuck served to every viewer for 15 minutes.
-  const searchRes = await fetch("https://api.xrel.to/v2/search/releases.json?q=" + enc(title) + "&scene=1&p2p=1&per_page=100");
+  // Same fix as resolveAppid above -- cacheTtlByStatus, so a bad/error
+  // xREL response can't get stuck served to every viewer for 15 minutes,
+  // while a real 2xx still caches normally.
+  const searchRes = await fetch("https://api.xrel.to/v2/search/releases.json?q=" + enc(title) + "&scene=1&p2p=1&per_page=100", {
+    cf: { cacheTtlByStatus: { "200-299": 900, "300-599": 0 } },
+  } as RequestInit);
   if (!searchRes.ok) return svgResponse("UNCRACKED", 60);
 
   const data = (await searchRes.json()) as SearchReleasesResponse;

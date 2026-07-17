@@ -17,8 +17,11 @@ export const handleWishlist: Handler = async ({ request }) => {
   }
 
   const path = steamid ? `profiles/${enc(steamid)}` : `id/${enc(vanity)}`;
+  // FIX (confirmed live, QA sweep): cacheEverything caches ANY status code
+  // for the full cacheTtl, including a transient Steam failure -- never
+  // caches an error status now.
   const r = await fetch(`https://store.steampowered.com/wishlist/${path}/wishlistdata/`, {
-    cf: { cacheTtl: 300, cacheEverything: true },
+    cf: { cacheTtlByStatus: { "200-299": 300, "300-599": 0 } },
   } as RequestInit);
 
   if (!r.ok) return json({ error: "Could not reach Steam", appids: [] }, 30, 502);

@@ -11,17 +11,20 @@ interface SearchReleasesResponse {
 export const handleXrelSearch: Handler = async ({ request }) => {
   const url = new URL(request.url);
 
+  // Same fix as browse.ts/archive.ts/etc: cacheTtlByStatus never caches an
+  // error status, so a transient xREL failure retries next request instead
+  // of getting stuck for the full TTL.
   if (url.searchParams.get("latest")) {
     const api =
       "https://api.xrel.to/v2/release/latest.json?per_page=" +
       enc(url.searchParams.get("per_page") || "100");
-    const r = await fetch(api, { cf: { cacheTtl: 900, cacheEverything: true } } as RequestInit);
+    const r = await fetch(api, { cf: { cacheTtlByStatus: { "200-299": 900, "300-599": 0 } } } as RequestInit);
     return relay(r);
   }
 
   const api =
     "https://api.xrel.to/v2/search/releases.json?q=" + enc(url.searchParams.get("q")) + "&scene=1&p2p=1";
-  const r = await fetch(api, { cf: { cacheTtl: 900, cacheEverything: true } } as RequestInit);
+  const r = await fetch(api, { cf: { cacheTtlByStatus: { "200-299": 900, "300-599": 0 } } } as RequestInit);
   if (!r.ok) return json({ total: 0, list: [] }, 60, r.status);
   const data = (await r.json()) as SearchReleasesResponse;
   // FIX: this route already asked for p2p=1, but xREL splits the response into
