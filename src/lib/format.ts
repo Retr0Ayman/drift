@@ -76,6 +76,41 @@ export function sortReleasesByPriority(releases: Release[]): Release[] {
   });
 }
 
+/* Chronological view for the Crack Timeline (GameDetail's "Crack options"
+   tab) -- real first_seen_ts/firstSeenTs() below, never the mutable ts/date
+   fields an ongoing crack's own updates keep advancing. Unresolved rows
+   (firstSeenTs returns null -- no ts, no parseable date at all) sort last:
+   we can't honestly place something on a timeline when we don't know when
+   it happened. */
+export function sortReleasesByFirstSeen(releases: Release[]): Release[] {
+  return [...releases].sort((a, b) => {
+    const at = firstSeenTs(a);
+    const bt = firstSeenTs(b);
+    if (at == null && bt == null) return 0;
+    if (at == null) return 1;
+    if (bt == null) return -1;
+    return at - bt;
+  });
+}
+
+/* The one release the timeline marks as the genuine first crack -- the
+   EARLIEST release that is NOT a repack/anonymous upload, never simply
+   "whichever row's timestamp happens to sort first." A repack rebundles
+   someone else's DRM bypass and xREL's "P2P" group_name is an
+   unattributed placeholder, not a real group -- if either's recorded
+   first_seen_ts happens to predate the actual original crack (bad/partial
+   upstream data), crediting it as "first crack" would be exactly the kind
+   of fabricated-sounding claim this project's other AI-grounding fixes
+   have been about avoiding, just for structured data instead of prose.
+   Returns null when every tracked release is a repack/anonymous upload --
+   there's no genuine crack to credit as first. */
+export function earliestGenuineRelease(releases: Release[]): Release | null {
+  const genuine = releases.filter((r) => !r.isRepack && !r.isAnonymous);
+  const dated = genuine.filter((r) => firstSeenTs(r) != null);
+  if (!dated.length) return null;
+  return dated.reduce((a, b) => (firstSeenTs(b)! < firstSeenTs(a)! ? b : a));
+}
+
 /* SteamDB/Cirno-style version label: bare numbers get a "v" prefix ("3" ->
    "v3"); anything already starting with a version-like token ("v1.05",
    "HVB v3") or free text ("BETA 5.0", "launch") is shown verbatim -- never

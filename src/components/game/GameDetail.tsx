@@ -9,6 +9,7 @@ import DlcRow from "./DlcRow";
 import FaqSection from "./FaqSection";
 import GameFact from "./GameFact";
 import CrackOutlook from "./CrackOutlook";
+import CrackTimeline from "./CrackTimeline";
 import GlassPanel from "../ui/GlassPanel";
 import Pill from "../ui/Pill";
 import Reveal from "../ui/Reveal";
@@ -149,6 +150,7 @@ export default function GameDetail() {
       content: (
         <div className="detail-releases">
           <CrackOutlook game={mergedGame} />
+          <CrackTimeline game={mergedGame} />
           <div className="detail-release-list">
             {releases.length ? (
               releases.map((r, i) => (
