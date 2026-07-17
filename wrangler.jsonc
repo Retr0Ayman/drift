@@ -6,7 +6,17 @@
 	"compatibility_flags": ["nodejs_compat"],
 	"assets": {
 		"directory": "./dist",
-		"binding": "ASSETS"
+		"binding": "ASSETS",
+		// FIX (confirmed live, QA sweep): without this, any direct navigation
+		// to a client-side route -- /game/<id>, /group/<key>, /watchlist, a
+		// bookmark, a shared link, a page refresh -- 404'd with a blank page
+		// instead of serving the SPA shell, since env.ASSETS.fetch() only
+		// matches real files in dist/ and this Worker's own fetch handler
+		// falls through to it for every non-/api/ path. "single-page-
+		// application" makes an unmatched path serve index.html instead of a
+		// raw 404, letting react-router's client-side routing take over
+		// exactly like it already does for in-app navigation.
+		"not_found_handling": "single-page-application"
 	},
 	"observability": {
 		"enabled": true
