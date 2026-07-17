@@ -37,6 +37,7 @@ interface JoinedRow {
   rel_first_seen_date: string | null;
   rel_first_seen_build: number | null;
   rel_first_seen_ts: number | null;
+  rel_first_seen_verified: number | null;
 }
 
 const DEFAULT_PER_PAGE = 200;
@@ -74,7 +75,7 @@ const QUERY = `
     r.xrel_id as rel_xrel_id, r.link_href as rel_link_href, r.is_repack as rel_is_repack,
     r.is_anonymous as rel_is_anonymous, r.update_count as rel_update_count,
     r.first_seen_date as rel_first_seen_date, r.first_seen_build as rel_first_seen_build,
-    r.first_seen_ts as rel_first_seen_ts
+    r.first_seen_ts as rel_first_seen_ts, r.first_seen_verified as rel_first_seen_verified
   FROM (SELECT * FROM games ORDER BY updated_at DESC LIMIT ? OFFSET ?) g
   LEFT JOIN releases r ON r.game_id = g.id
   ORDER BY g.updated_at DESC, r.ts DESC
@@ -145,6 +146,13 @@ export const handleCatalog: Handler = async ({ request, env }) => {
           firstSeenDate: r.rel_first_seen_date || undefined,
           firstSeenBuild: r.rel_first_seen_build,
           firstSeenTs: r.rel_first_seen_ts || undefined,
+          // null only for a row written before migrations/0005 ran and not
+          // yet backfilled by it (that migration's own UPDATE statement
+          // gives every existing row a real 0/1 the moment it runs) --
+          // treat that narrow window the same as "not yet confirmed"
+          // rather than assuming true, so crackTimingLabel never shows a
+          // confident day-count it can't actually stand behind.
+          firstSeenVerified: r.rel_first_seen_verified == null ? false : !!r.rel_first_seen_verified,
         })),
       };
     });

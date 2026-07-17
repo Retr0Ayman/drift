@@ -25,7 +25,7 @@ function parseVersionFromDirname(dn?: string): string {
   return m ? m[0].replace(/\./g, " ").replace(/^\w/, (c) => c.toUpperCase()) : "";
 }
 
-function parseBuildFromDirname(dn?: string): number | null {
+export function parseBuildFromDirname(dn?: string): number | null {
   if (!dn) return null;
   const m = dn.match(/\bbuild[.\s]?(\d{5,9})\b/i);
   return m ? Number(m[1]) : null;
@@ -63,7 +63,7 @@ export interface ParsedGame {
   releases: ParsedRelease[];
 }
 
-const dateFromTs = (t?: number): string =>
+export const dateFromTs = (t?: number): string =>
   t ? new Date(t * 1000).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "";
 const yearFromTs = (t?: number): number | null => (t ? new Date(t * 1000).getFullYear() : null);
 

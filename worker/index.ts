@@ -28,6 +28,7 @@ import { runBackfillTick } from "./backfill/run";
 import { runDeepBackfillTick } from "./backfill/deepRun";
 import { runArchiveBackfillTick } from "./backfill/archiveRun";
 import { runDrmBackfillTick } from "./backfill/drmBackfillRun";
+import { runFirstSeenReconcileTick } from "./backfill/reconcileFirstSeen";
 
 /* This is a Worker with static assets (wrangler.jsonc `main` + `assets`), not
    classic Cloudflare Pages -- confirmed live: the workers.dev domain and
@@ -37,7 +38,11 @@ import { runDrmBackfillTick } from "./backfill/drmBackfillRun";
    else (the built SPA + its static files). */
 // Must match the second/third/fourth/fifth entries in wrangler.jsonc's
 // `triggers.crons` exactly -- ScheduledEvent.cron is how the one scheduled()
-// handler below tells the five triggers apart.
+// handler below tells the five triggers apart. There's no sixth: Cloudflare
+// caps a Worker at 5 cron triggers (confirmed live -- a 6th's schedules API
+// call 400s), so the first-seen reconciliation piggybacks on this one
+// instead of getting its own, the same way the 15-minute trigger already
+// combines two unrelated tasks below.
 const BACKFILL_CRON = "*/2 * * * *";
 const DEEP_BACKFILL_CRON = "*/3 * * * *";
 const ARCHIVE_BACKFILL_CRON = "*/4 * * * *";
@@ -100,11 +105,18 @@ export default {
   // (worker/backfill/archiveRun.ts), the largest of the five -- expect it
   // to run for days; a fifth walks every existing games row exactly once to
   // reconcile the false-Denuvo tag backlog against a real PCGamingWiki
-  // lookup (worker/backfill/drmBackfillRun.ts) -- a different traversal
-  // (every row, not just xREL-recent ones) than any of the other four, so
-  // it gets its own cadence rather than piggybacking on one of them.
-  // waitUntil so none of these get torn down before their D1 writes (and,
-  // for the alert path, the KV writes/webhook POST) finish.
+  // lookup (worker/backfill/drmBackfillRun.ts) AND, alongside it, keeps
+  // sweeping the false-crack-timing backlog against real xREL group
+  // history (worker/backfill/reconcileFirstSeen.ts) -- Cloudflare caps a
+  // Worker at 5 cron triggers (confirmed live), so this shares the DRM
+  // backfill's slot rather than getting a dedicated one, same as the
+  // 15-minute trigger already combining two unrelated tasks. Unlike the
+  // DRM backfill, the reconciliation deliberately never reaches a terminal
+  // "done" state -- see that file's own comment for why (xREL's group
+  // search proved flaky enough during verification that a one-shot pass
+  // would permanently strand whatever it hit mid-outage). waitUntil so
+  // none of these get torn down before their D1 writes (and, for the alert
+  // path, the KV writes/webhook POST) finish.
   async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
     if (event.cron === BACKFILL_CRON) {
       ctx.waitUntil(runBackfillTick(env));
@@ -119,7 +131,7 @@ export default {
       return;
     }
     if (event.cron === DRM_BACKFILL_CRON) {
-      ctx.waitUntil(runDrmBackfillTick(env));
+      ctx.waitUntil(Promise.all([runDrmBackfillTick(env), runFirstSeenReconcileTick(env)]));
       return;
     }
     ctx.waitUntil(Promise.all([runScheduledAlert(env), runSteadyStateSync(env)]));

@@ -1,0 +1,28 @@
+-- Confirmed live on Crimson Desert: its DenuvOwO release showed "Cracked in
+-- 114 days" / "First cracked 10 Jul 2026" despite the game releasing Mar 19
+-- 2026 and DenuvOwO being a consistently day-1 hypervisor group -- the real
+-- first crack landed Mar 20 2026 (one day after release), confirmed by
+-- re-querying the group's own full history via p2p/releases.json.
+--
+-- Root cause: 0004's first_seen_date/build/ts migration correctly set those
+-- fields going forward on every real INSERT, but every release that already
+-- existed in D1 before that migration ran (every already-tracked release,
+-- since UNIQUE(game_id, group_name) had already collapsed every prior
+-- update into one row) had no real historical value to backfill from --
+-- the migration's best-effort default was "equal to current date", which
+-- silently recorded "whenever the migration happened to run" as if it were
+-- the original crack date. That's wrong for every affected row, but
+-- invisibly so -- the site displayed it with the same confidence as a
+-- genuinely-known date.
+--
+-- This column distinguishes the two cases so the display layer (src/lib/
+-- format.ts's crackTimingLabel/crackTimingDays) can tell a real value from
+-- a flawed placeholder and never show a confident "Cracked in N days" claim
+-- built on the latter. update_count = 1 rows were never touched by the old
+-- bug (their first_seen was never overwritten, so it's already correct) --
+-- only update_count > 1 rows are actually at risk, and worker/backfill/
+-- reconcileFirstSeen.ts's one-time pass re-derives the real value for as
+-- many of those as xREL's own group history still contains, flipping this
+-- back to verified for each one it successfully corrects.
+ALTER TABLE releases ADD COLUMN first_seen_verified INTEGER;
+UPDATE releases SET first_seen_verified = CASE WHEN update_count <= 1 THEN 1 ELSE 0 END;

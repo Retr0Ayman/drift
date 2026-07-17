@@ -43,10 +43,16 @@ const UPSERT_GAME_SQL = `
 // true first-ever row for this game) and never touched again, which is
 // exactly what preserves the real original crack date/build against every
 // later update overwriting date/build/ts (see migrations/0004's own
-// comment for the full reasoning).
+// comment for the full reasoning). first_seen_verified is bound to 1 on
+// every fresh INSERT and, same as the fields above, deliberately excluded
+// from DO UPDATE SET -- a row written by this code always has a real
+// first-seen value (there's no "best-effort default" path left post-0005),
+// and that must survive future updates exactly like the fields it
+// describes (see migrations/0005 for the historical case this doesn't
+// cover -- releases already in D1 before that migration ran).
 const UPSERT_RELEASE_SQL = `
-  INSERT INTO releases (game_id, method, group_name, build, version, date, ts, note, xrel_id, link_href, is_repack, is_anonymous, update_count, first_seen_date, first_seen_build, first_seen_ts)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  INSERT INTO releases (game_id, method, group_name, build, version, date, ts, note, xrel_id, link_href, is_repack, is_anonymous, update_count, first_seen_date, first_seen_build, first_seen_ts, first_seen_verified)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
   ON CONFLICT(game_id, group_name) DO UPDATE SET
     method = excluded.method, build = excluded.build, version = excluded.version, date = excluded.date,
     ts = excluded.ts, note = excluded.note, xrel_id = excluded.xrel_id, link_href = excluded.link_href,
