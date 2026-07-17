@@ -30,10 +30,17 @@ function norm(s?: string | null): string {
 }
 
 async function resolveAppid(title: string): Promise<number | null> {
-  const r = await fetch(
-    "https://store.steampowered.com/api/storesearch/?term=" + enc(title) + "&l=english&cc=us",
-    { cf: { cacheTtl: 3600, cacheEverything: true } } as RequestInit,
-  );
+  // FIX (confirmed live, QA sweep): every badge query was showing UNCRACKED
+  // regardless of title, including well-known heavily-cracked games (Elden
+  // Ring, Crimson Desert). Root cause: cf.cacheEverything here let a single
+  // transient/empty Steam storesearch response get cached at the edge for
+  // the full cacheTtl (an hour), after which every request replayed that
+  // same stuck empty result -- resolve.ts's handleResolve hits the exact
+  // same endpoint but deliberately omits cacheEverything for this precise
+  // reason (see that file's own comment), and was unaffected. No caching
+  // here either now -- a bad response just retries next request instead of
+  // getting stuck.
+  const r = await fetch("https://store.steampowered.com/api/storesearch/?term=" + enc(title) + "&l=english&cc=us");
   if (!r.ok) return null;
   const data = (await r.json()) as StoreSearchResponse;
   const target = norm(title);
@@ -107,15 +114,17 @@ export const handleBadge: Handler = async ({ request }) => {
   }
 
   const appid = await resolveAppid(title);
-  if (appid == null) return svgResponse("UNCRACKED", 1800);
+  // Short TTL, not the 1800s a genuine "no rows matched" result below gets --
+  // this branch can't tell a real Steam miss apart from a transient failure,
+  // so it shouldn't get cached with the same confidence either.
+  if (appid == null) return svgResponse("UNCRACKED", 60);
 
   const currentBuild = await buildId(String(appid));
 
-  const searchRes = await fetch(
-    "https://api.xrel.to/v2/search/releases.json?q=" + enc(title) + "&scene=1&p2p=1&per_page=100",
-    { cf: { cacheTtl: 900, cacheEverything: true } } as RequestInit,
-  );
-  if (!searchRes.ok) return svgResponse("UNCRACKED", 300);
+  // Same fix as resolveAppid above -- no cacheEverything, so a bad/empty
+  // xREL response can't get stuck served to every viewer for 15 minutes.
+  const searchRes = await fetch("https://api.xrel.to/v2/search/releases.json?q=" + enc(title) + "&scene=1&p2p=1&per_page=100");
+  if (!searchRes.ok) return svgResponse("UNCRACKED", 60);
 
   const data = (await searchRes.json()) as SearchReleasesResponse;
   const target = norm(title);
