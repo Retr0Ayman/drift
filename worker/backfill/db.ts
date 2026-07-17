@@ -20,7 +20,7 @@ const UPSERT_GAME_SQL = `
   ON CONFLICT(id) DO UPDATE SET
     xrel_key = excluded.xrel_key, title = excluded.title, appid = excluded.appid, year = excluded.year,
     released = excluded.released, developer = excluded.developer, publisher = excluded.publisher,
-    genres = excluded.genres, current_build = excluded.current_build, desc = excluded.desc,
+    genres = excluded.genres, tags = excluded.tags, current_build = excluded.current_build, desc = excluded.desc,
     metacritic = excluded.metacritic, header = excluded.header,
     accent_color_primary = CASE
       WHEN excluded.accent_color_primary != ? OR accent_color_primary IS NULL OR accent_color_primary = ''
@@ -112,7 +112,14 @@ export async function upsertGames(db: D1Database, games: ParsedGame[], enrichmen
           enrichment.developer,
           enrichment.publisher,
           JSON.stringify(enrichment.genres),
-          JSON.stringify(["Denuvo"]),
+          // FIX (confirmed live): this was a hardcoded JSON.stringify(["Denuvo"])
+          // -- every single game ever written to D1 got tagged as Denuvo-protected
+          // unconditionally, regardless of its real DRM, and ReleaseCard.tsx renders
+          // this under a field literally labeled "Protection". No per-game DRM lookup
+          // exists yet (see worker/backfill/resolve.ts), so an honest empty array is
+          // the only correct value here until one does -- a blank field beats a
+          // confident lie.
+          JSON.stringify([]),
           enrichment.currentBuild,
           enrichment.desc,
           null, // fact -- generated + cached client-side on demand, not backfilled

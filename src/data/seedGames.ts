@@ -143,7 +143,7 @@ export const SEED_GAMES: Game[] = [
     developer: "EA Tiburon",
     publisher: "EA Sports",
     genres: ["Sports", "Simulation"],
-    tags: ["Denuvo", "EA anti-cheat"],
+    tags: ["EA anti-cheat"],
     currentBuild: 16110700,
     survivalHrs: 96,
     releases: [
@@ -158,7 +158,7 @@ export const SEED_GAMES: Game[] = [
       },
     ],
     desc: "The latest entry in EA's revived college football series, built on the Frostbite engine.",
-    fact: "EA's college football franchise sat dormant for over a decade before its revival — the return became one of the best-selling US sports launches in years.",
+    fact: "EA's college football franchise sat dormant for over a decade before its revival — its recent EA Sports titles have moved off Denuvo onto EA's own protection stack instead.",
     dlc: [{ n: "MVP Edition", p: "—" }],
     source: { name: "CrackWatch", url: "https://isitcracked.com/news/ea-sports-college-football-27-cracked-by-rune" },
   },
