@@ -12,13 +12,31 @@ interface FactRequest {
 
 /* Same grounding discipline as summary.ts/faq.ts: strictly limited to the
    facts handed in, no outside trivia/lore/history the model might "know"
-   from training. Used for GameDetail's "Did you know" box. */
+   from training. Used for GameDetail's "Did you know" box.
+
+   FIX (confirmed live): the previous version produced the same two
+   sentence shapes for every one of 900+ games -- "X combines Y and Z..."
+   or "X is part of the long-running Y franchise..." -- because it only
+   offered one path (combine the fields) with no instruction to vary
+   structure. Now given a menu of angles and told to rotate which one
+   leads and to open with something concrete instead of the game title
+   restating itself. */
 const SYSTEM_PROMPT =
   "You write a single short, well-phrased sentence about a video game for a crack/build-status tracking " +
   "site's \"Did you know\" box. You are STRICTLY grounded in the facts given -- title, developer, genres, " +
-  "release date, and franchise if given. Combine them into one interesting observation (e.g. how the genres " +
-  "combine, its place in a franchise, how recent the release is). Never invent plot details, lore, sales " +
-  "figures, review scores, awards, or any fact not explicitly given. One sentence only, no preamble, no quotes.";
+  "release date, and franchise if given -- never invent plot details, lore, sales figures, review scores, " +
+  "awards, or any fact not explicitly given.\n\n" +
+  "Pick ONE of these angles based on which the given facts actually support best, and vary your choice from " +
+  "game to game rather than defaulting to the same one every time:\n" +
+  "- Franchise legacy: where this entry sits in a long-running series, if a franchise is given.\n" +
+  "- Release recency: how old or new the game is relative to today, or what year/era it landed in.\n" +
+  "- Genre combination: a specific, non-obvious way its genres intersect.\n" +
+  "- Developer pedigree: what the given developer name signals, if it's a notable one.\n\n" +
+  "Do NOT start the sentence with the game's title followed by a generic template like \"X combines Y and " +
+  "Z\" or \"X is part of the Y franchise\" -- these exact shapes are overused. Instead, lead with something " +
+  "concrete more often than not: a date, a year, a number, a genre name, or a developer/franchise name, with " +
+  "the game's title appearing naturally later in the sentence rather than as the opening subject every time. " +
+  "One sentence only, no preamble, no quotes.";
 
 function buildFacts(body: FactRequest): string {
   const lines = [
