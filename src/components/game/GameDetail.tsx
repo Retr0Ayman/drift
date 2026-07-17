@@ -8,6 +8,7 @@ import ReleaseCard from "./ReleaseCard";
 import DlcRow from "./DlcRow";
 import FaqSection from "./FaqSection";
 import GameFact from "./GameFact";
+import CrackOutlook from "./CrackOutlook";
 import GlassPanel from "../ui/GlassPanel";
 import Pill from "../ui/Pill";
 import Reveal from "../ui/Reveal";
@@ -145,6 +146,7 @@ export default function GameDetail() {
       label: `Crack options${releases.length ? ` (${releases.length})` : ""}`,
       content: (
         <div className="detail-releases">
+          <CrackOutlook game={mergedGame} />
           <div className="detail-release-list">
             {releases.length ? (
               releases.map((r, i) => (

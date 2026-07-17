@@ -1,0 +1,30 @@
+.crack-outlook {
+  padding: 18px 20px;
+  margin-bottom: 16px;
+}
+
+.crack-outlook-h {
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: var(--out);
+  text-transform: uppercase;
+}
+
+.crack-outlook-h .ai-tag-ring {
+  margin-left: 8px;
+}
+
+.crack-outlook p {
+  color: var(--ink);
+  font-size: 0.92rem;
+  line-height: 1.6;
+  margin-top: 8px;
+  font-weight: 500;
+}
+
+.crack-outlook-status {
+  color: var(--ink-3);
+  font-size: 0.88rem;
+  margin-top: 8px;
+}

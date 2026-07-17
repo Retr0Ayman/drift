@@ -16,6 +16,7 @@ import { handleFx } from "./routes/fx";
 import { handleSummary } from "./routes/summary";
 import { handleDigest } from "./routes/digest";
 import { handleFact } from "./routes/fact";
+import { handleOutlook } from "./routes/outlook";
 import { handleSearchAssist } from "./routes/searchAssist";
 import { handleSitemap } from "./routes/sitemap";
 import { handleBadge } from "./routes/badge";
@@ -56,6 +57,7 @@ const ROUTES: Record<string, Handler> = {
   "/api/summary": handleSummary,
   "/api/digest": handleDigest,
   "/api/fact": handleFact,
+  "/api/outlook": handleOutlook,
   "/api/badge": handleBadge,
   "/api/wishlist": handleWishlist,
   "/api/feed.xml": handleFeed,
