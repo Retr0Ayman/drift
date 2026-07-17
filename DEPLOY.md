@@ -99,29 +99,22 @@ Anything under `/api/` that isn't one of the routes above returns a `404` JSON b
 every 15 minutes) and posts a Discord embed for genuinely new cracks — the main
 Windows browse feed's first page plus each starred P2P group's full history,
 diffed against a `SEEN_RELEASES` KV namespace so the same release never gets
-re-posted. It's already deployed as code but **inert** until both of the
-following manual, non-scriptable steps are done — until then it silently no-ops
-every time the cron fires, it does not error.
+re-posted. It's already deployed as code, and the KV namespace itself is
+already created and bound (`wrangler.jsonc`'s `kv_namespaces`) — the one
+remaining step is Discord-account-specific and can't be scripted, so it's
+still **inert** until it's done; it silently no-ops every time the cron fires,
+it does not error.
 
-**A. Create the KV namespace** (needs a Cloudflare login):
-```
-wrangler kv namespace create SEEN_RELEASES
-```
-That prints an `id`. Add it to `wrangler.jsonc`:
-```jsonc
-"kv_namespaces": [{ "binding": "SEEN_RELEASES", "id": "<the id it printed>" }]
-```
-
-**B. Create a Discord webhook and set the secret:**
+**Create a Discord webhook and set the secret:**
 1. In your Discord server: channel → Edit Channel → Integrations → Webhooks →
    New Webhook → copy its URL.
 2. Dashboard → Workers & Pages → `drift` → Settings → Variables and Secrets → add
    `DISCORD_WEBHOOK_URL` with that URL, marked **Secret**. Never committed to
    git, never pasted in chat.
 
-Then `npm run deploy` again so the new `kv_namespaces` binding takes effect.
+Adding the secret takes effect immediately, no redeploy needed.
 
-The very first time the cron fires after both are configured, it seeds
+The very first time the cron fires after the secret is set, it seeds
 `SEEN_RELEASES` with everything currently visible **without** alerting on any
 of it — otherwise that first tick would post one alert per release already
 sitting in the catalog, which isn't "new." Every tick after that only alerts on
@@ -147,4 +140,4 @@ the live path:
 | xREL release list, search, P2P group lookup, drift detection | free, no key | none |
 | xREL NFO images | free | optional, needs an xREL-approved Consumer Key/Secret — skip it, ASCII `.nfo` is permanent |
 | build-id refresh (curated path) | free (GitHub Actions minutes) | none |
-| Discord new-release alerts | free (KV free tier) | one-time: create the KV namespace + a Discord webhook, set `DISCORD_WEBHOOK_URL` — see section 5 |
+| Discord new-release alerts | free (KV free tier) | one-time: create a Discord webhook, set `DISCORD_WEBHOOK_URL` — see section 5 |
