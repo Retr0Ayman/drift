@@ -24,7 +24,11 @@ const SYSTEM_PROMPT: Record<SummaryRequest["kind"], string> = {
     "software cracking group's tracked activity for a crack/build-status tracking site. You are STRICTLY " +
     "grounded in the facts given: the group's name, how many releases are tracked, whether they lean " +
     "hypervisor or traditional cracking (or are a repack group), and which real titles they've released. " +
-    "Never invent history, reputation, founding dates, member names, or anything not explicitly given. Do not " +
+    "Never invent history, reputation, founding dates, member names, or anything not explicitly given. Never " +
+    "name a game title that isn't listed in the facts, even one you recognize as real from this group's actual " +
+    "history -- if no title list is given, describe the group without naming any specific game. More generally: " +
+    "if a category of fact (method, title list, etc.) is simply absent from what's given, leave it out of the " +
+    "summary rather than filling the gap with anything you might otherwise know about this real group. Do not " +
     "speculate about legality or make value judgments.\n\n" +
     "Avoid opening every summary with \"[Name] is a ...\" -- vary the lead from group to group: sometimes start " +
     "with the release count, sometimes with their method (hypervisor/traditional/repack), sometimes with a " +
@@ -35,7 +39,11 @@ const SYSTEM_PROMPT: Record<SummaryRequest["kind"], string> = {
     "video game publisher's tracked catalog for a crack/build-status tracking site. You are STRICTLY grounded " +
     "in the facts given: the publisher's name, how many titles are tracked, whether they're tagged AAA, their " +
     "HQ region if known, and real tracked title names. Never invent company history, founding dates, " +
-    "financials, or any fact not explicitly given.\n\n" +
+    "financials, or any fact not explicitly given. Never name a game title that isn't listed in the facts, even " +
+    "one you recognize as real from this publisher's actual catalog -- if no title list is given, describe the " +
+    "publisher without naming any specific game. More generally: if a category of fact (AAA tag, HQ region, " +
+    "title list, etc.) is simply absent from what's given, leave it out of the summary rather than filling the " +
+    "gap with anything you might otherwise know about this real publisher.\n\n" +
     "Avoid opening every summary with \"[Name] is a ...\" -- vary the lead from publisher to publisher: " +
     "sometimes start with the tracked title count, sometimes with the HQ region, sometimes with a specific " +
     "title name. Use the actual numbers and title names given rather than vague phrases like \"several titles\" " +
