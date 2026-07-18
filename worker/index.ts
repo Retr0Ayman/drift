@@ -30,6 +30,7 @@ import { runArchiveBackfillTick } from "./backfill/archiveRun";
 import { runDrmBackfillTick } from "./backfill/drmBackfillRun";
 import { runFirstSeenReconcileTick } from "./backfill/reconcileFirstSeen";
 import { runStaleRefreshTick } from "./backfill/refreshStale";
+import { runEnrichmentRepairTick } from "./backfill/repairEnrichment";
 
 /* This is a Worker with static assets (wrangler.jsonc `main` + `assets`), not
    classic Cloudflare Pages -- confirmed live: the workers.dev domain and
@@ -113,16 +114,19 @@ export default {
   // reconcile the false-Denuvo tag backlog against a real PCGamingWiki
   // lookup (worker/backfill/drmBackfillRun.ts) AND, alongside it, keeps
   // sweeping the false-crack-timing backlog against real xREL group
-  // history (worker/backfill/reconcileFirstSeen.ts) -- Cloudflare caps a
-  // Worker at 5 cron triggers (confirmed live), so this shares the DRM
-  // backfill's slot rather than getting a dedicated one, same as the
-  // 15-minute trigger already combining two unrelated tasks. Unlike the
-  // DRM backfill, the reconciliation deliberately never reaches a terminal
-  // "done" state -- see that file's own comment for why (xREL's group
-  // search proved flaky enough during verification that a one-shot pass
-  // would permanently strand whatever it hit mid-outage). waitUntil so
-  // none of these get torn down before their D1 writes (and, for the alert
-  // path, the KV writes/webhook POST) finish.
+  // history (worker/backfill/reconcileFirstSeen.ts) AND, also sharing this
+  // slot, repairing the false-blank-metadata backlog left by the appid-
+  // echoed-on-failure bug (worker/backfill/repairEnrichment.ts's own
+  // comment) -- Cloudflare caps a Worker at 5 cron triggers (confirmed
+  // live), so this one slot now carries three unrelated one-time/ongoing
+  // reconciliation tasks, same as the 15-minute trigger already combining
+  // two unrelated tasks. Like the first-seen reconciliation and unlike the
+  // DRM backfill, the enrichment repair deliberately never reaches a
+  // terminal "done" state -- a row a tick attempts and still fails (Steam
+  // having a bad moment right now) must stay eligible for a later tick, not
+  // get marked "visited" and skipped forever. waitUntil so none of these
+  // get torn down before their D1 writes (and, for the alert path, the KV
+  // writes/webhook POST) finish.
   async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
     if (event.cron === BACKFILL_CRON) {
       ctx.waitUntil(runBackfillTick(env));
@@ -137,7 +141,7 @@ export default {
       return;
     }
     if (event.cron === DRM_BACKFILL_CRON) {
-      ctx.waitUntil(Promise.all([runDrmBackfillTick(env), runFirstSeenReconcileTick(env)]));
+      ctx.waitUntil(Promise.all([runDrmBackfillTick(env), runFirstSeenReconcileTick(env), runEnrichmentRepairTick(env)]));
       return;
     }
     ctx.waitUntil(Promise.all([runScheduledAlert(env), runSteadyStateSync(env), runStaleRefreshTick(env)]));

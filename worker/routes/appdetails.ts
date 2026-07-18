@@ -50,10 +50,27 @@ export const handleAppdetails: Handler = async ({ request }) => {
     // stalling the backfill on every run since deploy. Short TTL so the
     // next request retries instead of caching a transient failure as if
     // it were a genuine "no such app" result.
-    return json({ appid: Number(appid), success: false }, 30);
+    //
+    // SECOND FIX (confirmed live): both failure paths here used to echo
+    // `appid: Number(appid)` back in the body -- resolve.ts's enrichFromSteam
+    // only ever checked `if (!d.appid) return null` to detect a failed
+    // lookup, so a truthy appid on a FAILED response made that guard never
+    // fire. Every transient Steam rate-limit/error got silently treated as a
+    // "successful" enrichment with every other field (title/developer/
+    // publisher/released/genres/desc/header/currentBuild) undefined, which
+    // then got written straight over a game's existing good data -- header
+    // and most other columns are unconditional overwrites in db.ts's
+    // upsert/refresh SQL (only accent color has fallback-preserving logic
+    // there), so this silently corrupted roughly a quarter of the live
+    // catalog over time, worst on whichever games got re-touched most
+    // (confirmed live against real Steam data: Forza Horizon 6, V Rising,
+    // PowerWash Simulator 2, Urban Jungle, Mirror of Heaven all have full
+    // real Steam data available right now but sat blanked in D1). No appid
+    // field on failure now, so `!d.appid` genuinely means failure.
+    return json({ success: false }, 30);
   }
   const node = data[appid as string];
-  if (!node || !node.success) return json({ appid: Number(appid), success: false }, 600);
+  if (!node || !node.success) return json({ success: false }, 600);
   const d = node.data;
   // Steam returns pc_requirements as {minimum, recommended} HTML strings, or an
   // empty array [] on some delisted/unusual apps -- never assume object shape.
