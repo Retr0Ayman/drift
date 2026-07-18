@@ -12,6 +12,19 @@ const RESOLVE_BATCH_SIZE = 6;
 
 export interface Enrichment {
   appid: number;
+  /* Steam's own real, canonical name (appdetails.ts's `title` field,
+     straight from Steam's `name`) -- NOT the xREL-derived title
+     resolveAndEnrichBatch/upsertGames key the enrichments map by. Those
+     two can genuinely differ: xREL's own ext_info.title reflects
+     whatever language/formatting that release's own scene/P2P group
+     happened to package it under (confirmed live: LEGO Batman: Legacy of
+     the Dark Knight's releases are all German, so xREL's canonical title
+     for it was the German name), and upsertGames used to write THAT
+     straight into the games.title column every game gets displayed
+     under. This is what a caller should actually store/display -- see
+     upsertGames' own comment for why this matters for every game, not
+     just the one that surfaced it. */
+  title: string;
   year: number | null;
   released: string;
   developer: string;
@@ -38,13 +51,53 @@ export interface Enrichment {
   tags: string[];
 }
 
+/* CONFIRMED live: xREL's own ext_info.title (the master_game's canonical
+   title, what groupRowsByTitle groups releases by) is sometimes in
+   whatever language that release's own scene/P2P group happened to
+   package it under -- e.g. LEGO Batman: Legacy of the Dark Knight's
+   x.X.RIDDICK.X.x/ElAmigos releases are all German (main_lang: "german"),
+   so xREL's canonical title for it is "Lego Batman: Das Vermächtnis des
+   Dunklen Ritters", not the English Steam listing name. This isn't a
+   normalization gap resolve.ts's norm() can fix (that handles punctuation/
+   trademark-symbol variants of the SAME string, not a different language
+   entirely) -- resolveTitle needs to know the real title before it ever
+   reaches Steam's storesearch. Small, explicit, extensible map rather than
+   a fuzzy-match fallback: a wrong guess here would insert the wrong game
+   under a real one's data, worse than staying unresolved. Add an entry
+   whenever a seed title is confirmed stuck on this exact failure mode
+   (found real xREL releases via search, never resolves) -- don't guess
+   ahead of a confirmed case. */
+const XREL_TITLE_ALIASES: Record<string, string> = {
+  "lego batman: das vermächtnis des dunklen ritters": "LEGO Batman: Legacy of the Dark Knight",
+};
+
+/* Steam's real `name` is what enrichment.title now stores/displays (see
+   that field's own comment), but Steam's raw name frequently carries
+   cosmetic artifacts real users shouldn't see rendered literally on a
+   game page: trademark/copyright glyphs ("LEGO® Batman™: Legacy of the
+   Dark Knight"), and confirmed-live literal underscores standing in for
+   spaces ("Watch_Dogs™"). This is deliberately lighter than resolve.ts's
+   own norm() -- that one lowercases and strips punctuation too, which is
+   correct for matching but would mangle a title meant to actually be
+   displayed. Only the cosmetic artifacts get cleaned; casing and real
+   punctuation (colons, apostrophes, dashes) are left exactly as Steam
+   has them. */
+function cleanDisplayTitle(name: string): string {
+  return name
+    .replace(/[™®©]/g, "")
+    .replace(/_/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 /* Calls the route handlers directly with a synthetic same-origin Request,
    same pattern worker/scheduled.ts already uses for the xREL routes --
    identical logic and edge caching, no extra network hop back into this
    same Worker. */
 export async function resolveTitle(env: Env, title: string): Promise<number | null> {
+  const realTitle = XREL_TITLE_ALIASES[title.trim().toLowerCase()] || title;
   const res = await handleResolve({
-    request: new Request("https://internal.invalid/api/resolve?title=" + encodeURIComponent(title)),
+    request: new Request("https://internal.invalid/api/resolve?title=" + encodeURIComponent(realTitle)),
     env,
   });
   if (!res.ok) return null;
@@ -60,6 +113,7 @@ export async function enrichFromSteam(env: Env, appid: number): Promise<Enrichme
   if (!res.ok) return null;
   const d = (await res.json()) as {
     appid?: number;
+    title?: string;
     year?: number | null;
     released?: string;
     developers?: string[];
@@ -76,6 +130,7 @@ export async function enrichFromSteam(env: Env, appid: number): Promise<Enrichme
   const drm = await lookupDrmForAppids([d.appid]);
   return {
     appid: d.appid,
+    title: d.title ? cleanDisplayTitle(d.title) : "",
     year: d.year ?? null,
     released: d.released || "",
     developer: d.developers?.[0] || "",

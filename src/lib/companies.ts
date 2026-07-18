@@ -621,9 +621,18 @@ const FRANCHISE_MAP: Record<string, string> = {
   "batman: arkham origins": "Batman: Arkham",
   "mortal kombat 1": "Mortal Kombat",
   "mortal kombat 11": "Mortal Kombat",
-  "lego batman: legacy of the dark knight": "LEGO Batman",
-  "lego star wars: the skywalker saga": "LEGO Star Wars",
-  "lego marvel super heroes": "LEGO Marvel",
+  // Unified under one real "LEGO" franchise rather than each isolated as
+  // its own single-entry micro-franchise (LEGO Batman/LEGO Marvel/LEGO
+  // Star Wars) -- a franchise page should show every tracked LEGO game
+  // together, not fragment three of them into franchises of exactly one
+  // game each. "Lego Harry Potter Collection" stays under Wizarding World
+  // instead (grouped with Hogwarts Legacy) -- that's a deliberate existing
+  // cross-IP grouping, not an oversight, and nothing here asked to unwind it.
+  "lego batman: legacy of the dark knight": "LEGO",
+  "lego star wars: the skywalker saga": "LEGO",
+  "lego marvel super heroes": "LEGO",
+  "lego marvel super heroes 2": "LEGO",
+  "lego party!": "LEGO",
   "lego harry potter collection": "Wizarding World",
   "hogwarts legacy": "Wizarding World",
   "middle-earth: shadow of war": "Middle-earth",

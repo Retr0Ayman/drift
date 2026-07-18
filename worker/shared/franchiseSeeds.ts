@@ -332,6 +332,8 @@ export const FRANCHISE_SEED_TITLES: string[] = [
   "lego batman: legacy of the dark knight",
   "lego star wars: the skywalker saga",
   "lego marvel super heroes",
+  "lego marvel super heroes 2",
+  "lego party!",
   "lego harry potter collection",
   "hogwarts legacy",
   "middle-earth: shadow of war",
