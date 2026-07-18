@@ -188,3 +188,22 @@
     display: none;
   }
 }
+
+/* FIX (confirmed live via real-viewport testing): below ~400px the navbar's
+   remaining flow content (logo + menu toggle + status pill + theme toggle,
+   already down to its minimum set per the 860px breakpoint above) still
+   doesn't fit -- confirmed the theme toggle was pushed fully off-screen and
+   unreachable on common small-phone widths (375px, 360px, 320px), not just
+   visually tight. The status pill is the least essential piece of this row
+   (a nice-to-know sync indicator, not a control), so it's what gives way
+   here -- narrower than the 860px breakpoint above so it stays visible on
+   every width that actually has room for it (tablets, larger phones). */
+@media (max-width: 420px) {
+  .navbar-live {
+    display: none;
+  }
+
+  .navbar-inner {
+    gap: 14px;
+  }
+}
