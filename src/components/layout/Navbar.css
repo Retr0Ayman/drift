@@ -164,11 +164,22 @@
   margin-left: auto;
 }
 
+/* Groups the beta indicator with the live-sync status pill so they read as
+   one related cluster (tighter gap than navbar-inner's own 22px) rather
+   than two unrelated badges scattered across the bar. */
+.navbar-status-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+
 /* Sizing/positioning only -- the tinted background, color, border-radius,
    and font-weight all come from Pill's own tone styling (see Navbar.tsx's
    STATUS_TONE map), same treatment the release-status pills use, just
    dialed down a step to fit the navbar's compact height. */
-.navbar-live {
+.navbar-live,
+.navbar-beta {
   flex: none;
   font-size: 0.66rem;
   letter-spacing: 0.5px;
@@ -230,7 +241,7 @@
    breakpoint above so it stays visible on every width that actually has
    room for it (tablets, larger phones). */
 @media (max-width: 480px) {
-  .navbar-live {
+  .navbar-status-group {
     display: none;
   }
 

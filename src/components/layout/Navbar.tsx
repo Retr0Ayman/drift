@@ -111,9 +111,14 @@ export default function Navbar({ status, onOpenSearch, revealBrandMark, theme, o
             <SearchBar onOpenSearch={onOpenSearch} />
           </div>
 
-          <Pill tone={STATUS_TONE[status]} className="navbar-live">
-            {STATUS_LABEL[status]}
-          </Pill>
+          <div className="navbar-status-group">
+            <Pill tone="neutral" className="navbar-beta" title="orlaz is in active development -- data, AI content, and visuals are still evolving">
+              BETA
+            </Pill>
+            <Pill tone={STATUS_TONE[status]} className="navbar-live">
+              {STATUS_LABEL[status]}
+            </Pill>
+          </div>
 
           <button
             type="button"

@@ -59,6 +59,10 @@ export default function Footer() {
             orlaz tracks public release metadata and Steam build status only. It does not host, mirror, or link to
             any downloads, files, or manifests — news sources only.
           </p>
+          <p>
+            orlaz is in early access and under active development. Data, AI-generated content, and visuals are
+            still being refined, so expect occasional gaps or rough edges.
+          </p>
         </div>
       </div>
 
