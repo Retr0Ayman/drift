@@ -81,6 +81,18 @@
   font-weight: 600;
 }
 
+/* Holds one or more DrmTag pills instead of plain text -- overrides .v's
+   block display for a flex row so multiple protection tags wrap cleanly.
+   The "None confirmed" text fallback still just sits fine inside a flex
+   container as a bare text node. */
+.detail-meta .v.detail-meta-protection {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-weight: 500;
+}
+
 .detail-genres {
   display: flex;
   gap: 8px;

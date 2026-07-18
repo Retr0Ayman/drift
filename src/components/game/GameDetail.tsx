@@ -252,6 +252,21 @@ export default function GameDetail() {
                   <span className="k">Released</span>
                   <span className="v">{mergedGame.released || "—"}</span>
                 </div>
+                <div className="detail-meta">
+                  <span className="k">Protection</span>
+                  {/* Same DrmTag treatment the tag row below already uses --
+                      reused here, not reinvented, per the pill overhaul's
+                      own "one visual family per meaning" rule. Real data
+                      only (game.tags, populated by the PCGamingWiki lookup
+                      in worker/backfill/pcgamingwiki.ts) -- "None confirmed"
+                      when empty is an honest statement about what's known,
+                      never a guessed DRM. */}
+                  <span className="v detail-meta-protection">
+                    {(mergedGame.tags || []).length
+                      ? (mergedGame.tags || []).map((t) => <DrmTag key={t}>{t}</DrmTag>)
+                      : "None confirmed"}
+                  </span>
+                </div>
               </div>
               <div className="detail-genres">
                 {(mergedGame.tags || []).map((t) => (
