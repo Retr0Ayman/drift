@@ -75,6 +75,19 @@ export default function Navbar({ status, onOpenSearch, revealBrandMark, theme, o
             </span>
           </Link>
 
+          {/* FIX (confirmed live): .navbar-search-slot below is fully
+              display:none under the 860px breakpoint, and Cmd/Ctrl+K has no
+              mobile equivalent -- search was completely unreachable on any
+              phone/tablet-width viewport, not just visually cramped. Same
+              icon-button treatment as navbar-toggle/theme-toggle, only
+              shown where the full SearchBar pill isn't (see Navbar.css). */}
+          <button className="navbar-search-toggle" aria-label="Search" onClick={onOpenSearch}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="11" cy="11" r="7" />
+              <path d="m20 20-3.5-3.5" />
+            </svg>
+          </button>
+
           <button
             className="navbar-toggle"
             aria-label="Menu"

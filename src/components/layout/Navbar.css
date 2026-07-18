@@ -91,6 +91,29 @@
   height: 18px;
 }
 
+/* Hidden on desktop -- .navbar-search-slot's full SearchBar pill already
+   covers search there. Shown at the same breakpoint that pill disappears
+   at (below), same icon-button sizing/treatment as navbar-toggle. */
+.navbar-search-toggle {
+  display: none;
+  border: none;
+  background: var(--glass-bg);
+  color: var(--ink);
+  width: 38px;
+  height: 38px;
+  border-radius: var(--pill);
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex: none;
+  margin-left: auto;
+}
+
+.navbar-search-toggle svg {
+  width: 17px;
+  height: 17px;
+}
+
 .theme-toggle {
   display: flex;
   border: none;
@@ -157,6 +180,10 @@
     display: flex;
   }
 
+  .navbar-search-toggle {
+    display: flex;
+  }
+
   .navbar-links {
     position: absolute;
     top: calc(100% + 10px);
@@ -189,21 +216,26 @@
   }
 }
 
-/* FIX (confirmed live via real-viewport testing): below ~400px the navbar's
-   remaining flow content (logo + menu toggle + status pill + theme toggle,
-   already down to its minimum set per the 860px breakpoint above) still
-   doesn't fit -- confirmed the theme toggle was pushed fully off-screen and
-   unreachable on common small-phone widths (375px, 360px, 320px), not just
-   visually tight. The status pill is the least essential piece of this row
-   (a nice-to-know sync indicator, not a control), so it's what gives way
-   here -- narrower than the 860px breakpoint above so it stays visible on
-   every width that actually has room for it (tablets, larger phones). */
-@media (max-width: 420px) {
+/* FIX (confirmed live via real-viewport testing): below ~480px the navbar's
+   remaining flow content (logo + search icon + menu toggle + status pill +
+   theme toggle, already down to its minimum set per the 860px breakpoint
+   above) still doesn't fit -- confirmed the theme toggle was pushed fully
+   off-screen and unreachable on common small-phone widths (375px, 360px,
+   320px), not just visually tight. Re-measured after adding the mobile
+   search-icon button above and the threshold moved out from 420px to
+   480px accordingly -- re-verify this breakpoint against real widths again
+   if the icon set here ever changes. The status pill is the least
+   essential piece of this row (a nice-to-know sync indicator, not a
+   control), so it's what gives way here -- narrower than the 860px
+   breakpoint above so it stays visible on every width that actually has
+   room for it (tablets, larger phones). */
+@media (max-width: 480px) {
   .navbar-live {
     display: none;
   }
 
   .navbar-inner {
-    gap: 14px;
+    gap: 10px;
+    padding: 10px 8px 10px 14px;
   }
 }
