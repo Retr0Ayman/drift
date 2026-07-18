@@ -17,13 +17,14 @@
   background: var(--aura-panel-bg);
   backdrop-filter: blur(var(--aura-blur));
   -webkit-backdrop-filter: blur(var(--aura-blur));
+  box-shadow: var(--glass-highlight), var(--glass-ambient);
   transition: box-shadow var(--dur) var(--ease), color var(--dur) var(--ease);
 }
 
 .searchbar:hover,
 .searchbar:focus-visible {
   color: var(--accent);
-  box-shadow: 0 0 0 4px var(--accent-dim);
+  box-shadow: var(--glass-highlight), var(--glass-ambient), 0 0 0 4px var(--accent-dim);
 }
 
 .searchbar svg {

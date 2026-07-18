@@ -40,6 +40,19 @@
   --glass-shadow: 0 1px 2px rgba(23, 21, 15, 0.06);
   --glass-shadow-lg: 0 2px 8px rgba(23, 21, 15, 0.08);
 
+  /* Real depth for glass/aura surfaces (GlassPanel.css, Navbar.css,
+     SearchBar.css) -- a thin bright inset line along the top edge
+     (simulates light catching the top of real frosted glass) plus a soft,
+     larger, downward-offset ambient shadow underneath (simulates the panel
+     actually floating above the page rather than being flush with it).
+     Both are full box-shadow VALUES, not bare colors, so call sites can
+     just list them alongside the existing --glass-shadow/--glass-shadow-lg
+     tokens in one box-shadow property -- additive, not a replacement for
+     the blur+saturate+translucency already doing the "frosted" half of the
+     job. */
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  --glass-ambient: 0 18px 36px -14px rgba(23, 21, 15, 0.22);
+
   /* aura ring -- reserved for the search bar, one hero stat panel per page,
      and AI-generated-content tags (AiTag.tsx). That third one is a
      deliberate, scoped extension of the original "search bar + one hero
@@ -142,6 +155,15 @@
     --glass-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
     --glass-shadow-lg: 0 2px 10px rgba(0, 0, 0, 0.45);
 
+    /* Dimmer highlight than light mode's -- a full-strength white inset
+       line reads as a bright, glowing edge against a near-black panel,
+       not a subtle glass reflection. Ambient shadow deepens instead of
+       lightening (real black-on-black shadows have little contrast to
+       work with, so this leans on a wider spread instead of more darkness
+       to still register as "floating"). */
+    --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    --glass-ambient: 0 20px 40px -14px rgba(0, 0, 0, 0.55);
+
     /* Same hv/trad-derived hardcoded hex+alpha-suffix pattern the light
        aura already uses (not color-mix()), just built from the
        brightened dark-mode hv/trad above instead of the light ones. */
@@ -185,6 +207,9 @@
   --glass-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
   --glass-shadow-lg: 0 2px 10px rgba(0, 0, 0, 0.45);
 
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  --glass-ambient: 0 20px 40px -14px rgba(0, 0, 0, 0.55);
+
   --aura-a: #a68bdb55;
   --aura-b: #4fb8a055;
 
@@ -227,6 +252,9 @@
   --glass-border-strong: rgba(23, 21, 15, 0.2);
   --glass-shadow: 0 1px 2px rgba(23, 21, 15, 0.06);
   --glass-shadow-lg: 0 2px 8px rgba(23, 21, 15, 0.08);
+
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  --glass-ambient: 0 18px 36px -14px rgba(23, 21, 15, 0.22);
 
   --aura-a: #6b4fa055;
   --aura-b: #1f7a6c55;

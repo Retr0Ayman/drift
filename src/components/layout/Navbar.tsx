@@ -45,7 +45,13 @@ export default function Navbar({ status, onOpenSearch, revealBrandO, theme, onTo
   const scrollProgress = useTransform(scrollY, [0, 120], [0, 1]);
   const scale = useTransform(scrollProgress, [0, 1], [1, 0.985]);
   const shadowAlpha = useTransform(scrollProgress, [0, 1], [0.05, 0.12]);
-  const boxShadow = useTransform(shadowAlpha, (a) => `0 8px 24px -8px rgba(23, 21, 15, ${a})`);
+  // Composed with var(--glass-highlight) (the same top-edge inner-highlight
+  // GlassPanel.css now gives every other glass surface) so the navbar gets
+  // real depth too -- an inline style always wins over any CSS box-shadow
+  // rule regardless of specificity, so the highlight has to be baked into
+  // this motion value rather than left in a static CSS rule that scroll
+  // would just override every frame.
+  const boxShadow = useTransform(shadowAlpha, (a) => `var(--glass-highlight), 0 8px 24px -8px rgba(23, 21, 15, ${a})`);
 
   const [menuOpen, setMenuOpen] = useState(false);
 

@@ -2,12 +2,12 @@
   border-radius: var(--r-lg);
   background: var(--bg-1);
   border: 1px solid var(--glass-border);
-  box-shadow: var(--glass-shadow);
+  box-shadow: var(--glass-highlight), var(--glass-shadow), var(--glass-ambient);
 }
 
 .glass-panel--strong {
   border-color: var(--glass-border-strong);
-  box-shadow: var(--glass-shadow-lg);
+  box-shadow: var(--glass-highlight), var(--glass-shadow-lg), var(--glass-ambient);
 }
 
 .glass-panel--aura {
@@ -16,7 +16,7 @@
   -webkit-backdrop-filter: blur(var(--aura-blur));
   backdrop-filter: blur(var(--aura-blur));
   border: none;
-  box-shadow: var(--glass-shadow-lg);
+  box-shadow: var(--glass-highlight), var(--glass-shadow-lg), var(--glass-ambient);
 }
 
 /* Static counterpart to .glass-panel--aura -- same translucent fill +
@@ -29,7 +29,7 @@
   -webkit-backdrop-filter: blur(var(--aura-blur)) saturate(1.4);
   backdrop-filter: blur(var(--aura-blur)) saturate(1.4);
   border: 1px solid color-mix(in srgb, var(--aura-a), var(--aura-b));
-  box-shadow: var(--glass-shadow-lg);
+  box-shadow: var(--glass-highlight), var(--glass-shadow-lg), var(--glass-ambient);
 }
 
 /* Stronger version of the same frost treatment, for tile surfaces that
@@ -66,5 +66,5 @@
   -webkit-backdrop-filter: blur(calc(var(--aura-blur) * 2.2)) saturate(1.85);
   backdrop-filter: blur(calc(var(--aura-blur) * 2.2)) saturate(1.85);
   border: 1px solid color-mix(in srgb, var(--aura-a), var(--aura-b));
-  box-shadow: var(--glass-shadow-lg);
+  box-shadow: var(--glass-highlight), var(--glass-shadow-lg), var(--glass-ambient);
 }
