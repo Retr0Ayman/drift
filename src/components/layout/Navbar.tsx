@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { motion, useScroll, useTransform } from "motion/react";
 import SearchBar from "../search/SearchBar";
 import DriftMark from "../ui/illustrations/DriftMark";
+import Pill, { type PillTone } from "../ui/Pill";
 import type { CatalogStatus } from "../../hooks/useLiveCatalog";
 import "./Navbar.css";
 
@@ -10,6 +11,18 @@ const STATUS_LABEL: Record<CatalogStatus, string> = {
   seeded: "SEEDED",
   syncing: "SYNCING",
   live: "LIVE",
+};
+
+// Reuses the same status-pill tones item 2 already gave a bolder, more
+// confident treatment (rounded-square, bold weight) -- "live" maps to the
+// same green "Current" tone a release in good standing gets, "syncing" to
+// the warm in-progress "out" tone, "seeded" to the neutral "unv" tone. Not
+// a new badge style: this IS the FLAG_TONE system, just applied to a
+// different status vocabulary than release freshness.
+const STATUS_TONE: Record<CatalogStatus, PillTone> = {
+  seeded: "unv",
+  syncing: "out",
+  live: "dead",
 };
 
 interface NavbarProps {
@@ -75,10 +88,9 @@ export default function Navbar({ status, onOpenSearch, revealBrandO, theme, onTo
             <SearchBar onOpenSearch={onOpenSearch} />
           </div>
 
-          <div className="navbar-live">
-            <span className="navbar-pip" />
-            <span>{STATUS_LABEL[status]}</span>
-          </div>
+          <Pill tone={STATUS_TONE[status]} className="navbar-live">
+            {STATUS_LABEL[status]}
+          </Pill>
 
           <button
             type="button"

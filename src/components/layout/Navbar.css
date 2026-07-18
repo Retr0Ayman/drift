@@ -141,45 +141,15 @@
   margin-left: auto;
 }
 
+/* Sizing/positioning only -- the tinted background, color, border-radius,
+   and font-weight all come from Pill's own tone styling (see Navbar.tsx's
+   STATUS_TONE map), same treatment the release-status pills use, just
+   dialed down a step to fit the navbar's compact height. */
 .navbar-live {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.66rem;
-  font-weight: 700;
-  color: var(--ink-2);
-  letter-spacing: 0.5px;
-  padding: 8px 13px;
-  border-radius: var(--pill);
-  background: var(--glass-bg);
   flex: none;
-}
-
-.navbar-pip {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--dead);
-  box-shadow: 0 0 0 0 rgba(47, 122, 79, 0.5);
-  animation: navbar-pip-pulse 1.8s infinite;
-}
-
-@keyframes navbar-pip-pulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(47, 122, 79, 0.5);
-  }
-  70% {
-    box-shadow: 0 0 0 7px rgba(47, 122, 79, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(47, 122, 79, 0);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .navbar-pip {
-    animation: none;
-  }
+  font-size: 0.66rem;
+  letter-spacing: 0.5px;
+  padding: 6px 11px;
 }
 
 @media (max-width: 860px) {
@@ -215,10 +185,6 @@
   }
 
   .navbar-search-slot {
-    display: none;
-  }
-
-  .navbar-live span:last-child {
     display: none;
   }
 }
