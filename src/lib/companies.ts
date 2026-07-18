@@ -696,6 +696,34 @@ const FRANCHISE_MAP: Record<string, string> = {
   "metro exodus": "Metro",
   "metro: last light redux": "Metro",
   "metro 2033 redux": "Metro",
+
+  /* Confirmed live via a direct xREL Cargo/search sweep (real game-nfo
+     master_game hits, not console dumps or unrelated title-substring
+     noise): genuine catalog gaps for well-known, definitely-on-Steam,
+     definitely-has-real-crack-scene-presence titles. Ruled out and
+     deliberately NOT added, same "confirm real data before adding"
+     discipline as every prior round: Cuphead (only a Switch/console-nfo
+     dump + an unrelated TV show tracked, no real PC crack), Lethal
+     Company (zero xREL hits at all), Sea of Thieves (already seeded from
+     an earlier round, still correctly unresolved -- no real match, only
+     an unrelated "Thief of Thieves" title-substring false positive),
+     Diablo IV and Helldivers 2 (no real crack tracked for either --
+     xREL only has Diablo II: Resurrected and the original 2015
+     Helldivers, both added below instead of their newer sequels). */
+  "celeste": "Celeste",
+  "outer wilds": "Outer Wilds",
+  "palworld": "Palworld",
+  "uncharted: legacy of thieves collection": "Uncharted",
+  "the last of us part ii remastered": "The Last of Us",
+  "the last of us part i": "The Last of Us",
+  "helldivers": "Helldivers",
+  "injustice": "Injustice",
+  "injustice 2": "Injustice",
+  // Confirmed live: the original game's real xREL master_game title is the
+  // German "Injustice: Götter unter uns" -- a plain "injustice" search
+  // only ever surfaces Injustice 2, same German-xREL-title gap as
+  // Dishonored/LEGO Batman above.
+  "injustice: götter unter uns": "Injustice",
 };
 
 /* Steam's own API returns some titles with underscores standing in for

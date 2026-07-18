@@ -76,6 +76,27 @@ export interface Enrichment {
    ahead of a confirmed case. */
 const XREL_TITLE_ALIASES: Record<string, string> = {
   "lego batman: das vermächtnis des dunklen ritters": "LEGO Batman: Legacy of the Dark Knight",
+  // Confirmed live during the Dishonored franchise-gap sweep -- same German-
+  // xREL-title failure mode as LEGO Batman above, real releases exist but
+  // resolveTitle never matched Steam's English listing without this.
+  "dishonored 2: das vermächtnis der maske": "Dishonored 2",
+  "dishonored: der tod des outsiders": "Dishonored: Death of the Outsider",
+  "dishonored: die maske des zorns": "Dishonored",
+  // Confirmed live via Steam's own storesearch: neither base listing is
+  // independently searchable anymore -- "Infernal Edition"/"Dive Harder
+  // Edition" are each the sole current purchasable SKU representing these,
+  // not a generic "edition" suffix norm() already strips for the common
+  // case (deluxe/ultimate/remastered/etc.). The alias value here is also
+  // the literal search query resolveTitle sends to Steam's storesearch
+  // (not just the comparison target) -- confirmed live that an en-dash in
+  // the query itself ("Diablo II: Resurrected – Infernal Edition", Steam's
+  // exact listed name) makes storesearch return zero results, while the
+  // same string with the dash simply omitted returns the single correct
+  // match. norm() already strips dashes from both sides for the actual
+  // comparison, so this costs nothing there.
+  "diablo ii: resurrected": "Diablo II: Resurrected Infernal Edition",
+  "helldivers": "HELLDIVERS Dive Harder Edition",
+  "injustice: götter unter uns": "Injustice: Gods Among Us Ultimate Edition",
 };
 
 /* Steam's real `name` is what enrichment.title now stores/displays (see

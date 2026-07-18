@@ -382,4 +382,13 @@ export const FRANCHISE_SEED_TITLES: string[] = [
   "metro exodus",
   "metro: last light redux",
   "metro 2033 redux",
+  "celeste",
+  "outer wilds",
+  "palworld",
+  "uncharted: legacy of thieves collection",
+  "the last of us part ii remastered",
+  "helldivers",
+  "injustice",
+  "injustice 2",
+  "injustice: götter unter uns",
 ];
