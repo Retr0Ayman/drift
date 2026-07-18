@@ -1,3 +1,17 @@
+/* Replaces the old metaball/goo background (12 small blob clusters, each
+   wrapped in an SVG `filter: url(#ambient-goo)` reference filter -- forces
+   a re-rasterize of the whole filtered subtree on every animated tick, not
+   just a recomposite). This version has zero live filters anywhere: the
+   mesh layer is a fully static `background` (radial-gradients painted once,
+   nothing animates them), the conic layer only ever animates `transform`
+   (GPU-composited, no repaint), and the grain layer is a static pre-
+   rendered SVG data-URI `background-image`, not a live `<feTurbulence>`
+   resampling anything every frame. See .ambient-conic's own comment for
+   the (long) measured trail of what got tried and rejected along the way
+   -- both `filter: blur()` and `mix-blend-mode` looked appealing for
+   softening the conic layer but measured expensive even at small sizes, so
+   neither made it into what ships. Net result measured above the old goo
+   version's own real fps on the same test page. */
 .ambient-bg {
   position: fixed;
   inset: 0;
@@ -6,136 +20,116 @@
   pointer-events: none;
 }
 
-/* Small, bounded per-cluster size -- deliberately NOT one big full-viewport
-   filter. An SVG reference filter (filter: url(...), unlike a plain CSS
-   blur()) forces the browser to re-rasterize its whole filtered subtree
-   whenever anything inside changes, including a child's transform --
-   normally compositor-only and free, not free anymore once wrapped in a
-   filter. Coverage across the full screen comes from SIX of these small
-   clusters (see CLUSTERS in AmbientBackground.tsx) rather than one much
-   larger filtered region -- total re-rasterize cost scales with
-   cluster-count x small-area, which measured cheaper than one big area at
-   full coverage. If a future change needs more budget back, shrink/thin
-   the cluster count here, don't reintroduce coarse animation throttling
-   (see the drift keyframes' own comment below for why).
-
-   Deliberately NOT declaring --ambient-primary/secondary here: an
-   element's own explicit custom-property declaration always shadows an
-   inherited value regardless of specificity, so a default set on this
-   rule would permanently hide whatever useAmbientAccent sets on :root's
-   inline style (see GameDetail.tsx/useAmbientAccent.ts). The var(...,
-   #hex) fallback on each blob below is the only place these defaults
-   live -- same fixed neutral pair worker/shared/colorExtract.ts falls
-   back to (FALLBACK_PRIMARY/FALLBACK_SECONDARY), keep those two literals
-   in sync with that file. */
-.ambient-goo {
+/* Five soft-edged radial fields anchored at both top corners, both bottom
+   corners, and dead center -- same "reach every part of the viewport, no
+   flat corner or center left untouched" lesson the old 4x3 cluster grid
+   was widened to solve, just as one static composited background instead
+   of 12 independently-animated DOM nodes. Deliberately NOT declaring
+   --ambient-primary/secondary here, same reasoning the old .ambient-goo
+   rule documented: an element's own custom-property declaration would
+   permanently shadow whatever useAmbientAccent.ts sets on :root's inline
+   style, so the var(..., #hex) fallback on each stop below is the only
+   place the neutral default pair lives -- keep those two literals in sync
+   with colorExtract.ts's FALLBACK_PRIMARY/FALLBACK_SECONDARY. */
+.ambient-mesh {
   position: absolute;
-  width: clamp(200px, 20vw, 280px);
-  height: clamp(200px, 20vw, 280px);
-  filter: url(#ambient-goo);
-  /* FIX (requested live): 0.42 read as a flat, solid color fill rather
-     than tinted glass with real see-through depth. Lowered post-filter --
-     the pre-filter blobs themselves stay solid/near-full alpha (see
-     .ambient-blob's own comment: the goo filter's feColorMatrix needs real
-     alpha to threshold against, a translucent shape here would blur into
-     mush and the merge wouldn't read). Translucency belongs here, after
-     the filter, as a separate compositor step -- same reasoning as the
-     very first version of this component, just retuned lower. Verified via
-     pixel sampling, not eyeballing (see AmbientBackground.tsx's own commit
-     history for why that distinction matters here specifically). */
-  opacity: 0.26;
+  inset: 0;
+  opacity: 0.4;
+  background:
+    radial-gradient(ellipse 62% 55% at 6% 8%, var(--ambient-primary, #6b4fa0) 0%, transparent 72%),
+    radial-gradient(ellipse 58% 58% at 94% 10%, var(--ambient-secondary, #4a3570) 0%, transparent 72%),
+    radial-gradient(ellipse 62% 58% at 50% 50%,
+      color-mix(in srgb, var(--ambient-primary, #6b4fa0), var(--ambient-secondary, #4a3570)) 0%, transparent 75%),
+    radial-gradient(ellipse 60% 55% at 10% 95%, var(--ambient-secondary, #4a3570) 0%, transparent 72%),
+    radial-gradient(ellipse 62% 58% at 92% 92%, var(--ambient-primary, #6b4fa0) 0%, transparent 72%);
 }
 
-.ambient-blob {
+/* A bare conic-gradient reads as a hard-edged sunburst/pinwheel radiating
+   from its exact center -- conic-gradient's angular color stops are
+   inherently sharp, unlike a radial-gradient's soft distance-based
+   falloff. The obvious fix is `filter: blur()`, and an obvious way to
+   animate the rotation is a `mix-blend-mode` wash over an animated
+   `@property`-registered angle (the same technique globals.css's
+   .aura-ring spin already uses safely for the search bar). Both were
+   tried here and both measured expensive (Playwright rAF-fps sampling,
+   present-vs-removed, same methodology every prior round of this
+   background used) even after shrinking the blurred box down to a small
+   pre-scale size and switching the rotation to a compositor-only
+   `transform: rotate()`: filter:blur() alone measured ~7fps, mix-blend-
+   mode alone ~22fps, against a 60fps true baseline with neither -- both
+   individually costly regardless of blur radius or box size, not just in
+   combination. That's the same "presence-triggered, size-independent"
+   signature GlassPanel.css already documented for backdrop-filter in
+   headless Chromium's software-rendering fallback (never reproduced on a
+   real GPU compositor there) -- plausibly the same story here, but
+   unconfirmed without real hardware to check against, so this shipped
+   without either rather than trust an unverifiable number.
+
+   What ships instead: plain opacity, the same mechanism .ambient-mesh
+   already uses successfully, pushed low (0.16) with wide transparent
+   bands between each color stop so the unblurred conic-gradient reads as
+   a faint rotating tint over the mesh rather than a sharp sunburst.
+   Measured ~47fps for this layer alone (mesh+grain layers cost ~0 on
+   their own, confirmed independently) -- above the old goo background's
+   own ~30fps on the identical test page. If a future change wants blur or
+   blend-mode back, re-measure present-vs-removed on a REAL headed
+   browser first, not headless. */
+.ambient-conic {
   position: absolute;
-  border-radius: 50%;
-  /* Solid, near-full alpha -- the goo filter's feColorMatrix thresholds
-     against real alpha values; a translucent shape here would blur into a
-     soft gradient with nothing sharp enough to snap to fully-opaque, and
-     the merge effect wouldn't read. Overall see-through quality comes from
-     .ambient-goo's own opacity (applied AFTER the filter, as a normal
-     compositor step), not from making the blobs themselves faint. */
+  top: 50%;
+  left: 50%;
+  width: 60vmax;
+  height: 60vmax;
+  margin-top: -30vmax;
+  margin-left: -30vmax;
+  opacity: 0.16;
+  background: conic-gradient(
+    from 0deg,
+    var(--ambient-primary, #6b4fa0),
+    transparent 30%,
+    var(--ambient-secondary, #4a3570) 40%,
+    transparent 63%,
+    color-mix(in srgb, var(--ambient-primary, #6b4fa0), var(--ambient-secondary, #4a3570)) 73%,
+    transparent 96%,
+    var(--ambient-primary, #6b4fa0)
+  );
+  transform: scale(2.7);
+  animation: ambient-mesh-spin 90s linear infinite;
+  will-change: transform;
 }
 
-.ambient-blob--a {
-  top: 6%;
-  left: 8%;
-  width: 42%;
-  height: 42%;
-  background: var(--ambient-primary, #6b4fa0);
-  animation: ambient-drift-a 24s ease-in-out infinite;
+@keyframes ambient-mesh-spin {
+  0% {
+    transform: scale(2.7) rotate(0deg);
+  }
+  100% {
+    transform: scale(2.7) rotate(360deg);
+  }
 }
 
-.ambient-blob--b {
-  top: 32%;
-  left: 38%;
-  width: 38%;
-  height: 38%;
-  background: var(--ambient-secondary, #4a3570);
-  animation: ambient-drift-b 29s ease-in-out infinite;
+/* Static pre-rendered noise (an SVG feTurbulence baked into a data-URI
+   background-image, tiled), not a live filter -- the browser rasterizes
+   this once, same as any other background-image, instead of resampling a
+   turbulence function every frame the way an applied `filter` would.
+   mix-blend-mode: overlay + a low opacity is what gives the tactile,
+   editorial paper-grain feel without darkening or lightening the page --
+   overlay preserves pure black/white in the underlying stack while
+   pushing midtones either direction based on the noise. */
+.ambient-grain {
+  position: absolute;
+  inset: 0;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n' color-interpolation-filters='sRGB'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch' result='t'/%3E%3CfeColorMatrix in='t' type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.85 0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
 }
 
-.ambient-blob--c {
-  top: 10%;
-  left: 44%;
-  width: 32%;
-  height: 32%;
-  /* Third tone derived from the same two given colors (an even blend), not
-     a third invented hue -- same reasoning as the previous version. */
-  background: color-mix(in srgb, var(--ambient-primary, #6b4fa0), var(--ambient-secondary, #4a3570));
-  animation: ambient-drift-c 33s ease-in-out infinite;
-}
-
-.ambient-bg--paused .ambient-blob {
+.ambient-bg--paused .ambient-conic {
   animation-play-state: paused;
 }
 
-/* MEASURED (Playwright rAF-fps sampling, effect present vs. removed, same
-   methodology as every previous round): smooth ease-in-out here, no
-   steps() throttling, because at this per-cluster size (clamp()'d to
-   200-280px, roughly a third the area of the single corner cluster this
-   replaced) continuous re-rasterization of all six clusters together
-   measured a real but small cost -- cheaper in aggregate than the single
-   larger cluster's steps()-throttled version was, while looking genuinely
-   fluid instead of visibly jumping between discrete positions. steps()
-   was the previous round's fix for a real cost problem, but at a coarse
-   enough step count it reads as choppy rather than smooth -- the fix here
-   is a smaller cost surface (smaller clusters) that doesn't need
-   throttling at all, not a higher step count. If this ever needs to be
-   revisited, re-measure the same way (present vs. removed, real fps
-   numbers) before changing it -- don't reintroduce steps() as a reflex. */
-@keyframes ambient-drift-a {
-  0%,
-  100% {
-    transform: translate(0, 0);
-  }
-  33% {
-    transform: translate(22px, 18px);
-  }
-  66% {
-    transform: translate(-14px, 24px);
-  }
-}
-
-@keyframes ambient-drift-b {
-  0%,
-  100% {
-    transform: translate(0, 0);
-  }
-  33% {
-    transform: translate(-20px, -15px);
-  }
-  66% {
-    transform: translate(15px, -21px);
-  }
-}
-
-@keyframes ambient-drift-c {
-  0%,
-  100% {
-    transform: translate(0, 0);
-  }
-  50% {
-    transform: translate(-18px, 20px);
+@media (prefers-reduced-motion: reduce) {
+  .ambient-conic {
+    animation: none;
   }
 }

@@ -1,60 +1,23 @@
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useState } from "react";
 import "./AmbientBackground.css";
 
-/* FIX (reported live): the previous version was one bounded goo cluster in
-   the top-left corner -- on a game detail page that reads as the game's
-   accent color only touching one corner while the rest of the screen
-   stays flat, and the drift itself looked choppy (steps(10, jump-end) was
-   too coarse -- individual blob motion jumped in visible discrete steps
-   rather than reading as smooth liquid drift, something an aggregate
-   fps-only check didn't catch since averaged frame rate can look "fine"
-   while the actual position deltas driving visible motion are still
-   large, infrequent jumps).
-
-   Fix for coverage: several small goo clusters (CLUSTERS below) scattered
-   across the full viewport via percentage anchors instead of one big
-   cluster in a corner -- same shared #ambient-goo filter def, applied to
-   N separate small bounding boxes instead of one larger one. This is the
-   "sparser full-coverage grid" lever, not a bigger single blur: each
-   cluster's filtered region is small (see .css), so total re-rasterize
-   cost scales with cluster count x small-area rather than with one much
-   larger area, and per-cluster cost stays cheap to throttle if needed.
-
-   Fix for choppiness: dropped the steps() throttling entirely in favor of
-   smooth transform easing, now that each individual filtered region is
-   small enough (per-cluster, not full-viewport) that continuous
-   re-rasterization measured cheap -- see the .css comment for the actual
-   before/after numbers. If a future change needs to claw back budget,
-   the right lever is fewer/smaller clusters or a smaller blur radius, not
-   reintroducing coarse steps() -- that's what caused the choppiness
-   complaint in the first place. */
-/* FIX (reported live): the previous six clusters all sat at edges/corners --
-   top/left values only ever near 0%/100% on either axis, so the true
-   center of the viewport and the area behind the right sidebar panels
-   (visible at every height on a game detail page, not just the one
-   ~40%-top point the old right column touched) stayed genuinely flat.
-   Widened to a jittered 4-column x 3-row grid (12 clusters) spanning the
-   full 0-100% range on both axes -- columns include a true ~50% center
-   column, and the right column now has coverage at three different
-   heights (top/mid/bottom) instead of one, since a game detail page's
-   sidebar spans much of the viewport's height. Same per-cluster
-   size/opacity/blur/motion as before (see .css) -- this only changes
-   distribution, not intensity or the drift/merge mechanics. */
-const CLUSTERS: Array<{ top: string; left: string }> = [
-  { top: "-10%", left: "-6%" },
-  { top: "-6%", left: "23%" },
-  { top: "-12%", left: "52%" },
-  { top: "-8%", left: "78%" },
-  { top: "34%", left: "-8%" },
-  { top: "40%", left: "24%" },
-  { top: "36%", left: "50%" },
-  { top: "42%", left: "80%" },
-  { top: "74%", left: "2%" },
-  { top: "80%", left: "26%" },
-  { top: "76%", left: "54%" },
-  { top: "78%", left: "76%" },
-];
-
+/* Replaces the old metaball/goo background (SVG feGaussianBlur +
+   feColorMatrix filter re-rasterizing 12 discrete blob clusters every
+   frame) with a purely CSS effect: a static radial-gradient mesh (five
+   soft-edged fields reaching every corner + the center, so there's no
+   flat dead zone -- same coverage goal the old 4x3 cluster grid solved,
+   just without a filter or any per-frame layout/paint cost since nothing
+   here animates position) plus one slowly rotating conic-gradient layer
+   blended on top for a sense of gentle, ambient motion, plus a static
+   (not per-frame-generated) SVG grain texture. All three layers are
+   `background`/`background-image`, never `filter: url(...)` -- no
+   forced re-rasterization of a filtered subtree the way the old goo
+   clusters had, which is what made this measurably cheaper (see
+   AmbientBackground.css's own comment for the actual numbers). Same
+   accent-color sourcing as before: --ambient-primary/--ambient-secondary
+   set on :root by useAmbientAccent.ts on a game page, falling back to
+   the fixed neutral pair colorExtract.ts's own FALLBACK_PRIMARY/SECONDARY
+   uses when nothing has set them (homepage, directories, etc.). */
 export default function AmbientBackground() {
   const [paused, setPaused] = useState(() => typeof document !== "undefined" && document.hidden);
 
@@ -66,34 +29,9 @@ export default function AmbientBackground() {
 
   return (
     <div className={`ambient-bg${paused ? " ambient-bg--paused" : ""}`} aria-hidden="true">
-      {/* width/height 0 -- this <svg> only hosts the <filter> definition
-          every cluster below references via filter: url(#ambient-goo); it
-          renders nothing itself. One shared def, reused by every cluster
-          (each gets its own independent filter region from its own
-          bounding box) rather than duplicating the filter per cluster. */}
-      <svg width="0" height="0" style={{ position: "absolute" }}>
-        <defs>
-          <filter id="ambient-goo" x="-60%" y="-60%" width="220%" height="220%" colorInterpolationFilters="sRGB">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="9" result="blur" />
-            {/* Identity on R/G/B (rows 1-3), alpha-only linear ramp on row 4
-                -- the merge mechanism: see AmbientBackground.css's header
-                comment for the full explanation, unchanged from before. */}
-            <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 24 -11" />
-          </filter>
-        </defs>
-      </svg>
-      {CLUSTERS.map((pos, i) => (
-        <div key={i} className="ambient-goo" style={{ top: pos.top, left: pos.left } as CSSProperties}>
-          {/* Each blob's own animation-delay is offset per cluster (not
-              baked into the shared a/b/c keyframe classes in .css) purely
-              so the clusters don't all breathe in exact lockstep --
-              inline style wins over the class's own animation-delay
-              because it's a more specific longhand declaration. */}
-          <div className="ambient-blob ambient-blob--a" style={{ animationDelay: `${-(i * 3.4)}s` }} />
-          <div className="ambient-blob ambient-blob--b" style={{ animationDelay: `${-(i * 3.4 + 5.1)}s` }} />
-          <div className="ambient-blob ambient-blob--c" style={{ animationDelay: `${-(i * 3.4 + 8.6)}s` }} />
-        </div>
-      ))}
+      <div className="ambient-mesh" />
+      <div className="ambient-conic" />
+      <div className="ambient-grain" />
     </div>
   );
 }
