@@ -20,10 +20,18 @@ const CARGO_URL = "https://www.pcgamingwiki.com/w/api.php";
 // Confirmed live via a 500-row group_by=Uses_DRM sample of the real
 // Availability table: this field mixes genuine anti-tamper/protection
 // schemes (Denuvo Anti-Tamper, VMProtect, StarForce, ...) in with plain
-// storefront/launcher names and legacy non-blocking markers (a game being
-// sold on Steam always lists "Steam" here, which isn't "protection" in any
-// sense this site's Protection field means). Everything in this set is
-// noise to filter out; anything else that shows up is a real tag.
+// storefront/launcher names. "Steam" specifically is ambiguous HERE
+// (confirmed live: Stardew Valley and Baba Is You -- both genuinely
+// DRM-free on Steam -- still list "Steam" once in this field, because
+// Uses_DRM rolls every storefront's own Availability row into one
+// comma list; a game on N storefronts gets N entries, and the Steam
+// row's entry doesn't distinguish "has real Steam DRM" from "this row
+// is just the Steam listing"). That ambiguity is why "Steam" stays
+// filtered out of Uses_DRM's own real-tag list below -- but it's NOT why
+// every Steam game shows "None confirmed" for Steam's own DRM: see
+// Availability.Steam_DRM below, a separate dedicated field that resolves
+// this precisely. Everything else in this set is genuine noise
+// (storefront/launcher names, non-blocking markers) to filter out.
 const STOREFRONT_NOISE = new Set([
   "Steam",
   "GOG.com",
@@ -80,12 +88,24 @@ function splitList(v: string | null | undefined): string[] {
    appears in). Anticheat (Middleware table) is a separate concern from DRM
    entirely (EAC/BattlEye govern online play, not the executable's own
    anti-tamper) but is exactly the kind of "protection" info this site's
-   field is for, so it's folded in too. */
-export function classifyDrm(usesDrm: string | null, removedDrm: string | null, anticheat: string | null): string[] {
+   field is for, so it's folded in too.
+
+   steamDrm is Availability.Steam_DRM -- PCGamingWiki's dedicated field for
+   the Steam release specifically, not the general storefront-rolled-up
+   Uses_DRM above. Confirmed live against real pairs: Portal 2, Braid,
+   Celeste, and Resident Evil Village (Denuvo already removed, per above)
+   all show Steam_DRM: "Steam", a real Steamworks CEG wrapper; Stardew
+   Valley, Baba Is You, and Hollow Knight -- all genuinely DRM-free even on
+   Steam -- show Steam_DRM: "DRM-free". This is the actual signal Uses_DRM
+   can't give reliably for "Steam" specifically (see this file's own
+   STOREFRONT_NOISE comment), so it's trusted directly rather than inferred
+   from the noisy aggregate. */
+export function classifyDrm(usesDrm: string | null, removedDrm: string | null, anticheat: string | null, steamDrm: string | null): string[] {
   const removed = new Set(splitList(removedDrm));
   const real = splitList(usesDrm).filter((v) => !STOREFRONT_NOISE.has(v) && !removed.has(v));
   const ac = splitList(anticheat);
-  return [...new Set([...real, ...ac])];
+  const steamHasDrm = splitList(steamDrm).includes("Steam") && !removed.has("Steam");
+  return [...new Set([...real, ...ac, ...(steamHasDrm ? ["Steam DRM"] : [])])];
 }
 
 interface CargoRow {
@@ -94,6 +114,7 @@ interface CargoRow {
     "Uses DRM"?: string | null;
     "Removed DRM"?: string | null;
     Anticheat?: string | null;
+    "Steam DRM"?: string | null;
   };
 }
 
@@ -130,7 +151,7 @@ export async function lookupDrmForAppids(appids: number[]): Promise<Map<number, 
           action: "cargoquery",
           tables: "Infobox_game,Availability,Middleware",
           join_on: "Infobox_game._pageName=Availability._pageName,Infobox_game._pageName=Middleware._pageName",
-          fields: "Infobox_game.Steam_AppID=AppID,Availability.Uses_DRM,Availability.Removed_DRM,Middleware.Anticheat",
+          fields: "Infobox_game.Steam_AppID=AppID,Availability.Uses_DRM,Availability.Removed_DRM,Middleware.Anticheat,Availability.Steam_DRM",
           where,
           limit: String(BATCH_SIZE * 2), // a page can legitimately list >1 appid (bundles/demos), headroom not a hard cap assumption
           format: "json",
@@ -140,7 +161,7 @@ export async function lookupDrmForAppids(appids: number[]): Promise<Map<number, 
       const data = (await r.json()) as CargoResponse;
       if (data.error) continue;
       for (const row of data.cargoquery || []) {
-        const tags = classifyDrm(row.title["Uses DRM"] ?? null, row.title["Removed DRM"] ?? null, row.title.Anticheat ?? null);
+        const tags = classifyDrm(row.title["Uses DRM"] ?? null, row.title["Removed DRM"] ?? null, row.title.Anticheat ?? null, row.title["Steam DRM"] ?? null);
         for (const idStr of splitList(row.title.AppID)) {
           const id = Number(idStr);
           if (chunk.includes(id)) out.set(id, tags);
