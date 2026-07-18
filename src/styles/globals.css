@@ -1,5 +1,26 @@
 @import "./tokens.css";
 
+/* Self-hosted (not a Google Fonts/CDN <link>, which this project's own
+   standing preference is to avoid depending on for anything load-bearing
+   -- an external font host going down or getting blocked shouldn't make
+   the site's own body text disappear). Geist-Variable.woff2 is the
+   official variable-weight build (Vercel's `geist` npm package, MIT
+   licensed), covering the full 100-900 weight axis in one file -- this
+   codebase's UI already spans a wide range of font-weight values (500
+   through 900 across pills, headings, buttons), so a variable font is a
+   better fit than shipping five-plus separate static weight files.
+   font-display: swap so text renders in the system-font fallback
+   immediately rather than staying invisible while this loads. Only Geist
+   Sans (the body/UI face) is here -- --font-display (the serif title
+   font) is untouched, and Geist Mono was never requested for --mono. */
+@font-face {
+  font-family: "Geist";
+  src: url("/fonts/Geist-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 *,
 *::before,
 *::after {
