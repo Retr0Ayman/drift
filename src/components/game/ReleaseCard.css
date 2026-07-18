@@ -94,17 +94,6 @@
   margin-top: 5px;
 }
 
-.release-tag-chip {
-  font-size: 0.68rem;
-  font-weight: 700;
-  color: var(--ink-2);
-  background: var(--glass-bg-strong);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--pill);
-  padding: 3px 9px;
-  white-space: nowrap;
-}
-
 .release-infogrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));

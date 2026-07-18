@@ -12,6 +12,7 @@ import CrackOutlook from "./CrackOutlook";
 import CrackTimeline from "./CrackTimeline";
 import GlassPanel from "../ui/GlassPanel";
 import Pill from "../ui/Pill";
+import DrmTag from "../ui/DrmTag";
 import Reveal from "../ui/Reveal";
 import WatchToggle from "../ui/WatchToggle";
 import Tabs, { type TabDef } from "../ui/Tabs";
@@ -254,7 +255,7 @@ export default function GameDetail() {
               </div>
               <div className="detail-genres">
                 {(mergedGame.tags || []).map((t) => (
-                  <Pill key={t}>{t}</Pill>
+                  <DrmTag key={t}>{t}</DrmTag>
                 ))}
                 {(mergedGame.genres || []).map((t) => (
                   <Pill key={t}>{t}</Pill>

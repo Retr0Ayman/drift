@@ -1,0 +1,20 @@
+.drm-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  padding: 4px 9px 4px 7px;
+  border-radius: var(--r-sm);
+  white-space: nowrap;
+  color: var(--drm);
+  background: color-mix(in srgb, var(--drm) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--drm) 42%, transparent);
+}
+
+.drm-tag-icon {
+  width: 10px;
+  height: 10px;
+  flex: none;
+}

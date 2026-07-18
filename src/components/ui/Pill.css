@@ -49,3 +49,20 @@
   color: var(--unv);
   background: color-mix(in srgb, var(--unv) 18%, transparent);
 }
+
+/* Status pills (Current/Outdated/Unverified/HVB/Updated Nx -- every tone
+   above except neutral/accent, which stay the quiet rounded-full genre-
+   pill treatment) get a bolder, more confident shape: rounded-square, no
+   icon, heavier weight. Same colors/meanings as above, untouched -- this
+   only changes the shape+weight so a status pill reads as visually
+   distinct from both a genre pill (rounded-full, quiet) and a DRM pill
+   (DrmTag.tsx: rounded-square + border + shield icon + warm tint). */
+.pill--hv,
+.pill--trad,
+.pill--dead,
+.pill--out,
+.pill--unc,
+.pill--unv {
+  border-radius: var(--r-sm);
+  font-weight: 800;
+}

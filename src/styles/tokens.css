@@ -24,6 +24,14 @@
   --unc: #a13f34;
   --unv: #7a7263;
 
+  /* Chrome color for protection/DRM pills specifically (DrmTag.tsx) -- NOT
+     a status color, not reserved by the rule above, deliberately a
+     distinct warm amber/mustard hue rather than reusing --out (which
+     already means the "Outdated" release status) so a DRM pill and an
+     Outdated status pill never read as the same color meaning two
+     different things when they sit next to each other. */
+  --drm: #9c6b12;
+
   /* flat card surfaces -- hairline border, minimal shadow, no blur */
   --glass-bg: rgba(23, 21, 15, 0.04);
   --glass-bg-strong: rgba(23, 21, 15, 0.07);
@@ -125,6 +133,8 @@
     --unc: #e06a5d;
     --unv: #a89f8d;
 
+    --drm: #d9a53f;
+
     --glass-bg: rgba(245, 243, 238, 0.05);
     --glass-bg-strong: rgba(245, 243, 238, 0.09);
     --glass-border: rgba(245, 243, 238, 0.14);
@@ -166,6 +176,8 @@
   --unc: #e06a5d;
   --unv: #a89f8d;
 
+  --drm: #d9a53f;
+
   --glass-bg: rgba(245, 243, 238, 0.05);
   --glass-bg-strong: rgba(245, 243, 238, 0.09);
   --glass-border: rgba(245, 243, 238, 0.14);
@@ -206,6 +218,8 @@
   --out: #b5602a;
   --unc: #a13f34;
   --unv: #7a7263;
+
+  --drm: #9c6b12;
 
   --glass-bg: rgba(23, 21, 15, 0.04);
   --glass-bg-strong: rgba(23, 21, 15, 0.07);

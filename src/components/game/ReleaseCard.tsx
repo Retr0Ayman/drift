@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import type { Game, Release } from "../../types/game";
 import { relStatus, fmtBuild, slugify, crackTimingLabel, type RecencyStatus } from "../../lib/format";
 import Pill, { type PillTone } from "../ui/Pill";
+import DrmTag from "../ui/DrmTag";
 import GlassPanel from "../ui/GlassPanel";
 import WatchToggle from "../ui/WatchToggle";
 import "./ReleaseCard.css";
@@ -93,11 +94,7 @@ export default function ReleaseCard({ game, release, recencyStatus }: ReleaseCar
           <span className="k">Protection</span>
           <div className="release-tag-row">
             {(game.tags || []).length
-              ? (game.tags || []).map((t) => (
-                  <span className="release-tag-chip" key={t}>
-                    {t}
-                  </span>
-                ))
+              ? (game.tags || []).map((t) => <DrmTag key={t}>{t}</DrmTag>)
               : <span className="v">—</span>}
           </div>
         </div>
