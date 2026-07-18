@@ -3,6 +3,25 @@
   width: fit-content;
 }
 
+/* Overrides .aura-ring's (globals.css) shared purple/teal conic-gradient
+   with the "Apple Intelligence" --ai-* palette (tokens.css) instead --
+   search-as-assistant is the one surface besides actual AI-generated
+   content (AiTag.tsx/GlassPanel.css's .ai-glow) this warmer sweep is
+   reserved for, not a case of recoloring the ring everywhere. Two
+   classes (.aura-ring.searchbar-aura) so this reliably wins over
+   .aura-ring's own same-specificity rule regardless of CSS import order,
+   rather than relying on this file happening to load after globals.css. */
+.aura-ring.searchbar-aura {
+  background: conic-gradient(
+    from var(--aura-angle, 0deg),
+    var(--ai-1),
+    var(--ai-2) 30%,
+    var(--ai-3) 60%,
+    var(--ai-4) 85%,
+    var(--ai-1)
+  );
+}
+
 .searchbar {
   position: relative;
   display: flex;

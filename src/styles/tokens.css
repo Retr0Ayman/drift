@@ -53,13 +53,48 @@
   --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.75);
   --glass-ambient: 0 18px 36px -14px rgba(23, 21, 15, 0.22);
 
-  /* aura ring -- reserved for the search bar, one hero stat panel per page,
-     and AI-generated-content tags (AiTag.tsx). That third one is a
-     deliberate, scoped extension of the original "search bar + one hero
-     panel" rule, not an oversight -- everywhere else, a plain grey Pill. */
+  /* aura ring -- reserved for one hero stat panel per page. Everywhere
+     else that used to share this same purple/teal ring (the search bar,
+     AI-generated-content tags) now uses the dedicated --ai-* palette
+     below instead -- see that token block's own comment for why they
+     split off. */
   --aura-a: #6b4fa055;
   --aura-b: #1f7a6c55;
   --aura-blur: 10px;
+
+  /* "Apple Intelligence" glow palette -- a warm pink/magenta/blue/gold
+     sweep, deliberately distinct from --aura-a/--aura-b's cooler purple/
+     teal, reserved for exactly two things: AI-generated-content markers
+     (AiTag.tsx, and the panels that host them -- GameFact/CrackOutlook/
+     FaqSection, gated on the same "is this actually AI content" boolean
+     AiTag itself already uses) and the search bar (a deliberate, scoped
+     extension of the same reasoning -- search-as-assistant is the one
+     other surface where an Apple-Intelligence-style glow reads as
+     intentional rather than decorative noise, not a case of "just make
+     everything glow"). Same vivid hex values in both themes -- unlike
+     the subtle --hv/--trad-derived aura tones, these are saturated
+     enough to hold up against both a near-white and a near-black
+     background without needing separate tuning. */
+  --ai-1: #ff6482;
+  --ai-2: #c65fff;
+  --ai-3: #5b8dff;
+  --ai-4: #ffa53e;
+  /* Composed from --ai-1/--ai-2/--ai-3 above (color-mix resolves those at
+     use time, so this automatically follows whichever theme's values are
+     active -- doesn't need its own separate light/dark declaration the
+     way a token built from raw hex would). A colored "border" via a 0-
+     spread box-shadow layer, plus two soft offset-free glows, is what
+     GlassPanel's .ai-glow modifier (GlassPanel.css) appends alongside
+     the existing --glass-highlight/--glass-shadow/--glass-ambient stack
+     -- additive, not a replacement, same discipline as that whole stack
+     already follows. Deliberately static, no animation -- AiTag.tsx's own
+     ring right next to it already carries the "alive" motion at a cheap
+     small scale; animating a glow this size would revisit the exact
+     filter/blend-mode cost trap the ambient background already hit, for
+     a subtler payoff, so this stays a plain (cheap, compositor-only)
+     static box-shadow. */
+  --ai-glow-shadow: 0 0 0 1px color-mix(in srgb, var(--ai-2) 35%, transparent), 0 0 28px -8px var(--ai-1),
+    0 0 40px -10px var(--ai-3);
 
   --font-display: ui-serif, Georgia, "Iowan Old Style", "Times New Roman", serif;
   --font: "Geist", -apple-system, system-ui, "Segoe UI", sans-serif;
@@ -170,6 +205,11 @@
     --aura-a: #a68bdb55;
     --aura-b: #4fb8a055;
 
+    --ai-1: #ff6482;
+    --ai-2: #c65fff;
+    --ai-3: #5b8dff;
+    --ai-4: #ffa53e;
+
     --aura-panel-bg: rgba(19, 18, 16, 0.82);
   }
 }
@@ -212,6 +252,11 @@
 
   --aura-a: #a68bdb55;
   --aura-b: #4fb8a055;
+
+  --ai-1: #ff6482;
+  --ai-2: #c65fff;
+  --ai-3: #5b8dff;
+  --ai-4: #ffa53e;
 
   --aura-panel-bg: rgba(19, 18, 16, 0.82);
 }
@@ -258,6 +303,11 @@
 
   --aura-a: #6b4fa055;
   --aura-b: #1f7a6c55;
+
+  --ai-1: #ff6482;
+  --ai-2: #c65fff;
+  --ai-3: #5b8dff;
+  --ai-4: #ffa53e;
 
   --aura-panel-bg: rgba(255, 255, 255, 0.85);
 }

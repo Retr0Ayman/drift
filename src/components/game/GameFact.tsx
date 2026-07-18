@@ -39,7 +39,7 @@ export default function GameFact({ game }: { game: Game }) {
   if (!fact) return null;
 
   return (
-    <GlassPanel className="detail-factbox" frost>
+    <GlassPanel className={`detail-factbox${aiGenerated ? " ai-glow" : ""}`} frost>
       <div className="detail-factbox-h">
         Did you know
         {aiGenerated ? <AiTag /> : null}

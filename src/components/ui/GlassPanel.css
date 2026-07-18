@@ -22,8 +22,9 @@
 /* Static counterpart to .glass-panel--aura -- same translucent fill +
    blur, saturate() added per the Stage 3 brief, and a thin border blended
    from the same two aura hues instead of the spinning conic-gradient ring
-   (reserved for the search bar / hero panel / AI tags). Reuses the exact
-   --aura-* tokens, no new ones invented. */
+   (reserved for the hero stat panel -- the search bar and AI tags moved to
+   the dedicated --ai-* palette, see tokens.css's own comment). Reuses the
+   exact --aura-* tokens, no new ones invented. */
 .glass-panel--frost {
   background: var(--aura-panel-bg);
   -webkit-backdrop-filter: blur(var(--aura-blur)) saturate(1.4);
@@ -67,4 +68,29 @@
   backdrop-filter: blur(calc(var(--aura-blur) * 2.2)) saturate(1.85);
   border: 1px solid color-mix(in srgb, var(--aura-a), var(--aura-b));
   box-shadow: var(--glass-highlight), var(--glass-shadow-lg), var(--glass-ambient);
+}
+
+/* "Apple Intelligence" glow modifier -- an optional extra class, additive
+   on top of whichever glass-panel variant a caller already uses, for
+   panels that host actual AI-generated content (GameFact's factbox,
+   CrackOutlook, FaqSection -- see tokens.css's own --ai-glow-shadow
+   comment for the full reasoning, including why this is a plain static
+   box-shadow rather than an animated one). Each caller gates this class
+   on the exact same "is this really AI content, right now" boolean it
+   already uses to decide whether to render <AiTag/> at all -- never
+   applied unconditionally to a panel that might be showing a real,
+   non-AI value instead (GameFact falls back to a hand-curated seed fact
+   with no AI tag; this must not glow then either).
+   .glass-panel alone uses --glass-shadow, every other variant uses
+   --glass-shadow-lg -- two rules, not one, to combine correctly with
+   whichever box-shadow the base variant already set rather than
+   guessing a single shared value. */
+.ai-glow.glass-panel {
+  box-shadow: var(--glass-highlight), var(--glass-shadow), var(--glass-ambient), var(--ai-glow-shadow);
+}
+
+.ai-glow.glass-panel--strong,
+.ai-glow.glass-panel--frost,
+.ai-glow.glass-panel--frost-strong {
+  box-shadow: var(--glass-highlight), var(--glass-shadow-lg), var(--glass-ambient), var(--ai-glow-shadow);
 }

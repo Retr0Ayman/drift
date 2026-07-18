@@ -33,11 +33,13 @@ export default function CrackOutlook({ game }: { game: Game }) {
     };
   }, [game]);
 
+  const ready = !loading && !error && !!outlook;
+
   return (
-    <GlassPanel className="crack-outlook" frost>
+    <GlassPanel className={`crack-outlook${ready ? " ai-glow" : ""}`} frost>
       <div className="crack-outlook-h">
         Crack outlook
-        {!loading && !error && outlook ? <AiTag /> : null}
+        {ready ? <AiTag /> : null}
       </div>
       {loading ? (
         <p className="crack-outlook-status">Generating…</p>

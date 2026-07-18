@@ -70,7 +70,7 @@ export default function FaqSection({ game }: { game: Game }) {
         FAQ
         {ready ? <AiTag /> : null}
       </h4>
-      <GlassPanel className="faq-panel">
+      <GlassPanel className={`faq-panel${ready ? " ai-glow" : ""}`}>
         {loading ? (
           <p className="faq-status">Generating…</p>
         ) : error || !pairs.length ? (
