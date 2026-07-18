@@ -61,6 +61,69 @@ const UPSERT_RELEASE_SQL = `
   WHERE excluded.ts > releases.ts
 `;
 
+const REFRESH_GAME_SQL = `
+  UPDATE games SET
+    title = ?, year = ?, released = ?, developer = ?, publisher = ?, genres = ?, tags = ?,
+    current_build = ?, desc = ?, metacritic = ?, header = ?,
+    accent_color_primary = CASE
+      WHEN ? != ? OR accent_color_primary IS NULL OR accent_color_primary = ''
+      THEN ? ELSE accent_color_primary END,
+    accent_color_secondary = CASE
+      WHEN ? != ? OR accent_color_secondary IS NULL OR accent_color_secondary = ''
+      THEN ? ELSE accent_color_secondary END,
+    updated_at = ?
+  WHERE id = ?
+`;
+
+/* worker/backfill/refreshStale.ts's own tick: games whose Steam metadata
+   (current_build above all) hasn't been re-checked in the longest time --
+   oldest updated_at first, so this naturally cycles through the entire
+   catalog over time rather than needing a fixed staleness threshold. Only
+   games with a real resolved appid qualify (a game that somehow never
+   resolved one has nothing to refresh against). */
+export async function getStaleGames(db: D1Database, limit: number): Promise<Array<{ id: string; appid: number; title: string }>> {
+  const rows = await db
+    .prepare("SELECT id, appid, title FROM games WHERE appid IS NOT NULL ORDER BY updated_at ASC LIMIT ?")
+    .bind(limit)
+    .all<{ id: string; appid: number; title: string }>();
+  return rows.results || [];
+}
+
+/* Plain UPDATE, not the full INSERT-with-defaults UPSERT_GAME_SQL above --
+   this only ever touches a game D1 already has (getStaleGames selects
+   existing rows), no xrel_key/releases involved, so the lighter statement
+   is the honest shape for what this actually does. Same accent-color
+   preservation logic as UPSERT_GAME_SQL: only overwrite with a fresh
+   extraction if it's not just the fixed fallback pair (or the column was
+   never populated), so a transient extraction failure on a refresh tick
+   can't clobber a real color this game already had. */
+export async function refreshStaleGame(db: D1Database, id: string, currentTitle: string, e: Enrichment): Promise<void> {
+  await db
+    .prepare(REFRESH_GAME_SQL)
+    .bind(
+      e.title || currentTitle,
+      e.year,
+      e.released,
+      e.developer,
+      e.publisher,
+      JSON.stringify(e.genres),
+      JSON.stringify(e.tags),
+      e.currentBuild,
+      e.desc,
+      e.metacritic,
+      e.header,
+      e.accentColorPrimary,
+      FALLBACK_PRIMARY,
+      e.accentColorPrimary,
+      e.accentColorSecondary,
+      FALLBACK_SECONDARY,
+      e.accentColorSecondary,
+      Date.now(),
+      id,
+    )
+    .run();
+}
+
 // Safely under D1's bound-parameter ceiling per statement (confirmed live
 // during the /api/catalog fix: 100 worked, 101 didn't) -- chunked so an
 // existence check never risks hitting that limit even on a large tick.
@@ -111,7 +174,26 @@ export async function upsertGames(db: D1Database, games: ParsedGame[], enrichmen
         db.prepare(UPSERT_GAME_SQL).bind(
           game.id,
           game.xrel_key,
-          game.title,
+          // FIX (confirmed live): this used to write game.title -- the raw
+          // xREL-derived title (grouped by worker/backfill/parse.ts's
+          // groupRowsByTitle) that resolveTitle/upsertGames use as their
+          // lookup key -- straight into the displayed games.title column.
+          // xREL's own ext_info.title reflects whatever language/naming
+          // that release's own scene/P2P group happened to package it
+          // under (confirmed live: LEGO Batman: Legacy of the Dark
+          // Knight's tracked releases are all German, so its xREL title
+          // was "Lego Batman: Das Vermächtnis des Dunklen Ritters" -- and
+          // that's what every game on this site displayed under until
+          // now). enrichment.title is Steam's own real, canonical name
+          // (appdetails.ts's `title` field) -- the actually-correct thing
+          // to display. Falls back to game.title only in the
+          // (essentially never, given d.appid already had to exist)
+          // case Steam's response somehow omitted a name. `title =
+          // excluded.title` in UPSERT_GAME_SQL's ON CONFLICT clause means
+          // this self-corrects for every already-inserted game the next
+          // time steady-state sync/deep backfill touches it again, no
+          // separate migration needed.
+          enrichment.title || game.title,
           enrichment.appid,
           enrichment.year ?? game.year,
           enrichment.released,

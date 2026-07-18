@@ -29,6 +29,7 @@ import { runDeepBackfillTick } from "./backfill/deepRun";
 import { runArchiveBackfillTick } from "./backfill/archiveRun";
 import { runDrmBackfillTick } from "./backfill/drmBackfillRun";
 import { runFirstSeenReconcileTick } from "./backfill/reconcileFirstSeen";
+import { runStaleRefreshTick } from "./backfill/refreshStale";
 
 /* This is a Worker with static assets (wrangler.jsonc `main` + `assets`), not
    classic Cloudflare Pages -- confirmed live: the workers.dev domain and
@@ -94,8 +95,13 @@ export default {
 
   // Five cron patterns (see wrangler.jsonc's `triggers.crons`), dispatched
   // by which one fired: the original 15-minute trigger runs the Discord
-  // alerts (worker/scheduled.ts) plus the small steady-state D1 sync
-  // alongside it; a separate, more frequent trigger drives the resumable
+  // alerts (worker/scheduled.ts), the small steady-state D1 sync, AND
+  // worker/backfill/refreshStale.ts's independent Steam-metadata freshness
+  // sweep (oldest-updated-first, small batch, keyed off each game's own
+  // already-known appid -- unlike steady-state sync, this one isn't gated
+  // on any recent crack/xREL activity, since a game can go stale on Steam's
+  // side with zero cracking-scene activity to ever re-trigger a check
+  // otherwise); a separate, more frequent trigger drives the resumable
   // historical backfill (worker/backfill/run.ts) until it completes, then
   // becomes a cheap no-op forever after -- see that file's own comment for
   // why this needs its own faster cadence instead of piggybacking on the
@@ -134,6 +140,6 @@ export default {
       ctx.waitUntil(Promise.all([runDrmBackfillTick(env), runFirstSeenReconcileTick(env)]));
       return;
     }
-    ctx.waitUntil(Promise.all([runScheduledAlert(env), runSteadyStateSync(env)]));
+    ctx.waitUntil(Promise.all([runScheduledAlert(env), runSteadyStateSync(env), runStaleRefreshTick(env)]));
   },
 };
