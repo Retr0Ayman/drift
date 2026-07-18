@@ -317,16 +317,32 @@ export async function buildLiveGameFromRows(title: string): Promise<Game | null>
   return game;
 }
 
-/* Newest-first needs a real point in time, not just a bucket year. Prefers
-   the Steam release date; falls back to the xREL scene-release timestamp;
-   falls back to Jan 1 of the year so seed-only entries with neither still
-   sort sanely. */
+/* FIX (confirmed live): this used to prefer g.released (the game's own
+   Steam release date) over any real tracking activity -- Home's "newest
+   first" default sort and Hero's "Most recent crack" stat both call this,
+   and both read as visibly wrong for it: a game force-inserted or freshly
+   cracked TODAY still sorted after any older-catalog game with a more
+   recent Steam release date, since a release date is static and almost
+   always present, so the real activity signal (g.xrelTime) it was
+   supposedly falling back to almost never got reached. Worse, g.xrelTime
+   itself is only ever set by the client-side live-search-resolve path
+   (buildLiveGameFromRows below) -- every game coming through the real D1
+   catalog (useLiveCatalog.ts, the actual homepage data source) never sets
+   it at all, so the old fallback chain was dead code for the common case.
+   Real per-game tracking recency already exists on every game regardless
+   of source: the max `ts` across g.releases (each one straight from xREL's
+   own release timestamp). That's what "newest" actually means for a
+   crack-tracking site's homepage and its "most recent crack" stat -- prefer
+   it first. g.released/g.year stay as sane fallbacks for a game with no
+   tracked releases yet (e.g. "unreleased" status). */
 export function gTimestamp(g: Game): number {
+  const newestReleaseTs = (g.releases || []).reduce((mx, r) => Math.max(mx, r.ts || 0), 0);
+  if (newestReleaseTs) return newestReleaseTs * 1000;
+  if (g.xrelTime) return g.xrelTime * 1000;
   if (g.released) {
     const t = Date.parse(g.released);
     if (!isNaN(t)) return t;
   }
-  if (g.xrelTime) return g.xrelTime * 1000;
   if (g.year) return new Date(g.year, 0, 1).getTime();
   return 0;
 }
