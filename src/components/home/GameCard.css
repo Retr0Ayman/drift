@@ -77,6 +77,39 @@
   backdrop-filter: blur(10px);
 }
 
+/* FIX (reported live): this badge reused Pill's plain tone styling, a
+   ~16%-opacity color tint meant to read against this app's own flat
+   background -- fine in that context, but illegible here since it sits
+   directly on top of arbitrary cover art (a bright, busy, or
+   similarly-hued photo can wash the tinted text out completely). Same
+   fix .game-card-year already uses one rule down for exactly this
+   problem (a solid dark backing instead of a transparent tint), but kept
+   per-status color instead of going flat black/white -- a solid,
+   fully-opaque version of each status's own color reads clearly against
+   any photo while keeping the same cracked/hypervisor/uncracked color
+   coding used everywhere else on this card. Higher specificity than
+   Pill's own single-class rules (a descendant selector, not !important)
+   so this reliably wins regardless of stylesheet bundling order. */
+.game-card-cover .game-card-badge.pill--dead {
+  background: var(--dead);
+  color: #fff;
+}
+
+.game-card-cover .game-card-badge.pill--hv {
+  background: var(--hv);
+  color: #fff;
+}
+
+.game-card-cover .game-card-badge.pill--unc {
+  background: var(--unc);
+  color: #fff;
+}
+
+.game-card-cover .game-card-badge.pill--unv {
+  background: var(--unv);
+  color: #fff;
+}
+
 .game-card-body {
   padding: 18px 20px 21px;
 }
