@@ -55,8 +55,21 @@ export const isAnonymousUpload = (g: string): boolean => normGroup(g) === "p2p";
    set of legacy Nintendo/Sony disc-scene platform tokens this same P2P
    scene is evidently willing to dump -- wii/wiiu/3ds/n64/snes/nes/gba/gbc/
    nds/dsi/psx/ps1 -- since a scene that dumps PS3/PS4/PS5/3DS/WiiU under
-   one game's history is not going to stop at exactly those five. */
+   one game's history is not going to stop at exactly those five.
+
+   FIX (confirmed live, Forza franchise-completeness sweep): `xbox(?:360|
+   one|series)?` only matched the bare word or those three exact suffixes
+   followed by a real delimiter -- original-Xbox disc dumps tag the token
+   as "XBOXDVD" with no delimiter in between ("Forza_Motorsport_USA_
+   XBOXDVD-CDZ", also seen on Splinter Cell: Double Agent and Need for
+   Speed: Most Wanted releases), so the required trailing `([._-]|$)`
+   never matched and these slipped through as "Windows" releases -- one
+   of them a 2005 original-Xbox dump wrongly attached to the 2023 Forza
+   Motorsport reboot's Steam listing. Changed to `xbox\w*` (any suffix,
+   not just the three known modern-console ones) so it still requires the
+   "xbox" prefix at a real token boundary but no longer cares what follows
+   before the next delimiter. Mirrors the same fix in src/lib/constants.ts. */
 const NON_WINDOWS_PLATFORM =
-  /(^|[._-])(nsw|switch|ps[2-5]|psvita|xbox(?:360|one|series)?|linux|mac[._-]?os|osx|cusa\d+|ppsa\d+|b[lc][eu]s\d+|bcjs\d+|cfw|wiiu|wii|3ds|n64|snes|nes|gba|gbc|nds|dsi|psx|ps1)([._-]|$)/i;
+  /(^|[._-])(nsw|switch|ps[2-5]|psvita|xbox\w*|linux|mac[._-]?os|osx|cusa\d+|ppsa\d+|b[lc][eu]s\d+|bcjs\d+|cfw|wiiu|wii|3ds|n64|snes|nes|gba|gbc|nds|dsi|psx|ps1)([._-]|$)/i;
 
 export const isWindowsRelease = (dirname: string): boolean => !NON_WINDOWS_PLATFORM.test(dirname || "");
