@@ -468,6 +468,9 @@ const FRANCHISE_MAP: Record<string, string> = {
   "grand theft auto iv": "Grand Theft Auto",
   "red dead redemption 2": "Red Dead Redemption",
   "red dead redemption": "Red Dead Redemption",
+  "l.a. noire": "L.A. Noire",
+  "max payne 3": "Max Payne",
+  "max payne": "Max Payne",
   "bioshock: the collection": "BioShock",
   "bioshock infinite": "BioShock",
   "borderlands 4": "Borderlands",
@@ -531,6 +534,8 @@ const FRANCHISE_MAP: Record<string, string> = {
   "resident evil 5": "Resident Evil",
   "resident evil 6": "Resident Evil",
   "resident evil 0": "Resident Evil",
+  "resident evil: revelations": "Resident Evil",
+  "resident evil: revelations 2": "Resident Evil",
   "monster hunter wilds": "Monster Hunter",
   "monster hunter rise": "Monster Hunter",
   "monster hunter: world": "Monster Hunter",
@@ -539,11 +544,21 @@ const FRANCHISE_MAP: Record<string, string> = {
   "devil may cry 5": "Devil May Cry",
   "devil may cry 4 special edition": "Devil May Cry",
   "dmc: devil may cry": "Devil May Cry",
+  "devil may cry hd collection": "Devil May Cry",
   "mega man 11": "Mega Man",
   "mega man legacy collection": "Mega Man",
+  "mega man x legacy collection": "Mega Man",
+  "mega man x legacy collection 2": "Mega Man",
+  "mega man zero/zx legacy collection": "Mega Man",
   "dragon's dogma 2": "Dragon's Dogma",
   "dragon's dogma: dark arisen": "Dragon's Dogma",
   "phoenix wright: ace attorney trilogy": "Ace Attorney",
+  "the great ace attorney chronicles": "Ace Attorney",
+  // Confirmed live: xREL's own ext_info.title for both tracked Onimusha
+  // releases is real English, no alias needed -- a genuine total-absence
+  // gap (like Forza's), not a title-matching one.
+  "onimusha: warlords": "Onimusha",
+  "onimusha 2: samurai's destiny": "Onimusha",
 
   // ---- Bandai Namco ----
   "tekken 8": "Tekken",
