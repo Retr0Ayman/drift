@@ -1,6 +1,6 @@
 import type { Handler } from "../shared/types";
 import { json } from "../shared/http";
-import { buildId, parseYear, reqLines } from "../shared/steam";
+import { fetchBuildInfo, parseYear, reqLines } from "../shared/steam";
 
 interface SteamAppData {
   name: string;
@@ -58,6 +58,7 @@ export const handleAppdetails: Handler = async ({ request }) => {
   // Steam returns pc_requirements as {minimum, recommended} HTML strings, or an
   // empty array [] on some delisted/unusual apps -- never assume object shape.
   const pcr = d.pc_requirements && !Array.isArray(d.pc_requirements) ? d.pc_requirements : null;
+  const buildInfo = await fetchBuildInfo(appid as string);
   const slim = {
     appid: Number(appid),
     title: d.name,
@@ -80,7 +81,11 @@ export const handleAppdetails: Handler = async ({ request }) => {
     // Raw USD amount (cc=us above pins the region, so this is always USD when
     // present) for real currency conversion -- final is in whole cents.
     priceUsd: d.is_free ? 0 : d.price_overview?.final != null ? d.price_overview.final / 100 : null,
-    currentBuild: await buildId(appid as string),
+    currentBuild: buildInfo.buildId,
+    // Real Steam-side timestamp of when this build was published (see
+    // fetchBuildInfo's own comment) -- what survivalHrs()/GameDetail's
+    // Survival field is actually computed from.
+    currentBuildUpdatedAt: buildInfo.buildUpdatedAt,
     pcReq: pcr ? { minimum: reqLines(pcr.minimum), recommended: reqLines(pcr.recommended) } : null,
   };
   return json(slim, 3600);

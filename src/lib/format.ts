@@ -142,6 +142,30 @@ export function driftDelta(g: Game): number {
   return b && g.currentBuild && b < g.currentBuild ? g.currentBuild - b : -1;
 }
 
+/* GameDetail's "Survival" stat -- how long the tracked crack has stayed
+   current against Steam's own build history, computed fresh at render
+   time from currentBuildUpdatedAt (worker/shared/steam.ts's fetchBuildInfo,
+   ultimately steamcmd.net's real timebuildupdated field) rather than
+   stored/precomputed server-side, since "hours since X" is only correct
+   as of the moment it's actually displayed. Positive = the crack has
+   matched-or-beaten the current build for N hours so far; negative = the
+   crack fell behind N hours ago, when Steam last shipped a build past it
+   -- same sign convention the old hand-authored SEED_GAMES fallback data
+   used, so GameDetail's existing +/-Nh display logic didn't need to
+   change, only the source of the number. null (never a guess) whenever
+   any input required to make this claim honestly isn't known: no real
+   Steam timestamp yet, or no confirmed crack build to compare against
+   (relStatus's own "unverified" case -- a live xREL release with no real
+   build id has nothing to measure survival against). */
+export function survivalHrs(g: Game): number | null {
+  if (g.currentBuildUpdatedAt == null) return null;
+  const bd = bestBuild(g);
+  if (bd == null) return null;
+  const hoursSince = (Date.now() / 1000 - g.currentBuildUpdatedAt) / 3600;
+  const outdated = driftDelta(g) > 0;
+  return Math.round(outdated ? -hoursSince : hoursSince);
+}
+
 export const fmtBuild = (n: number | null | undefined): string => (n ? "#" + n.toLocaleString("en-US") : "—");
 
 const STEAM_CDN = "https://cdn.cloudflare.steamstatic.com/steam/apps/";

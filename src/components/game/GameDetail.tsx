@@ -32,6 +32,7 @@ import {
   statusMeta,
   steamLink,
   steamdbLink,
+  survivalHrs,
 } from "../../lib/format";
 import "./GameDetail.css";
 
@@ -111,6 +112,7 @@ export default function GameDetail() {
   const ring = STATUS_RING[sm.cls];
   const bd = bestBuild(mergedGame);
   const drift = driftDelta(mergedGame);
+  const survival = survivalHrs(mergedGame);
 
   // Images only -- no trailer slide (the YouTube-search trailer link was
   // flaky enough in practice not to be worth keeping).
@@ -351,7 +353,7 @@ export default function GameDetail() {
               </div>
               <div className="build-row">
                 <span className="k">Survival</span>
-                <span className="v">{mergedGame.survivalHrs == null ? "—" : (mergedGame.survivalHrs < 0 ? "−" : "+") + Math.abs(mergedGame.survivalHrs) + "h"}</span>
+                <span className="v">{survival == null ? "—" : (survival < 0 ? "−" : "+") + Math.abs(survival) + "h"}</span>
               </div>
             </div>
           </GlassPanel>

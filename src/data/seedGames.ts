@@ -15,7 +15,6 @@ export const SEED_GAMES: Game[] = [
     genres: ["Action", "Adventure", "Open World"],
     tags: ["Denuvo"],
     currentBuild: 19402210,
-    survivalHrs: -36,
     releases: [
       {
         method: "hv",
@@ -49,7 +48,6 @@ export const SEED_GAMES: Game[] = [
     genres: ["Action", "Stealth", "Third-Person"],
     tags: ["Denuvo"],
     currentBuild: 18220040,
-    survivalHrs: 0,
     releases: [
       {
         method: "hv",
@@ -80,7 +78,6 @@ export const SEED_GAMES: Game[] = [
     genres: ["Action", "Adventure", "Co-op"],
     tags: ["Denuvo"],
     currentBuild: 17640300,
-    survivalHrs: -18,
     releases: [
       {
         method: "hv",
@@ -114,7 +111,6 @@ export const SEED_GAMES: Game[] = [
     genres: ["Action", "Narrative", "Open World"],
     tags: ["Denuvo"],
     currentBuild: 16880450,
-    survivalHrs: 12,
     releases: [
       {
         method: "hv",
@@ -145,7 +141,6 @@ export const SEED_GAMES: Game[] = [
     genres: ["Sports", "Simulation"],
     tags: ["EA anti-cheat"],
     currentBuild: 16110700,
-    survivalHrs: 96,
     releases: [
       {
         method: "trad",
@@ -173,7 +168,6 @@ export const SEED_GAMES: Game[] = [
     genres: ["Survival", "Open World", "Underwater"],
     tags: ["Early Access"],
     currentBuild: 14020990,
-    survivalHrs: -30,
     releases: [
       {
         method: "trad",
@@ -204,7 +198,6 @@ export const SEED_GAMES: Game[] = [
     genres: ["FPS", "Action"],
     tags: ["Denuvo (expected)", "Always-online"],
     currentBuild: 0,
-    survivalHrs: null,
     releases: [],
     desc: "The next mainline Modern Warfare. Unreleased — expected to lean on Denuvo plus always-online components.",
     fact: "Modern Warfare (2007) is widely credited with reshaping the entire FPS genre and popularising the modern online-progression loop.",
@@ -223,7 +216,6 @@ export const SEED_GAMES: Game[] = [
     tags: ["Denuvo"],
     reviewPct: 96,
     currentBuild: 21393610,
-    survivalHrs: 6,
     releases: [
       {
         method: "hv",
@@ -265,7 +257,6 @@ export const SEED_GAMES: Game[] = [
     metacritic: 91,
     reviewPct: 55,
     currentBuild: 23440336,
-    survivalHrs: 720,
     releases: [
       {
         method: "trad",
@@ -298,7 +289,6 @@ export const SEED_GAMES: Game[] = [
     metacritic: 88,
     reviewPct: 61,
     currentBuild: 23848310,
-    survivalHrs: 600,
     releases: [
       {
         method: "trad",
@@ -328,7 +318,6 @@ export const SEED_GAMES: Game[] = [
     metacritic: 82,
     reviewPct: 72,
     currentBuild: 17941244,
-    survivalHrs: 1440,
     releases: [
       {
         method: "trad",
@@ -357,7 +346,6 @@ export const SEED_GAMES: Game[] = [
     tags: ["Denuvo", "EA anti-cheat"],
     reviewPct: 70,
     currentBuild: 15643690,
-    survivalHrs: 2160,
     releases: [
       {
         method: "trad",
@@ -387,7 +375,6 @@ export const SEED_GAMES: Game[] = [
     metacritic: 91,
     reviewPct: 97,
     currentBuild: 22377325,
-    survivalHrs: 24,
     releases: [
       {
         method: "trad",
@@ -420,7 +407,6 @@ export const SEED_GAMES: Game[] = [
     metacritic: 83,
     reviewPct: 89,
     currentBuild: 20773316,
-    survivalHrs: 120,
     releases: [
       {
         method: "trad",
@@ -450,7 +436,6 @@ export const SEED_GAMES: Game[] = [
     metacritic: 83,
     reviewPct: 95,
     currentBuild: 22373341,
-    survivalHrs: 8,
     releases: [
       {
         method: "trad",

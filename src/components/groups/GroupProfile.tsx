@@ -79,7 +79,6 @@ function syntheticGame(title: string, release: Release): Game {
     genres: [],
     tags: [],
     currentBuild: 0,
-    survivalHrs: null,
     releases: [release],
     desc: "",
     fact: "",

@@ -1,0 +1,24 @@
+-- GameDetail's "Survival" stat has been a hardcoded `survivalHrs: null` in
+-- worker/routes/catalog.ts's response mapping since the D1 migration --
+-- shown as a placeholder dash for literally every game, always, since
+-- nothing ever computed a real value.
+--
+-- Unlike first_seen_date (migrations/0004), this doesn't need a "no real
+-- history exists yet" bootstrap problem or a _verified flag: steamcmd.net's
+-- own public API (already the source worker/shared/steam.ts's buildId
+-- calls for currentBuild) returns a `timebuildupdated` field alongside
+-- buildid -- Steam's own real, authoritative record of when the current
+-- public-branch build was actually published. Confirmed live via
+-- api.steamcmd.net/v1/info/<appid>. That's a genuinely real, immediately-
+-- available, per-game-differentiated timestamp, not something this app
+-- has to wait to accumulate through its own observation -- so no backfill
+-- UPDATE here, existing rows simply stay NULL (an honest "not yet
+-- re-fetched from Steam since this column existed") until the next
+-- natural steady-state sync or refreshStale.ts pass re-enriches them with
+-- Steam's real value, same as any other newly-added enriched field.
+--
+-- worker/backfill/db.ts writes this as a straight overwrite on every
+-- enrichment (no "only if changed" conditional logic needed, unlike
+-- accent colors) -- Steam's timebuildupdated IS the ground truth of when
+-- it last changed, so the freshest fetched value is always correct.
+ALTER TABLE games ADD COLUMN current_build_updated_at INTEGER;

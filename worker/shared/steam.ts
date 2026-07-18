@@ -1,8 +1,25 @@
 interface SteamCmdInfo {
-  data?: Record<string, { depots?: { branches?: { public?: { buildid?: string | number } } } }>;
+  data?: Record<
+    string,
+    { depots?: { branches?: { public?: { buildid?: string | number; timebuildupdated?: string | number } } } }
+  >;
 }
 
-export async function buildId(appid: string): Promise<number | null> {
+export interface BuildInfo {
+  buildId: number | null;
+  /* Steam's own real, authoritative unix-seconds timestamp of when the
+     current public-branch build was actually published (steamcmd.net's
+     `timebuildupdated` field, confirmed live present on every appid
+     checked) -- NOT something this app derives from its own observation
+     history. This is what makes a real "how long has this crack stayed
+     current" survival stat possible without needing to wait for our own
+     tracking to accumulate history: Steam already recorded the real
+     moment, we just weren't reading it before. See GameDetail's Survival
+     field / src/lib/format.ts's survivalHrs(). */
+  buildUpdatedAt: number | null;
+}
+
+export async function fetchBuildInfo(appid: string): Promise<BuildInfo> {
   try {
     // FIX (confirmed live, QA sweep): cacheEverything caches ANY status
     // code for the full cacheTtl -- a transient steamcmd.net failure could
@@ -12,11 +29,19 @@ export async function buildId(appid: string): Promise<number | null> {
       cf: { cacheTtlByStatus: { "200-299": 3600, "300-599": 0 } },
     } as RequestInit);
     const jn = (await r.json()) as SteamCmdInfo;
-    const b = jn.data?.[appid]?.depots?.branches?.public?.buildid;
-    return b ? Number(b) : null;
+    const pub = jn.data?.[appid]?.depots?.branches?.public;
+    const b = pub?.buildid;
+    const t = pub?.timebuildupdated;
+    return { buildId: b ? Number(b) : null, buildUpdatedAt: t ? Number(t) : null };
   } catch {
-    return null;
+    return { buildId: null, buildUpdatedAt: null };
   }
+}
+
+// Thin back-compat wrapper -- badge.ts/build.ts only ever needed the bare
+// number, not the timestamp; keeps their call sites unchanged.
+export async function buildId(appid: string): Promise<number | null> {
+  return (await fetchBuildInfo(appid)).buildId;
 }
 
 export function parseYear(s?: string | null): number | null {

@@ -1,5 +1,5 @@
 import type { Game } from "../types/game";
-import { anyOutdated, driftDelta, gStatus } from "./format";
+import { anyOutdated, driftDelta, gStatus, survivalHrs } from "./format";
 import { gTimestamp } from "./catalog";
 
 export type StatusFilter = "all" | "outdated" | "hv" | "trad" | "uncracked" | "unreleased";
@@ -45,7 +45,7 @@ export function sortGames(games: Game[], sort: SortKey): Game[] {
     case "drift":
       return list.sort((a, b) => driftDelta(b) - driftDelta(a));
     case "survival":
-      return list.sort((a, b) => (a.survivalHrs ?? 1e9) - (b.survivalHrs ?? 1e9));
+      return list.sort((a, b) => (survivalHrs(a) ?? 1e9) - (survivalHrs(b) ?? 1e9));
     default:
       return list;
   }

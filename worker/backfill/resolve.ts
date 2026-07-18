@@ -31,6 +31,13 @@ export interface Enrichment {
   publisher: string;
   genres: string[];
   currentBuild: number | null;
+  /* Real Steam-side timestamp (unix seconds) of when currentBuild was
+     actually published, straight from steamcmd.net's own timebuildupdated
+     field (worker/shared/steam.ts's fetchBuildInfo) -- not derived from
+     this app's own observation history. What src/lib/format.ts's
+     survivalHrs() computes GameDetail's "Survival" stat from. null only
+     when Steam/steamcmd genuinely didn't return one. */
+  currentBuildUpdatedAt: number | null;
   desc: string;
   metacritic: number | null;
   /* Steam's own authoritative header image URL (appdetails.ts's `header`
@@ -120,6 +127,7 @@ export async function enrichFromSteam(env: Env, appid: number): Promise<Enrichme
     publishers?: string[];
     genres?: string[];
     currentBuild?: number | null;
+    currentBuildUpdatedAt?: number | null;
     desc?: string;
     about?: string;
     metacritic?: number | null;
@@ -137,6 +145,7 @@ export async function enrichFromSteam(env: Env, appid: number): Promise<Enrichme
     publisher: d.publishers?.[0] || "",
     genres: d.genres || [],
     currentBuild: d.currentBuild ?? null,
+    currentBuildUpdatedAt: d.currentBuildUpdatedAt ?? null,
     desc: d.about || d.desc || "",
     metacritic: d.metacritic ?? null,
     header: d.header || null,

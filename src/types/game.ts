@@ -76,7 +76,15 @@ export interface Game {
   genres?: string[];
   tags?: string[];
   currentBuild: number;
-  survivalHrs: number | null;
+  /* Real Steam-side unix-seconds timestamp of when currentBuild was last
+     actually published (steamcmd.net's own timebuildupdated field, see
+     worker/shared/steam.ts's fetchBuildInfo) -- not derived from this
+     app's own observation history. What src/lib/format.ts's survivalHrs()
+     computes GameDetail's "Survival" stat from. Undefined/null for a row
+     D1 hasn't re-enriched since migrations/0006 added the column, or for
+     bundled seed/synthetic Game objects that were never resolved against
+     Steam at all -- survivalHrs() returns null (not a guess) in both cases. */
+  currentBuildUpdatedAt?: number | null;
   releases: Release[];
   desc?: string;
   fact?: string;

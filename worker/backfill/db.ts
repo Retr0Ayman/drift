@@ -15,12 +15,17 @@ export async function setBackfillState(db: D1Database, key: string, value: strin
 }
 
 const UPSERT_GAME_SQL = `
-  INSERT INTO games (id, xrel_key, title, appid, year, released, developer, publisher, genres, tags, current_build, desc, fact, metacritic, source_name, source_url, header, accent_color_primary, accent_color_secondary, updated_at)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  INSERT INTO games (id, xrel_key, title, appid, year, released, developer, publisher, genres, tags, current_build, current_build_updated_at, desc, fact, metacritic, source_name, source_url, header, accent_color_primary, accent_color_secondary, updated_at)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   ON CONFLICT(id) DO UPDATE SET
     xrel_key = excluded.xrel_key, title = excluded.title, appid = excluded.appid, year = excluded.year,
     released = excluded.released, developer = excluded.developer, publisher = excluded.publisher,
-    genres = excluded.genres, tags = excluded.tags, current_build = excluded.current_build, desc = excluded.desc,
+    genres = excluded.genres, tags = excluded.tags, current_build = excluded.current_build,
+    -- Straight overwrite, unlike accent colors below -- Steam's own
+    -- timebuildupdated is always the ground truth of when current_build
+    -- last changed, no "only if different" conditional needed (see
+    -- migrations/0006's own comment).
+    current_build_updated_at = excluded.current_build_updated_at, desc = excluded.desc,
     metacritic = excluded.metacritic, header = excluded.header,
     accent_color_primary = CASE
       WHEN excluded.accent_color_primary != ? OR accent_color_primary IS NULL OR accent_color_primary = ''
@@ -64,7 +69,7 @@ const UPSERT_RELEASE_SQL = `
 const REFRESH_GAME_SQL = `
   UPDATE games SET
     title = ?, year = ?, released = ?, developer = ?, publisher = ?, genres = ?, tags = ?,
-    current_build = ?, desc = ?, metacritic = ?, header = ?,
+    current_build = ?, current_build_updated_at = ?, desc = ?, metacritic = ?, header = ?,
     accent_color_primary = CASE
       WHEN ? != ? OR accent_color_primary IS NULL OR accent_color_primary = ''
       THEN ? ELSE accent_color_primary END,
@@ -109,6 +114,7 @@ export async function refreshStaleGame(db: D1Database, id: string, currentTitle:
       JSON.stringify(e.genres),
       JSON.stringify(e.tags),
       e.currentBuild,
+      e.currentBuildUpdatedAt,
       e.desc,
       e.metacritic,
       e.header,
@@ -209,6 +215,7 @@ export async function upsertGames(db: D1Database, games: ParsedGame[], enrichmen
           // guessed fallback.
           JSON.stringify(enrichment.tags),
           enrichment.currentBuild,
+          enrichment.currentBuildUpdatedAt,
           enrichment.desc,
           null, // fact -- generated + cached client-side on demand, not backfilled
           enrichment.metacritic,
