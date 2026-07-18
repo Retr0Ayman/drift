@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import DriftMark from "../ui/illustrations/DriftMark";
 import "./IntroAnimation.css";
 
-const SESSION_KEY = "drift.introSeen";
 const REVEAL_DELAY_MS = 500;
 const HOLD_MS = 2200;
 
@@ -10,11 +10,17 @@ function prefersReducedMotion(): boolean {
   return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-/* Splash: a big "o" holds centered, "rlaz" reveals beside it, then the
-   overlay exits while the "o" -- sharing a layoutId with the navbar's own
-   "o" -- animates into the wordmark's real position via Framer Motion's
-   layout projection, no manual measurement needed. Gated on sessionStorage
-   so it plays once per tab session. */
+/* Splash: the real DriftMark icon (not a stand-in text glyph) holds large
+   and centered, "rlaz" reveals beside it, then the overlay exits while the
+   icon -- sharing a layoutId with the navbar's own icon -- animates into
+   the wordmark's real position via Framer Motion's layout projection, no
+   manual measurement needed. IntroAnimation is mounted once at Layout's
+   root (App.tsx), outside the routed <Outlet/>, so this effect's empty
+   dependency array only ever re-runs on an actual fresh mount of Layout --
+   a real page load/refresh -- never on in-app route navigation between
+   child routes, which leaves Layout mounted. No session/persistence gate
+   needed to get "plays once per page load": that's just what mounting
+   once per load already means. */
 interface IntroAnimationProps {
   onDone?: () => void;
 }
@@ -26,15 +32,13 @@ export default function IntroAnimation({ onDone }: IntroAnimationProps) {
 
   function finish() {
     timers.current.forEach(clearTimeout);
-    sessionStorage.setItem(SESSION_KEY, "1");
     document.body.style.overflow = "";
     setPhase("done");
     onDone?.();
   }
 
   useEffect(() => {
-    if (sessionStorage.getItem(SESSION_KEY) || prefersReducedMotion()) {
-      sessionStorage.setItem(SESSION_KEY, "1");
+    if (prefersReducedMotion()) {
       setPhase("done");
       onDone?.();
       return;
@@ -62,9 +66,9 @@ export default function IntroAnimation({ onDone }: IntroAnimationProps) {
           transition={{ duration: 0.35 }}
         >
           <div className="intro-word-row">
-            <motion.span layoutId="brand-o" className="intro-o">
-              o
-            </motion.span>
+            <motion.div layoutId="brand-mark" className="intro-mark">
+              <DriftMark />
+            </motion.div>
             {revealRest ? (
               <motion.span
                 className="intro-rest"

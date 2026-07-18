@@ -52,7 +52,7 @@ function Layout() {
       <Navbar
         status={catalog.status}
         onOpenSearch={() => setSearchOpen(true)}
-        revealBrandO={introDone}
+        revealBrandMark={introDone}
         theme={theme.resolved}
         onToggleTheme={theme.toggle}
       />

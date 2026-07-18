@@ -1,14 +1,12 @@
-/* Stylized "O" letterform -- an offset inner hole gives the ring a
-   calligraphic thick/thin stroke instead of a generic uniform circle. */
+/* "Layered drift rings" -- two offset, overlapping stroked circles (not
+   concentric), reading as a two-track skid/drift mark rather than a plain
+   letterform. currentColor so it inherits correctly in both light and
+   dark mode, same as the previous single-path version. */
 export default function DriftMark({ className }: { className?: string }) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        fillRule="evenodd"
-        clipRule="evenodd"
-        d="M21.5 12A9.5 9.5 0 1 1 2.5 12a9.5 9.5 0 0 1 19 0ZM19.6 11.2a6.8 6.8 0 1 1-13.6 0 6.8 6.8 0 0 1 13.6 0Z"
-        fill="currentColor"
-      />
+    <svg className={className} viewBox="0 0 34 34" fill="none" aria-hidden="true">
+      <circle cx="13" cy="17" r="10" stroke="currentColor" strokeWidth="3" opacity="0.5" />
+      <circle cx="19" cy="17" r="10" stroke="currentColor" strokeWidth="3.5" />
     </svg>
   );
 }

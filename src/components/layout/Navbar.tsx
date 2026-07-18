@@ -28,7 +28,7 @@ const STATUS_TONE: Record<CatalogStatus, PillTone> = {
 interface NavbarProps {
   status: CatalogStatus;
   onOpenSearch: () => void;
-  revealBrandO: boolean;
+  revealBrandMark: boolean;
   theme: "light" | "dark";
   onToggleTheme: () => void;
 }
@@ -40,7 +40,7 @@ interface NavbarProps {
    shadow/border intensity and a slight scale-down, not a 0->solid alpha
    ramp -- a floating element that's invisible at rest reads as broken, not
    restrained, the way a flush edge-to-edge bar could get away with. */
-export default function Navbar({ status, onOpenSearch, revealBrandO, theme, onToggleTheme }: NavbarProps) {
+export default function Navbar({ status, onOpenSearch, revealBrandMark, theme, onToggleTheme }: NavbarProps) {
   const { scrollY } = useScroll();
   const scrollProgress = useTransform(scrollY, [0, 120], [0, 1]);
   const scale = useTransform(scrollProgress, [0, 1], [1, 0.985]);
@@ -60,13 +60,17 @@ export default function Navbar({ status, onOpenSearch, revealBrandO, theme, onTo
       <motion.nav className="navbar" style={{ scale, boxShadow }}>
         <div className="navbar-inner">
           <Link to="/" className="navbar-logo" onClick={() => setMenuOpen(false)}>
-            <span className="navbar-mark">
-              <DriftMark />
-            </span>
-            <span className="navbar-word">
-              <span className="navbar-title">
-                {revealBrandO ? <motion.span layoutId="brand-o">o</motion.span> : <span>o</span>}rlaz
+            {revealBrandMark ? (
+              <motion.span layoutId="brand-mark" className="navbar-mark">
+                <DriftMark />
+              </motion.span>
+            ) : (
+              <span className="navbar-mark">
+                <DriftMark />
               </span>
+            )}
+            <span className="navbar-word">
+              <span className="navbar-title">orlaz</span>
               <span className="navbar-sub">BY DAREALAYMAN</span>
             </span>
           </Link>
