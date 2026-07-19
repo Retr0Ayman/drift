@@ -8,6 +8,9 @@ interface FactRequest {
   genres?: string[];
   released?: string;
   franchise?: string | null;
+  reviewPct?: number;
+  metacritic?: number;
+  dlcCount?: number;
 }
 
 /* Same grounding discipline as summary.ts/faq.ts: strictly limited to the
@@ -34,16 +37,25 @@ interface FactRequest {
    franchise-legacy angle as cover). Fixed by naming a longer list of
    banned openers instead of playing whack-a-mole one at a time, explicitly
    forbidding invented duration/legacy claims, and raising temperature so
-   the model isn't forced into its single lowest-entropy phrasing. */
+   the model isn't forced into its single lowest-entropy phrasing.
+
+   FIX #3: variety of sentence SHAPE didn't mean variety of actual content
+   depth -- samples were structurally distinct but still often a flat
+   restatement of one field ("X is a [genre] game by [developer]"), which
+   reads as filler even when grammatically varied. Given more real fields
+   to draw from (review score, Metacritic, DLC count) and an explicit
+   instruction to prefer whichever available angle yields the sharpest,
+   most specific detail rather than whichever comes first. */
 const SYSTEM_PROMPT =
   "You write a single short, well-phrased sentence about a video game for a crack/build-status tracking " +
   "site's \"Did you know\" box. You are STRICTLY grounded in the facts given -- title, developer, genres, " +
-  "release date, franchise if given, and today's date -- never invent plot details, lore, sales figures, review " +
-  "scores, awards, or any fact not explicitly given. This includes franchise duration/legacy claims: you are " +
-  "told the franchise NAME only, never its start date, entry count, or history. Even if you happen to know " +
-  "from training that a named franchise is old or well-known, treat that as information you do not have here " +
-  "and must not use -- do not use ANY of these words or their synonyms about the franchise: \"decades\", " +
-  "\"legacy\", \"long-running\", \"iconic\", \"beloved\", \"storied\", \"venerable\", \"classic\", " +
+  "release date, franchise if given, review score/Metacritic if given, DLC count if given, and today's date -- " +
+  "never invent plot details, lore, sales figures, awards, or any fact not explicitly given, and never invent a " +
+  "review score or DLC count when those fields are absent below. This includes franchise duration/legacy " +
+  "claims: you are told the franchise NAME only, never its start date, entry count, or history. Even if you " +
+  "happen to know from training that a named franchise is old or well-known, treat that as information you do " +
+  "not have here and must not use -- do not use ANY of these words or their synonyms about the franchise: " +
+  "\"decades\", \"legacy\", \"long-running\", \"iconic\", \"beloved\", \"storied\", \"venerable\", \"classic\", " +
   "\"established\", \"years\" (as in a duration). You may say it's part of that named series, nothing more.\n\n" +
   "Pick ONE of these angles based on which the given facts actually support best, and vary your choice from " +
   "game to game rather than defaulting to the same one every time:\n" +
@@ -53,10 +65,23 @@ const SYSTEM_PROMPT =
   "When no Franchise field is given, this game is standalone as far as you know: do not use the words " +
   "\"series\", \"franchise\", \"installment\", \"sequel\", or \"saga\" anywhere in the sentence.\n" +
   "- Release recency: how old or new the release date is compared to today's date, stated plainly (e.g. months " +
-  "or years ago), not with an invented sense of scale like \"just landed\" unless the gap is genuinely small.\n" +
-  "- Genre combination: a specific, non-obvious way its genres intersect.\n" +
+  "or years ago), not with an invented sense of scale like \"just landed\" unless the gap is genuinely small. " +
+  "If it lands on a notable coincidence (e.g. same year as a franchise sibling, an unusually short or long gap " +
+  "since a given date), that specific timing detail beats a generic age statement.\n" +
+  "- Genre combination: a specific, non-obvious way its genres intersect -- not just listing them back.\n" +
   "- Developer credit: name the developer plainly -- do not editorialize about their reputation or pedigree, " +
-  "that is never something the given facts actually support.\n\n" +
+  "that is never something the given facts actually support.\n" +
+  "- Critical reception: cite the real review score and/or Metacritic score plainly (e.g. \"holds a 94% " +
+  "positive rating on Steam\" or \"sits at 82 on Metacritic\") when given, without editorializing about quality " +
+  "beyond the number itself.\n" +
+  "- Content scope: cite the real DLC/expansion count plainly when given and notable (zero, one, or a " +
+  "double-digit count are all worth stating), without inventing what any of that content actually is.\n\n" +
+  "When more than one angle is genuinely supported by the facts, prefer whichever produces the sharpest, most " +
+  "specific, or most surprising detail -- a precise number, an unusual genre pairing, a real review score, a " +
+  "notable timing gap -- over the flattest available restatement of a field. Variety of sentence shape is not " +
+  "enough on its own: a grammatically different sentence that still just restates \"X is a [genre] game by " +
+  "[developer]\" is exactly the flat filler to avoid; pick the angle with real content, not just the angle " +
+  "that's easiest to phrase differently.\n\n" +
   "Never open with the game's title as the subject, and never default to any single recurring opener across " +
   "different games -- specifically, do NOT let any of these become your go-to shape: \"X combines Y and Z\", " +
   "\"X is part of the Y franchise\", \"In [year], ...\", \"With its/a ...\", \"Since its release, ...\". Rotate " +
@@ -71,6 +96,9 @@ function buildFacts(body: FactRequest): string {
     body.genres?.length ? `Genres: ${body.genres.join(", ")}` : null,
     body.released ? `Released: ${body.released}` : null,
     body.franchise ? `Franchise: ${body.franchise}` : null,
+    body.reviewPct != null ? `Steam review score: ${body.reviewPct}% positive` : null,
+    body.metacritic != null ? `Metacritic score: ${body.metacritic}` : null,
+    body.dlcCount != null ? `Number of DLC/expansions: ${body.dlcCount}` : null,
     `Today's date: ${new Date().toISOString().slice(0, 10)}`,
   ];
   return lines.filter(Boolean).join("\n");
