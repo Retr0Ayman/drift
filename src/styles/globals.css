@@ -126,6 +126,141 @@ select {
   }
 }
 
+/* Liquid-glass specular highlight -- a single static diagonal catch-light
+   band, the cue that reads as "glass with real depth" rather than just "a
+   blurred panel with a border" (every Apple frosted-glass surface carries
+   this same streak). Plain alpha-blended gradient, no mix-blend-mode and no
+   filter -- AmbientBackground.css already measured mix-blend-mode as
+   expensive even standalone, so this reaches for the same cheap tool
+   .ambient-mesh uses (a static, once-painted background) instead.
+   z-index: -1 inside .liquid-sheen's own isolation: isolate context tucks
+   it behind the panel's real children (painting order otherwise puts any
+   positioned pseudo-element above static in-flow content) while staying
+   above the panel's own translucent fill -- same layering GlassPanel.css's
+   hero-signal-glyph z-index split documents, just via isolation instead of
+   hand-numbering every child. Opt-in via class, not baked into every glass
+   surface -- reserved for panels that actually float over the ambient
+   background (GlassPanel's frost/frost-strong/aura variants, the navbar
+   pill, the search bar), same "not everything glows" discipline
+   --ai-glow-shadow already documents. */
+.liquid-sheen {
+  position: relative;
+  isolation: isolate;
+}
+
+.liquid-sheen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    115deg,
+    rgba(255, 255, 255, 0.32) 0%,
+    transparent 18%,
+    transparent 62%,
+    rgba(255, 255, 255, 0.1) 84%,
+    transparent 100%
+  );
+}
+
+@media (prefers-color-scheme: dark) {
+  .liquid-sheen::before {
+    background: linear-gradient(
+      115deg,
+      rgba(255, 255, 255, 0.08) 0%,
+      transparent 18%,
+      transparent 62%,
+      rgba(255, 255, 255, 0.03) 84%,
+      transparent 100%
+    );
+  }
+}
+
+:root[data-theme="dark"] .liquid-sheen::before {
+  background: linear-gradient(
+    115deg,
+    rgba(255, 255, 255, 0.08) 0%,
+    transparent 18%,
+    transparent 62%,
+    rgba(255, 255, 255, 0.03) 84%,
+    transparent 100%
+  );
+}
+
+:root[data-theme="light"] .liquid-sheen::before {
+  background: linear-gradient(
+    115deg,
+    rgba(255, 255, 255, 0.32) 0%,
+    transparent 18%,
+    transparent 62%,
+    rgba(255, 255, 255, 0.1) 84%,
+    transparent 100%
+  );
+}
+
+/* Cursor-tracked catch-light, layered on top of the static diagonal streak
+   above -- AmbientBackground.tsx's own rAF loop writes --sheen-x/--sheen-y
+   (0-100%) onto whichever .liquid-sheen panel the pointer is currently
+   over, so this hotspot follows real cursor movement instead of sitting in
+   one painted spot, the actual "light catching real glass" cue liquid-
+   glass surfaces are named for. Opacity only toggles on :hover (plain CSS,
+   not a JS-managed class) so there's nothing to clean up when the pointer
+   leaves a panel, and it fades in from wherever --sheen-x/y last landed
+   rather than snapping. Falls back to a fixed off-center position when no
+   pointermove has touched this panel yet (reduced motion, or before the
+   first move) -- still looks intentional on hover, just doesn't track. */
+.liquid-sheen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  background: radial-gradient(
+    circle 160px at var(--sheen-x, 70%) var(--sheen-y, 20%),
+    rgba(255, 255, 255, 0.85) 0%,
+    rgba(255, 255, 255, 0.32) 35%,
+    transparent 72%
+  );
+}
+
+.liquid-sheen:hover::after {
+  opacity: 1;
+}
+
+@media (prefers-color-scheme: dark) {
+  .liquid-sheen::after {
+    background: radial-gradient(
+      circle 160px at var(--sheen-x, 70%) var(--sheen-y, 20%),
+      rgba(255, 255, 255, 0.4) 0%,
+      rgba(255, 255, 255, 0.14) 35%,
+      transparent 72%
+    );
+  }
+}
+
+:root[data-theme="dark"] .liquid-sheen::after {
+  background: radial-gradient(
+    circle 160px at var(--sheen-x, 70%) var(--sheen-y, 20%),
+    rgba(255, 255, 255, 0.4) 0%,
+    rgba(255, 255, 255, 0.14) 35%,
+    transparent 72%
+  );
+}
+
+:root[data-theme="light"] .liquid-sheen::after {
+  background: radial-gradient(
+    circle 160px at var(--sheen-x, 70%) var(--sheen-y, 20%),
+    rgba(255, 255, 255, 0.85) 0%,
+    rgba(255, 255, 255, 0.32) 35%,
+    transparent 72%
+  );
+}
+
 .back-link {
   display: inline-flex;
   align-items: center;

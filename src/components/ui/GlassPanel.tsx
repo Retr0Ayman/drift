@@ -27,7 +27,7 @@ export default function GlassPanel({ children, className = "", strong, aura, fro
   if (aura) {
     return (
       <div className="aura-ring">
-        <div className={`glass-panel--aura${className ? ` ${className}` : ""}`} {...rest}>
+        <div className={`glass-panel--aura liquid-sheen${className ? ` ${className}` : ""}`} {...rest}>
           {children}
         </div>
       </div>
@@ -36,7 +36,7 @@ export default function GlassPanel({ children, className = "", strong, aura, fro
 
   return (
     <div
-      className={`glass-panel${strong ? " glass-panel--strong" : ""}${frostStrong ? " glass-panel--frost-strong" : frost ? " glass-panel--frost" : ""}${className ? ` ${className}` : ""}`}
+      className={`glass-panel${strong ? " glass-panel--strong" : ""}${frostStrong ? " glass-panel--frost-strong liquid-sheen" : frost ? " glass-panel--frost liquid-sheen" : ""}${className ? ` ${className}` : ""}`}
       {...rest}
     >
       {children}

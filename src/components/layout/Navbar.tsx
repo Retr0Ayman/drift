@@ -57,7 +57,7 @@ export default function Navbar({ status, onOpenSearch, revealBrandMark, theme, o
 
   return (
     <div className="navbar-float">
-      <motion.nav className="navbar" style={{ scale, boxShadow }}>
+      <motion.nav className="navbar liquid-sheen" style={{ scale, boxShadow }}>
         <div className="navbar-inner">
           <Link to="/" className="navbar-logo" onClick={() => setMenuOpen(false)}>
             {revealBrandMark ? (

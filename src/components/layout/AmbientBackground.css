@@ -20,6 +20,18 @@
   pointer-events: none;
 }
 
+/* Everything that drifts with the pointer (AmbientBackground.tsx) lives in
+   here, not directly in .ambient-bg -- inset: -32px makes this 32px larger
+   than the viewport on every edge, a buffer PARALLAX_MAX (18px) can never
+   fully cross, so translating this layer toward the cursor never exposes
+   the page background at an edge. .ambient-bg's own overflow: hidden clips
+   the excess. Grain stays outside this wrapper, static in the viewport --
+   parallaxing a texture layer read as swimming rather than adding depth. */
+.ambient-parallax {
+  position: absolute;
+  inset: -32px;
+}
+
 /* Five soft-edged radial fields anchored at both top corners, both bottom
    corners, and dead center -- same "reach every part of the viewport, no
    flat corner or center left untouched" lesson the old 4x3 cluster grid
@@ -107,6 +119,107 @@
   }
 }
 
+/* Second conic layer, same cheap recipe as .ambient-conic above (plain
+   opacity, compositor-only transform, no blur/blend-mode) -- offset
+   off-center, spinning the opposite direction at a slower speed, and
+   starting from a different angle so it never lines up with the first
+   layer's bands. Two conic sweeps drifting at different rates read as
+   real parallax depth instead of one flat rotating tint. */
+.ambient-conic-2 {
+  position: absolute;
+  top: 38%;
+  left: 62%;
+  width: 68vmax;
+  height: 68vmax;
+  margin-top: -34vmax;
+  margin-left: -34vmax;
+  opacity: 0.11;
+  background: conic-gradient(
+    from 200deg,
+    var(--ambient-secondary, #4a3570),
+    transparent 26%,
+    var(--ambient-primary, #6b4fa0) 42%,
+    transparent 66%,
+    color-mix(in srgb, var(--ambient-secondary, #4a3570), var(--ambient-primary, #6b4fa0)) 78%,
+    transparent 98%
+  );
+  transform: scale(2.3);
+  animation: ambient-mesh-spin-reverse 130s linear infinite;
+  will-change: transform;
+}
+
+@keyframes ambient-mesh-spin-reverse {
+  0% {
+    transform: scale(2.3) rotate(360deg);
+  }
+  100% {
+    transform: scale(2.3) rotate(0deg);
+  }
+}
+
+/* Two soft radial blobs that breathe and drift slowly via transform only
+   (translate + scale, the same compositor-only recipe .ambient-conic above
+   already validated -- animating background-position/gradient stops
+   instead would force a repaint every frame, not just a recomposite).
+   Anchored at left-mid-lower and right-mid-upper, deliberately away from
+   the five fixed .ambient-mesh anchor points (both corners + center), so
+   these add genuinely new movement instead of re-animating ground the
+   static mesh already covers. Long (52s/64s), non-symmetric easing so the
+   motion reads as organic drift rather than a mechanical bounce. */
+.ambient-blob-1 {
+  position: absolute;
+  top: 62%;
+  left: 18%;
+  width: 46vmax;
+  height: 46vmax;
+  margin-top: -23vmax;
+  margin-left: -23vmax;
+  opacity: 0.22;
+  background: radial-gradient(circle, var(--ambient-primary, #6b4fa0) 0%, transparent 70%);
+  animation: ambient-blob-drift-1 52s ease-in-out infinite;
+  will-change: transform;
+}
+
+@keyframes ambient-blob-drift-1 {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  35% {
+    transform: translate(4vmax, -3vmax) scale(1.12);
+  }
+  70% {
+    transform: translate(-3vmax, 2vmax) scale(0.92);
+  }
+}
+
+.ambient-blob-2 {
+  position: absolute;
+  top: 28%;
+  left: 80%;
+  width: 42vmax;
+  height: 42vmax;
+  margin-top: -21vmax;
+  margin-left: -21vmax;
+  opacity: 0.18;
+  background: radial-gradient(circle, var(--ambient-secondary, #4a3570) 0%, transparent 70%);
+  animation: ambient-blob-drift-2 64s ease-in-out infinite;
+  will-change: transform;
+}
+
+@keyframes ambient-blob-drift-2 {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  40% {
+    transform: translate(-4vmax, 3vmax) scale(0.9);
+  }
+  75% {
+    transform: translate(3vmax, -2vmax) scale(1.1);
+  }
+}
+
 /* Static pre-rendered noise (an SVG feTurbulence baked into a data-URI
    background-image, tiled), not a live filter -- the browser rasterizes
    this once, same as any other background-image, instead of resampling a
@@ -124,12 +237,18 @@
   background-size: 200px 200px;
 }
 
-.ambient-bg--paused .ambient-conic {
+.ambient-bg--paused .ambient-conic,
+.ambient-bg--paused .ambient-conic-2,
+.ambient-bg--paused .ambient-blob-1,
+.ambient-bg--paused .ambient-blob-2 {
   animation-play-state: paused;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ambient-conic {
+  .ambient-conic,
+  .ambient-conic-2,
+  .ambient-blob-1,
+  .ambient-blob-2 {
     animation: none;
   }
 }

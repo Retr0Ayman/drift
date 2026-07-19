@@ -13,7 +13,7 @@ interface SearchBarProps {
 export default function SearchBar({ onOpenSearch }: SearchBarProps) {
   return (
     <div className="aura-ring searchbar-aura">
-      <button type="button" className="searchbar" onClick={onOpenSearch} aria-label="Search titles, groups, publishers">
+      <button type="button" className="searchbar liquid-sheen" onClick={onOpenSearch} aria-label="Search titles, groups, publishers">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <circle cx="11" cy="11" r="7" />
           <path d="m20 20-3.5-3.5" />

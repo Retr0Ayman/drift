@@ -124,7 +124,7 @@ export default function CommandPalette({ games, catalogStatus, onLiveGameResolve
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="cmdk-overlay" />
-        <Dialog.Content className="cmdk-content" aria-describedby={undefined}>
+        <Dialog.Content className="cmdk-content liquid-sheen" aria-describedby={undefined}>
           <Dialog.Title className="cmdk-visually-hidden">Search orlaz</Dialog.Title>
           <div className="cmdk-input-row">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
