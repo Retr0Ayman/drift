@@ -22,7 +22,7 @@
   font-size: var(--fs-xs);
   font-weight: 700;
   letter-spacing: 0.5px;
-  color: var(--accent);
+  color: var(--canvas-ink);
   text-transform: uppercase;
 }
 
@@ -31,11 +31,11 @@
   font-weight: 800;
   letter-spacing: -1.5px;
   margin: 10px 0 10px;
-  color: var(--ink);
+  color: var(--canvas-ink);
 }
 
 .publishers-lede {
-  color: var(--ink-2);
+  color: var(--canvas-ink-2);
   font-weight: 450;
   font-size: 0.96rem;
   line-height: 1.6;
@@ -219,7 +219,7 @@
   margin-top: 22px;
   font-size: 0.74rem;
   font-weight: 700;
-  color: var(--ink-3);
+  color: var(--canvas-ink-3);
   letter-spacing: 0.2px;
 }
 
@@ -282,7 +282,7 @@
   font-size: var(--fs-h3);
   font-weight: 800;
   letter-spacing: -0.5px;
-  color: var(--ink);
+  color: var(--canvas-ink);
   margin-bottom: 16px;
 }
 
@@ -291,7 +291,7 @@
 }
 
 .franchise-title--muted {
-  color: var(--ink-3);
+  color: var(--canvas-ink-3);
   font-size: var(--fs-sm);
   font-weight: 700;
   letter-spacing: 0.4px;

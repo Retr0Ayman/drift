@@ -13,7 +13,7 @@
   font-size: var(--fs-xs);
   font-weight: 700;
   letter-spacing: 0.5px;
-  color: var(--accent);
+  color: var(--canvas-ink);
   text-transform: uppercase;
 }
 
@@ -22,11 +22,11 @@
   font-weight: 800;
   letter-spacing: -1.5px;
   margin: 10px 0 10px;
-  color: var(--ink);
+  color: var(--canvas-ink);
 }
 
 .watchlist-lede {
-  color: var(--ink-2);
+  color: var(--canvas-ink-2);
   font-weight: 450;
   font-size: 0.96rem;
   line-height: 1.6;

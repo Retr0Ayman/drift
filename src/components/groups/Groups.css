@@ -23,7 +23,7 @@
   font-size: var(--fs-xs);
   font-weight: 700;
   letter-spacing: 0.5px;
-  color: var(--accent);
+  color: var(--canvas-ink);
   text-transform: uppercase;
 }
 
@@ -32,11 +32,11 @@
   font-weight: 800;
   letter-spacing: -1.5px;
   margin: 10px 0 10px;
-  color: var(--ink);
+  color: var(--canvas-ink);
 }
 
 .groups-lede {
-  color: var(--ink-2);
+  color: var(--canvas-ink-2);
   font-weight: 450;
   font-size: 0.96rem;
   line-height: 1.6;
@@ -241,7 +241,7 @@
   font-weight: 800;
   letter-spacing: 0.6px;
   text-transform: uppercase;
-  color: var(--ink-2);
+  color: var(--canvas-ink-2);
   background: var(--glass-bg-strong);
   padding: 4px 10px;
   border-radius: var(--pill);
@@ -253,19 +253,19 @@
   line-height: 1.1;
   font-weight: 800;
   letter-spacing: -1px;
-  color: var(--ink);
+  color: var(--canvas-ink);
 }
 
 .grouphead-meta {
   font-size: 0.82rem;
-  color: var(--ink-2);
+  color: var(--canvas-ink-2);
   margin-top: 4px;
   font-weight: 500;
 }
 
 .grouphead-caveat {
   font-size: 0.74rem;
-  color: var(--ink-3);
+  color: var(--canvas-ink-3);
   margin-top: 8px;
   font-weight: 450;
   line-height: 1.5;

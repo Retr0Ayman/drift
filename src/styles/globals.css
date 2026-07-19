@@ -76,7 +76,20 @@ select {
   color: var(--ink);
 }
 
+/* position:relative + z-index:1 -- every page's root container needs its
+   own stacking context now that AmbientBackground.css's .ambient-bg is a
+   fully opaque fixed layer (z-index:0). Per CSS stacking rules, a
+   positioned z-index:0 element paints ABOVE plain position:static
+   in-flow content regardless of DOM order -- harmless while the ambient
+   layer was see-through (whatever was "underneath" still showed through
+   the transparency), but with an opaque fill it silently buries any page
+   content that doesn't have its own qualifying stacking context. Hero.css's
+   .hero-grid already carried this exact fix for unrelated reasons (a
+   full-bleed section outside .wrap); this is the same fix applied once,
+   site-wide, since every route's root div carries this class. */
 .wrap {
+  position: relative;
+  z-index: 1;
   max-width: var(--wrap);
   margin: 0 auto;
   padding: 0 24px;
@@ -292,7 +305,7 @@ select {
   gap: 5px;
   font-weight: 600;
   font-size: 0.92rem;
-  color: var(--accent);
+  color: var(--canvas-ink);
   cursor: pointer;
   background: none;
   border: none;
@@ -308,7 +321,7 @@ select {
 .catalogue-loading {
   text-align: center;
   font-size: 0.78rem;
-  color: var(--ink-3);
+  color: var(--canvas-ink-3);
   font-weight: 600;
   padding-bottom: 24px;
 }

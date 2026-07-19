@@ -102,7 +102,6 @@ export default function AmbientBackground() {
     <div className={`ambient-bg${paused ? " ambient-bg--paused" : ""}`} aria-hidden="true">
       <div className="ambient-parallax" ref={parallaxRef}>
         <div className="ambient-mesh" />
-        <div className="ambient-glow-wash" />
         <div className="ambient-conic" />
         <div className="ambient-conic-2" />
         <div className="ambient-blob-1" />

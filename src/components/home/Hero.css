@@ -31,7 +31,7 @@
   height: 60px;
   display: grid;
   place-items: center;
-  color: var(--accent);
+  color: var(--canvas-ink);
   margin-bottom: 4px;
 }
 
@@ -45,7 +45,7 @@
   line-height: 0.95;
   font-weight: 800;
   letter-spacing: -3px;
-  color: var(--ink);
+  color: var(--canvas-ink);
 }
 
 .hero-scrollcue {
@@ -53,7 +53,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  color: var(--ink-3);
+  color: var(--canvas-ink-3);
 }
 
 .hero-scrollcue span {

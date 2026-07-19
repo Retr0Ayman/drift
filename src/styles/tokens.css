@@ -67,10 +67,35 @@
   /* Vault vignette -- a soft depth cue for the ambient background's cosmic
      layer (AmbientBackground.css's .ambient-vault), deepening toward the
      edges like looking up into a dome rather than at a flat backdrop.
-     Cool violet-grey in light mode (this theme's paper base has no true
-     black to lean on), true near-black in dark mode for a real night-sky
-     vault -- see the dark-mode block below for why. */
-  --ambient-vignette: rgba(60, 50, 90, 0.16);
+     Deliberately NOT theme-conditional -- the wallpaper itself is always
+     deep space regardless of the light/dark toggle (see .ambient-bg's own
+     comment), so this only ever needs the one true-near-black value. */
+  --ambient-vignette: rgba(2, 2, 8, 0.65);
+
+  /* Fixed cosmic accents -- nebula clouds (.ambient-mesh/.ambient-conic/
+     .ambient-blob-*) blend these with each game's own extracted accent
+     pair (--ambient-primary/secondary) rather than either alone: pure
+     per-game tinting read as generic colored blobs with no "space"
+     identity, pure fixed color lost per-game variety entirely. Hot
+     magenta + deep cosmic blue is the real-nebula-photography pairing
+     (emission vs. reflection nebulae). Not theme-conditional, same
+     reasoning as --ambient-vignette above. */
+  --cosmic-a: #ff2ea6;
+  --cosmic-b: #2f5bff;
+
+  /* Text that sits directly on the ambient wallpaper with no card behind
+     it (hero h1/h2 page titles, their eyebrow/meta labels -- Hero.css,
+     GameGrid.css, GameDetail.css, and the *Directory/*Profile/Digest/
+     Watchlist hero sections) needs to stay legible against a backdrop
+     that's now always dark, regardless of the light/dark toggle --
+     unlike --ink itself, which still has to flip per theme for text
+     inside solid --bg-1 cards (that keep following the toggle normally).
+     Reuses the dark theme's own --ink/--ink-2/--ink-3 numbers since
+     light-on-dark already works there; not theme-conditional, on
+     purpose. */
+  --canvas-ink: #f5f3ee;
+  --canvas-ink-2: rgba(245, 243, 238, 0.68);
+  --canvas-ink-3: rgba(245, 243, 238, 0.45);
 
   /* aura ring -- reserved for one hero stat panel per page. Everywhere
      else that used to share this same purple/teal ring (the search bar,
@@ -238,9 +263,6 @@
     /* Pale lavender rather than white -- a plain white glow on a near-
        black panel read as a spotlight, not ambient light. */
     --ethereal-glow: 0 0 70px -14px rgba(166, 139, 219, 0.4);
-    /* True near-black vault -- this theme actually has the dark range to
-       let a real night-sky depth read, unlike light mode's paper base. */
-    --ambient-vignette: rgba(4, 3, 10, 0.6);
 
     /* Same hv/trad-derived hardcoded hex+alpha-suffix pattern the light
        aura already uses (not color-mix()), just built from the
@@ -294,7 +316,6 @@
   --glass-ambient: 0 20px 40px -14px rgba(0, 0, 0, 0.55);
 
   --ethereal-glow: 0 0 70px -14px rgba(166, 139, 219, 0.4);
-  --ambient-vignette: rgba(4, 3, 10, 0.6);
 
   --aura-a: #a68bdb55;
   --aura-b: #4fb8a055;
@@ -348,7 +369,6 @@
   --glass-ambient: 0 18px 36px -14px rgba(23, 21, 15, 0.22);
 
   --ethereal-glow: 0 0 60px -18px rgba(255, 255, 255, 0.8);
-  --ambient-vignette: rgba(60, 50, 90, 0.16);
 
   --aura-a: #6b4fa055;
   --aura-b: #1f7a6c55;
