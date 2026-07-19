@@ -125,7 +125,8 @@
   place-items: center;
   font-weight: 800;
   font-size: 0.82rem;
-  color: #06110d;
+  background: var(--accent);
+  color: var(--accent-ink);
 }
 
 .detail-stat-l {

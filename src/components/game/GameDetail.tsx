@@ -282,12 +282,7 @@ export default function GameDetail() {
                 <div className="detail-stats">
                   {mergedGame.metacritic ? (
                     <div className="detail-stat">
-                      <div
-                        className="detail-stat-badge"
-                        style={{ background: mergedGame.metacritic >= 75 ? "var(--dead)" : mergedGame.metacritic >= 50 ? "var(--out)" : "var(--unc)" }}
-                      >
-                        {mergedGame.metacritic}
-                      </div>
+                      <div className="detail-stat-badge">{mergedGame.metacritic}</div>
                       <div>
                         <div className="detail-stat-l">Metascore</div>
                         <div className="detail-stat-v">Critics</div>
@@ -298,9 +293,7 @@ export default function GameDetail() {
                     <div className="detail-stat">
                       <div>
                         <div className="detail-stat-l">Steam reviews</div>
-                        <div className="detail-stat-v" style={{ color: mergedGame.reviewPct >= 70 ? "var(--dead)" : "var(--out)" }}>
-                          {mergedGame.reviewPct}% positive
-                        </div>
+                        <div className="detail-stat-v">{mergedGame.reviewPct}% positive</div>
                       </div>
                     </div>
                   ) : null}

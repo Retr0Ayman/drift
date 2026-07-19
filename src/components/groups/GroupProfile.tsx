@@ -259,9 +259,7 @@ export default function GroupProfile() {
             <div className="group-stat-l">Last active</div>
           </GlassPanel>
           <GlassPanel className="group-stat" frost>
-            <div className="group-stat-n" style={{ color: "var(--out)" }}>
-              {daysSince == null ? "—" : daysSince}
-            </div>
+            <div className="group-stat-n">{daysSince == null ? "—" : daysSince}</div>
             <div className="group-stat-l">Days since last crack</div>
           </GlassPanel>
         </div>

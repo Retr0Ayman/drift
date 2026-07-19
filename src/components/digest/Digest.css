@@ -164,7 +164,7 @@
 .digest-waiting-days {
   font-family: var(--mono);
   font-weight: 700;
-  color: var(--out);
+  color: var(--unc);
   margin-left: auto;
 }
 
