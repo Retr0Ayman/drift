@@ -1,7 +1,12 @@
 import type { Game } from "../types/game";
 import { relStatus, driftDelta, crackTimingDays, sortReleasesByPriority } from "./format";
 
-const CACHE_PREFIX = "drift.outlook.v1.";
+// v2: bumped -- worker/routes/outlook.ts picked up a DRM-name grounding
+// backstop (48adf6b) after v1 entries were already cached, so a visitor who
+// hit a game like Ground Branch before that fix was stuck with a fabricated
+// "Denuvo" claim forever with no way to notice. A v1 entry is a dead key
+// now, never read again.
+const CACHE_PREFIX = "drift.outlook.v2.";
 
 export interface OutlookResult {
   outlook: string | null;

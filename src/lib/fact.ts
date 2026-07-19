@@ -1,4 +1,8 @@
-const CACHE_PREFIX = "drift.fact.v1.";
+// v2: bumped -- worker/routes/fact.ts picked up a grounding backstop and a
+// variety rewrite after v1 entries were already cached, so pre-fix visitors
+// were stuck with fabricated-franchise or repetitive-shape facts forever
+// with no way to notice. A v1 entry is a dead key now, never read again.
+const CACHE_PREFIX = "drift.fact.v2.";
 
 export interface FactResult {
   fact: string | null;
@@ -11,6 +15,9 @@ export interface FactInput {
   genres?: string[];
   released?: string;
   franchise?: string | null;
+  reviewPct?: number;
+  metacritic?: number;
+  dlcCount?: number;
 }
 
 // Cached per game id in localStorage -- generated once, not regenerated

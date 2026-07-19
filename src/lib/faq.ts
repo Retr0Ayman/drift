@@ -6,7 +6,12 @@ import { relStatus } from "./format";
 // in the page header) -- a v1 cache entry would otherwise keep showing
 // the old redundant questions forever, since this is cached once per game
 // and never regenerated on its own.
-const CACHE_PREFIX = "drift.faq.v2.";
+//
+// v3: bumped again -- worker/routes/faq.ts later picked up a phrasing-variety
+// fix (6ec3f41) that wasn't paired with a cache bump at the time, so v2
+// entries generated before that fix were stuck showing the same near-verbatim
+// question shapes for every game forever.
+const CACHE_PREFIX = "drift.faq.v3.";
 
 export interface FaqResult {
   faq: string | null;
