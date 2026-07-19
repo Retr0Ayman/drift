@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { fetchSummary, type SummaryFacts } from "../../lib/summary";
-import AiTag from "./AiTag";
 import "./AiSummary.css";
 
 interface AiSummaryProps {
@@ -21,10 +20,8 @@ interface AiSummaryProps {
   ready?: boolean;
 }
 
-/* Short AI-generated blurb, strictly grounded in real tracked data passed
-   in via `facts` (see worker/routes/summary.ts for the exact grounding
-   rule) -- never shown as a hard fact, always labeled as AI-generated so
-   it reads as commentary on real data, not as an additional data source. */
+/* Short generated blurb, strictly grounded in real tracked data passed in
+   via `facts` (see worker/routes/summary.ts for the exact grounding rule). */
 export default function AiSummary({ kind, cacheKey, name, facts, ready = true }: AiSummaryProps) {
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState<string | null>(null);
@@ -50,10 +47,5 @@ export default function AiSummary({ kind, cacheKey, name, facts, ready = true }:
 
   if (loading || (!summary && error)) return null; // quiet no-op, not a placeholder block
 
-  return summary ? (
-    <p className="ai-summary">
-      <AiTag>AI summary</AiTag>
-      {summary}
-    </p>
-  ) : null;
+  return summary ? <p className="ai-summary">{summary}</p> : null;
 }

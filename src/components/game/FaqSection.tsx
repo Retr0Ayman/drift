@@ -3,7 +3,6 @@ import * as RadixAccordion from "@radix-ui/react-accordion";
 import type { Game } from "../../types/game";
 import { fetchFaq } from "../../lib/faq";
 import GlassPanel from "../ui/GlassPanel";
-import AiTag from "../ui/AiTag";
 import "./FaqSection.css";
 
 /* Renders **bold** as <strong> via plain React text nodes -- never
@@ -66,10 +65,7 @@ export default function FaqSection({ game }: { game: Game }) {
 
   return (
     <div className="detail-faq">
-      <h4>
-        FAQ
-        {ready ? <AiTag /> : null}
-      </h4>
+      <h4>FAQ</h4>
       <GlassPanel className={`faq-panel${ready ? " ai-glow" : ""}`}>
         {loading ? (
           <p className="faq-status">Generating…</p>

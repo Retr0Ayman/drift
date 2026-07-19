@@ -44,7 +44,7 @@ export default function GroupsDirectory() {
       </button>
 
       <Link to="/digest" className="groups-leaderboard-link">
-        AI digest — what's notable right now ›
+        Digest — what's notable right now ›
       </Link>
 
       <Reveal>

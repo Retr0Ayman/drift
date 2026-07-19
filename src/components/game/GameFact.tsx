@@ -3,12 +3,11 @@ import type { Game } from "../../types/game";
 import { fetchFact } from "../../lib/fact";
 import { franchiseFor } from "../../lib/companies";
 import GlassPanel from "../ui/GlassPanel";
-import AiTag from "../ui/AiTag";
 
 // Prefers a real, hand-curated seed fact when one exists (see
-// src/data/seedGames.ts) -- only calls the AI generator for games that
-// don't have one, which in practice is every live-loaded game (the seed
-// catalog gets replaced once the live sync completes).
+// src/data/seedGames.ts) -- only calls the generator for games that don't
+// have one, which in practice is every live-loaded game (the seed catalog
+// gets replaced once the live sync completes).
 export default function GameFact({ game }: { game: Game }) {
   const [fact, setFact] = useState<string | null>(game.fact || null);
   const [aiGenerated, setAiGenerated] = useState(false);
@@ -43,10 +42,7 @@ export default function GameFact({ game }: { game: Game }) {
 
   return (
     <GlassPanel className={`detail-factbox${aiGenerated ? " ai-glow" : ""}`} frost>
-      <div className="detail-factbox-h">
-        Did you know
-        {aiGenerated ? <AiTag /> : null}
-      </div>
+      <div className="detail-factbox-h">Did you know</div>
       <p>{fact}</p>
     </GlassPanel>
   );

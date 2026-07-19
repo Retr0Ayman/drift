@@ -2,16 +2,15 @@ import { useEffect, useState } from "react";
 import type { Game } from "../../types/game";
 import { fetchOutlook } from "../../lib/outlook";
 import GlassPanel from "../ui/GlassPanel";
-import AiTag from "../ui/AiTag";
 import "./CrackOutlook.css";
 
-/* Third AI surface on the game page, distinct from GameFact (bio trivia,
-   sidebar) and FaqSection (Q&A, its own tab): a short practical verdict on
-   THIS game's crack situation right now. Lives above the release list in
-   the "Crack options" tab, since that's what it's actually about, instead
-   of adding a fourth panel to the already-full sidebar. Same honesty rule
-   as the other two -- a failed/unset-key call shows a real "unavailable"
-   line, never a fabricated-looking fallback. */
+/* Third generated surface on the game page, distinct from GameFact (bio
+   trivia, sidebar) and FaqSection (Q&A, its own tab): a short practical
+   verdict on THIS game's crack situation right now. Lives above the
+   release list in the "Crack options" tab, since that's what it's
+   actually about, instead of adding a fourth panel to the already-full
+   sidebar. Same honesty rule as the other two -- a failed/unset-key call
+   shows a real "unavailable" line, never a fabricated-looking fallback. */
 export default function CrackOutlook({ game }: { game: Game }) {
   const [loading, setLoading] = useState(true);
   const [outlook, setOutlook] = useState<string | null>(null);
@@ -37,10 +36,7 @@ export default function CrackOutlook({ game }: { game: Game }) {
 
   return (
     <GlassPanel className={`crack-outlook${ready ? " ai-glow" : ""}`} frost>
-      <div className="crack-outlook-h">
-        Crack outlook
-        {ready ? <AiTag /> : null}
-      </div>
+      <div className="crack-outlook-h">Crack outlook</div>
       {loading ? (
         <p className="crack-outlook-status">Generating…</p>
       ) : error || !outlook ? (

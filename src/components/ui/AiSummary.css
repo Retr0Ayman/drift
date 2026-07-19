@@ -6,8 +6,3 @@
   font-weight: 450;
   max-width: 68ch;
 }
-
-.ai-summary .ai-tag-ring {
-  margin-right: 8px;
-  transform: translateY(-1px);
-}

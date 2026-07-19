@@ -6,7 +6,6 @@ import { fetchDigest } from "../../lib/fetchDigest";
 import { slugify } from "../../lib/format";
 import GlassPanel from "../ui/GlassPanel";
 import Reveal from "../ui/Reveal";
-import AiTag from "../ui/AiTag";
 import { usePageMeta } from "../../hooks/usePageMeta";
 import "./Digest.css";
 
@@ -41,7 +40,7 @@ export default function Digest() {
 
   usePageMeta({
     title: "Digest — what's notable right now",
-    description: "An AI-narrated rundown of current crack activity, grounded in the real tracked catalogue.",
+    description: "A rundown of current crack activity, grounded in the real tracked catalogue.",
   });
 
   return (
@@ -55,8 +54,8 @@ export default function Digest() {
           <span className="digest-eyebrow">Digest</span>
           <h1>What's notable right now</h1>
           <p className="digest-lede">
-            A short AI-written rundown of current activity, generated strictly from the real numbers below --
-            never from anything the model wasn't handed directly.
+            A short rundown of current activity, generated strictly from the real numbers below -- never from
+            anything not handed directly to it.
           </p>
         </div>
       </Reveal>
@@ -71,10 +70,7 @@ export default function Digest() {
               Reading the catalogue…
             </div>
           ) : text ? (
-            <p className="digest-text">
-              <AiTag>AI digest</AiTag>
-              {text}
-            </p>
+            <p className="digest-text">{text}</p>
           ) : (
             <div className="digest-status">{error || "Digest unavailable right now."}</div>
           )}
