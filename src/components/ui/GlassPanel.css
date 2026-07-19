@@ -16,7 +16,7 @@
   -webkit-backdrop-filter: blur(var(--aura-blur));
   backdrop-filter: blur(var(--aura-blur));
   border: none;
-  box-shadow: var(--glass-highlight), var(--glass-shadow-lg), var(--glass-ambient);
+  box-shadow: var(--glass-highlight), var(--glass-shadow-lg), var(--glass-ambient), var(--ethereal-glow);
 }
 
 /* Static counterpart to .glass-panel--aura -- same translucent fill +
@@ -27,10 +27,10 @@
    exact --aura-* tokens, no new ones invented. */
 .glass-panel--frost {
   background: var(--aura-panel-bg);
-  -webkit-backdrop-filter: blur(var(--aura-blur)) saturate(1.4);
-  backdrop-filter: blur(var(--aura-blur)) saturate(1.4);
-  border: 1px solid color-mix(in srgb, var(--aura-a), var(--aura-b));
-  box-shadow: var(--glass-highlight), var(--glass-shadow-lg), var(--glass-ambient);
+  -webkit-backdrop-filter: blur(var(--aura-blur)) saturate(1.15);
+  backdrop-filter: blur(var(--aura-blur)) saturate(1.15);
+  border: 1px solid color-mix(in srgb, color-mix(in srgb, var(--aura-a), var(--aura-b)) 45%, white);
+  box-shadow: var(--glass-highlight), var(--glass-shadow-lg), var(--glass-ambient), var(--ethereal-glow);
 }
 
 /* Stronger version of the same frost treatment, for tile surfaces that
@@ -63,11 +63,11 @@
    verify any future change here in a real headed browser, not headless,
    if the numbers look alarming. */
 .glass-panel--frost-strong {
-  background: color-mix(in srgb, var(--aura-panel-bg) 68%, transparent);
-  -webkit-backdrop-filter: blur(calc(var(--aura-blur) * 2.2)) saturate(1.85);
-  backdrop-filter: blur(calc(var(--aura-blur) * 2.2)) saturate(1.85);
-  border: 1px solid color-mix(in srgb, var(--aura-a), var(--aura-b));
-  box-shadow: var(--glass-highlight), var(--glass-shadow-lg), var(--glass-ambient);
+  background: color-mix(in srgb, var(--aura-panel-bg) 55%, transparent);
+  -webkit-backdrop-filter: blur(calc(var(--aura-blur) * 2.2)) saturate(1.4);
+  backdrop-filter: blur(calc(var(--aura-blur) * 2.2)) saturate(1.4);
+  border: 1px solid color-mix(in srgb, color-mix(in srgb, var(--aura-a), var(--aura-b)) 45%, white);
+  box-shadow: var(--glass-highlight), var(--glass-shadow-lg), var(--glass-ambient), var(--ethereal-glow);
 }
 
 /* "Apple Intelligence" glow modifier -- an optional extra class, additive
@@ -89,8 +89,11 @@
   box-shadow: var(--glass-highlight), var(--glass-shadow), var(--glass-ambient), var(--ai-glow-shadow);
 }
 
-.ai-glow.glass-panel--strong,
+.ai-glow.glass-panel--strong {
+  box-shadow: var(--glass-highlight), var(--glass-shadow-lg), var(--glass-ambient), var(--ai-glow-shadow);
+}
+
 .ai-glow.glass-panel--frost,
 .ai-glow.glass-panel--frost-strong {
-  box-shadow: var(--glass-highlight), var(--glass-shadow-lg), var(--glass-ambient), var(--ai-glow-shadow);
+  box-shadow: var(--glass-highlight), var(--glass-shadow-lg), var(--glass-ambient), var(--ethereal-glow), var(--ai-glow-shadow);
 }

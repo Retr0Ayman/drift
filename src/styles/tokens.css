@@ -53,6 +53,25 @@
   --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.75);
   --glass-ambient: 0 18px 36px -14px rgba(23, 21, 15, 0.22);
 
+  /* Extreme-ethereal pass: a soft luminous halo, additive alongside the
+     --glass-highlight/--glass-shadow/--glass-ambient stack (see that
+     block's own comment for why this is additive rather than a
+     replacement) on the frost/frost-strong/aura surfaces specifically --
+     the "glowing from within" cue that separates a glass panel that's
+     merely translucent from one that reads as lit. Static box-shadow, no
+     animation -- same discipline --ai-glow-shadow already documents for
+     why an animated glow this size would revisit the ambient background's
+     own filter/blend-mode cost trap. */
+  --ethereal-glow: 0 0 60px -18px rgba(255, 255, 255, 0.8);
+
+  /* Vault vignette -- a soft depth cue for the ambient background's cosmic
+     layer (AmbientBackground.css's .ambient-vault), deepening toward the
+     edges like looking up into a dome rather than at a flat backdrop.
+     Cool violet-grey in light mode (this theme's paper base has no true
+     black to lean on), true near-black in dark mode for a real night-sky
+     vault -- see the dark-mode block below for why. */
+  --ambient-vignette: rgba(60, 50, 90, 0.16);
+
   /* aura ring -- reserved for one hero stat panel per page. Everywhere
      else that used to share this same purple/teal ring (the search bar,
      AI-generated-content tags) now uses the dedicated --ai-* palette
@@ -60,7 +79,7 @@
      split off. */
   --aura-a: #6b4fa055;
   --aura-b: #1f7a6c55;
-  --aura-blur: 10px;
+  --aura-blur: 18px;
 
   /* "Apple Intelligence" glow palette -- a warm pink/magenta/blue/gold
      sweep, deliberately distinct from --aura-a/--aura-b's cooler purple/
@@ -143,7 +162,7 @@
      GlassPanel.css, specifically so dark mode below can give it a real
      dark-appropriate value instead of silently staying a near-white fill
      inside a dark aura ring. */
-  --aura-panel-bg: rgba(255, 255, 255, 0.85);
+  --aura-panel-bg: rgba(255, 255, 255, 0.62);
 }
 
 /* Dark mode, two ways it can turn on:
@@ -216,6 +235,13 @@
     --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.14);
     --glass-ambient: 0 20px 40px -14px rgba(0, 0, 0, 0.55);
 
+    /* Pale lavender rather than white -- a plain white glow on a near-
+       black panel read as a spotlight, not ambient light. */
+    --ethereal-glow: 0 0 70px -14px rgba(166, 139, 219, 0.4);
+    /* True near-black vault -- this theme actually has the dark range to
+       let a real night-sky depth read, unlike light mode's paper base. */
+    --ambient-vignette: rgba(4, 3, 10, 0.6);
+
     /* Same hv/trad-derived hardcoded hex+alpha-suffix pattern the light
        aura already uses (not color-mix()), just built from the
        brightened dark-mode hv/trad above instead of the light ones. */
@@ -227,7 +253,7 @@
     --ai-3: #5b8dff;
     --ai-4: #ffa53e;
 
-    --aura-panel-bg: rgba(19, 18, 16, 0.82);
+    --aura-panel-bg: rgba(19, 18, 16, 0.6);
   }
 }
 
@@ -267,6 +293,9 @@
   --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.14);
   --glass-ambient: 0 20px 40px -14px rgba(0, 0, 0, 0.55);
 
+  --ethereal-glow: 0 0 70px -14px rgba(166, 139, 219, 0.4);
+  --ambient-vignette: rgba(4, 3, 10, 0.6);
+
   --aura-a: #a68bdb55;
   --aura-b: #4fb8a055;
 
@@ -275,7 +304,7 @@
   --ai-3: #5b8dff;
   --ai-4: #ffa53e;
 
-  --aura-panel-bg: rgba(19, 18, 16, 0.82);
+  --aura-panel-bg: rgba(19, 18, 16, 0.6);
 }
 
 /* Explicit "light" re-affirms the base :root values -- needed so someone
@@ -318,6 +347,9 @@
   --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.75);
   --glass-ambient: 0 18px 36px -14px rgba(23, 21, 15, 0.22);
 
+  --ethereal-glow: 0 0 60px -18px rgba(255, 255, 255, 0.8);
+  --ambient-vignette: rgba(60, 50, 90, 0.16);
+
   --aura-a: #6b4fa055;
   --aura-b: #1f7a6c55;
 
@@ -326,5 +358,5 @@
   --ai-3: #5b8dff;
   --ai-4: #ffa53e;
 
-  --aura-panel-bg: rgba(255, 255, 255, 0.85);
+  --aura-panel-bg: rgba(255, 255, 255, 0.62);
 }

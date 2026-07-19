@@ -16,9 +16,9 @@
   max-width: 1240px;
   border-radius: var(--pill);
   background: var(--aura-panel-bg);
-  backdrop-filter: blur(var(--aura-blur)) saturate(1.4);
-  -webkit-backdrop-filter: blur(var(--aura-blur)) saturate(1.4);
-  border: 1px solid color-mix(in srgb, var(--aura-a), var(--aura-b));
+  backdrop-filter: blur(var(--aura-blur)) saturate(1.15);
+  -webkit-backdrop-filter: blur(var(--aura-blur)) saturate(1.15);
+  border: 1px solid color-mix(in srgb, color-mix(in srgb, var(--aura-a), var(--aura-b)) 45%, white);
   transform-origin: top center;
 }
 

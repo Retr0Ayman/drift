@@ -105,7 +105,7 @@ select {
   border-radius: var(--aura-radius);
   padding: 1.5px;
   background: conic-gradient(from var(--aura-angle, 0deg), var(--aura-a), transparent 35%, var(--aura-b), transparent 75%);
-  animation: aura-spin 9s linear infinite;
+  animation: aura-spin 26s linear infinite;
 }
 
 @property --aura-angle {
@@ -148,6 +148,13 @@ select {
   isolation: isolate;
 }
 
+/* Idle drift on top of the static streak above -- a slow transform-only
+   oscillation (translate + scale, the same compositor-only recipe
+   AmbientBackground.css's blobs already validated) so glass panels feel
+   lit and alive even at rest, not just on hover/cursor-track. Runs
+   independently of the ::after cursor-glint below; transform, never
+   background-position, specifically so this stays cheap even with a dozen
+   .liquid-sheen surfaces visible at once on a catalog grid. */
 .liquid-sheen::before {
   content: "";
   position: absolute;
@@ -155,6 +162,8 @@ select {
   z-index: -1;
   border-radius: inherit;
   pointer-events: none;
+  animation: liquid-idle-drift 19s ease-in-out infinite;
+  will-change: transform;
   background: linear-gradient(
     115deg,
     rgba(255, 255, 255, 0.32) 0%,
@@ -200,6 +209,22 @@ select {
   );
 }
 
+@keyframes liquid-idle-drift {
+  0%,
+  100% {
+    transform: translate(-3%, -2%) scale(1.03);
+  }
+  50% {
+    transform: translate(3%, 2%) scale(0.99);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .liquid-sheen::before {
+    animation: none;
+  }
+}
+
 /* Cursor-tracked catch-light, layered on top of the static diagonal streak
    above -- AmbientBackground.tsx's own rAF loop writes --sheen-x/--sheen-y
    (0-100%) onto whichever .liquid-sheen panel the pointer is currently
@@ -221,9 +246,9 @@ select {
   opacity: 0;
   transition: opacity 0.4s ease;
   background: radial-gradient(
-    circle 160px at var(--sheen-x, 70%) var(--sheen-y, 20%),
-    rgba(255, 255, 255, 0.85) 0%,
-    rgba(255, 255, 255, 0.32) 35%,
+    circle 220px at var(--sheen-x, 70%) var(--sheen-y, 20%),
+    rgba(255, 255, 255, 0.92) 0%,
+    rgba(255, 255, 255, 0.4) 35%,
     transparent 72%
   );
 }
@@ -235,9 +260,9 @@ select {
 @media (prefers-color-scheme: dark) {
   .liquid-sheen::after {
     background: radial-gradient(
-      circle 160px at var(--sheen-x, 70%) var(--sheen-y, 20%),
-      rgba(255, 255, 255, 0.4) 0%,
-      rgba(255, 255, 255, 0.14) 35%,
+      circle 220px at var(--sheen-x, 70%) var(--sheen-y, 20%),
+      rgba(255, 255, 255, 0.5) 0%,
+      rgba(255, 255, 255, 0.2) 35%,
       transparent 72%
     );
   }
@@ -245,18 +270,18 @@ select {
 
 :root[data-theme="dark"] .liquid-sheen::after {
   background: radial-gradient(
-    circle 160px at var(--sheen-x, 70%) var(--sheen-y, 20%),
-    rgba(255, 255, 255, 0.4) 0%,
-    rgba(255, 255, 255, 0.14) 35%,
+    circle 220px at var(--sheen-x, 70%) var(--sheen-y, 20%),
+    rgba(255, 255, 255, 0.5) 0%,
+    rgba(255, 255, 255, 0.2) 35%,
     transparent 72%
   );
 }
 
 :root[data-theme="light"] .liquid-sheen::after {
   background: radial-gradient(
-    circle 160px at var(--sheen-x, 70%) var(--sheen-y, 20%),
-    rgba(255, 255, 255, 0.85) 0%,
-    rgba(255, 255, 255, 0.32) 35%,
+    circle 220px at var(--sheen-x, 70%) var(--sheen-y, 20%),
+    rgba(255, 255, 255, 0.92) 0%,
+    rgba(255, 255, 255, 0.4) 35%,
     transparent 72%
   );
 }
