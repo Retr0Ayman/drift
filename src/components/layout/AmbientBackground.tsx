@@ -7,6 +7,19 @@ import "./AmbientBackground.css";
 // so this can move without ever exposing the page background at an edge.
 const PARALLAX_MAX = 18;
 
+// Hardcoded (not randomized at mount) so the layout is stable and
+// reproducible across reloads instead of reshuffling every visit. Spread
+// across the viewport at varied sizes/delays/durations so the rise-and-
+// fade loops (.ambient-mote-rise in AmbientBackground.css) never sync up.
+const MOTES = [
+  { left: "10%", top: "72%", size: 5, delay: 0, duration: 15 },
+  { left: "26%", top: "38%", size: 4, delay: 4, duration: 18 },
+  { left: "47%", top: "82%", size: 6, delay: 8, duration: 16 },
+  { left: "64%", top: "30%", size: 4, delay: 2, duration: 20 },
+  { left: "81%", top: "64%", size: 5, delay: 11, duration: 17 },
+  { left: "92%", top: "22%", size: 4, delay: 6, duration: 19 },
+];
+
 /* Replaces the old metaball/goo background (SVG feGaussianBlur +
    feColorMatrix filter re-rasterizing 12 discrete blob clusters every
    frame) with a purely CSS effect: a static radial-gradient mesh (five
@@ -89,10 +102,25 @@ export default function AmbientBackground() {
     <div className={`ambient-bg${paused ? " ambient-bg--paused" : ""}`} aria-hidden="true">
       <div className="ambient-parallax" ref={parallaxRef}>
         <div className="ambient-mesh" />
+        <div className="ambient-glow-wash" />
         <div className="ambient-conic" />
         <div className="ambient-conic-2" />
         <div className="ambient-blob-1" />
         <div className="ambient-blob-2" />
+        {MOTES.map((m, i) => (
+          <div
+            key={i}
+            className="ambient-mote"
+            style={{
+              left: m.left,
+              top: m.top,
+              width: m.size,
+              height: m.size,
+              animationDelay: `${m.delay}s`,
+              animationDuration: `${m.duration}s`,
+            }}
+          />
+        ))}
       </div>
       <div className="ambient-grain" />
     </div>

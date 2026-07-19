@@ -43,17 +43,44 @@
    style, so the var(..., #hex) fallback on each stop below is the only
    place the neutral default pair lives -- keep those two literals in sync
    with colorExtract.ts's FALLBACK_PRIMARY/FALLBACK_SECONDARY. */
+/* Every stop below reads through an extra color-mix(..., white) wash before
+   it paints -- softens whatever --ambient-primary/secondary actually is
+   (the per-game extracted pair, or the neutral fallback) toward a pale,
+   luminous version of itself rather than the fully saturated hue. That's
+   the "ethereal glow" vs "colored blob" distinction: hue still comes from
+   the real accent (game pages keep their own tint), it just reads as soft
+   light instead of flat paint. */
 .ambient-mesh {
   position: absolute;
   inset: 0;
-  opacity: 0.4;
+  opacity: 0.42;
   background:
-    radial-gradient(ellipse 62% 55% at 6% 8%, var(--ambient-primary, #6b4fa0) 0%, transparent 72%),
-    radial-gradient(ellipse 58% 58% at 94% 10%, var(--ambient-secondary, #4a3570) 0%, transparent 72%),
+    radial-gradient(ellipse 62% 55% at 6% 8%,
+      color-mix(in srgb, var(--ambient-primary, #6b4fa0) 55%, white) 0%, transparent 72%),
+    radial-gradient(ellipse 58% 58% at 94% 10%,
+      color-mix(in srgb, var(--ambient-secondary, #4a3570) 55%, white) 0%, transparent 72%),
     radial-gradient(ellipse 62% 58% at 50% 50%,
-      color-mix(in srgb, var(--ambient-primary, #6b4fa0), var(--ambient-secondary, #4a3570)) 0%, transparent 75%),
-    radial-gradient(ellipse 60% 55% at 10% 95%, var(--ambient-secondary, #4a3570) 0%, transparent 72%),
-    radial-gradient(ellipse 62% 58% at 92% 92%, var(--ambient-primary, #6b4fa0) 0%, transparent 72%);
+      color-mix(in srgb, color-mix(in srgb, var(--ambient-primary, #6b4fa0), var(--ambient-secondary, #4a3570)) 50%, white) 0%, transparent 75%),
+    radial-gradient(ellipse 60% 55% at 10% 95%,
+      color-mix(in srgb, var(--ambient-secondary, #4a3570) 55%, white) 0%, transparent 72%),
+    radial-gradient(ellipse 62% 58% at 92% 92%,
+      color-mix(in srgb, var(--ambient-primary, #6b4fa0) 55%, white) 0%, transparent 72%);
+}
+
+/* Soft overhead haze -- a large, mostly-white glow anchored above the
+   viewport, like light diffusing down through mist rather than a hard
+   light source. Purely static (no animation, no filter), sitting above
+   the mesh in paint order so it brightens the upper half without fully
+   washing the color out underneath. */
+.ambient-glow-wash {
+  position: absolute;
+  top: -25%;
+  left: 50%;
+  width: 150vmax;
+  height: 90vmax;
+  margin-left: -75vmax;
+  opacity: 0.3;
+  background: radial-gradient(ellipse 55% 45% at 50% 0%, rgba(255, 255, 255, 0.95) 0%, transparent 72%);
 }
 
 /* A bare conic-gradient reads as a hard-edged sunburst/pinwheel radiating
@@ -97,16 +124,16 @@
   opacity: 0.16;
   background: conic-gradient(
     from 0deg,
-    var(--ambient-primary, #6b4fa0),
+    color-mix(in srgb, var(--ambient-primary, #6b4fa0) 55%, white),
     transparent 30%,
-    var(--ambient-secondary, #4a3570) 40%,
+    color-mix(in srgb, var(--ambient-secondary, #4a3570) 55%, white) 40%,
     transparent 63%,
-    color-mix(in srgb, var(--ambient-primary, #6b4fa0), var(--ambient-secondary, #4a3570)) 73%,
+    color-mix(in srgb, color-mix(in srgb, var(--ambient-primary, #6b4fa0), var(--ambient-secondary, #4a3570)) 50%, white) 73%,
     transparent 96%,
-    var(--ambient-primary, #6b4fa0)
+    color-mix(in srgb, var(--ambient-primary, #6b4fa0) 55%, white)
   );
   transform: scale(2.7);
-  animation: ambient-mesh-spin 90s linear infinite;
+  animation: ambient-mesh-spin 150s linear infinite;
   will-change: transform;
 }
 
@@ -136,15 +163,15 @@
   opacity: 0.11;
   background: conic-gradient(
     from 200deg,
-    var(--ambient-secondary, #4a3570),
+    color-mix(in srgb, var(--ambient-secondary, #4a3570) 55%, white),
     transparent 26%,
-    var(--ambient-primary, #6b4fa0) 42%,
+    color-mix(in srgb, var(--ambient-primary, #6b4fa0) 55%, white) 42%,
     transparent 66%,
-    color-mix(in srgb, var(--ambient-secondary, #4a3570), var(--ambient-primary, #6b4fa0)) 78%,
+    color-mix(in srgb, color-mix(in srgb, var(--ambient-secondary, #4a3570), var(--ambient-primary, #6b4fa0)) 50%, white) 78%,
     transparent 98%
   );
   transform: scale(2.3);
-  animation: ambient-mesh-spin-reverse 130s linear infinite;
+  animation: ambient-mesh-spin-reverse 210s linear infinite;
   will-change: transform;
 }
 
@@ -174,9 +201,9 @@
   height: 46vmax;
   margin-top: -23vmax;
   margin-left: -23vmax;
-  opacity: 0.22;
-  background: radial-gradient(circle, var(--ambient-primary, #6b4fa0) 0%, transparent 70%);
-  animation: ambient-blob-drift-1 52s ease-in-out infinite;
+  opacity: 0.24;
+  background: radial-gradient(circle, color-mix(in srgb, var(--ambient-primary, #6b4fa0) 50%, white) 0%, transparent 70%);
+  animation: ambient-blob-drift-1 78s ease-in-out infinite;
   will-change: transform;
 }
 
@@ -201,9 +228,9 @@
   height: 42vmax;
   margin-top: -21vmax;
   margin-left: -21vmax;
-  opacity: 0.18;
-  background: radial-gradient(circle, var(--ambient-secondary, #4a3570) 0%, transparent 70%);
-  animation: ambient-blob-drift-2 64s ease-in-out infinite;
+  opacity: 0.2;
+  background: radial-gradient(circle, color-mix(in srgb, var(--ambient-secondary, #4a3570) 50%, white) 0%, transparent 70%);
+  animation: ambient-blob-drift-2 96s ease-in-out infinite;
   will-change: transform;
 }
 
@@ -231,16 +258,54 @@
 .ambient-grain {
   position: absolute;
   inset: 0;
-  opacity: 0.05;
+  opacity: 0.035;
   mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n' color-interpolation-filters='sRGB'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch' result='t'/%3E%3CfeColorMatrix in='t' type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.85 0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n' color-interpolation-filters='sRGB'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch' result='t'/%3E%3CfeColorMatrix in='t' type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.6 0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
   background-size: 200px 200px;
+}
+
+/* Drifting light motes -- small soft glints that rise and fade in a slow
+   loop, the "dust in a sunbeam" cue. Plain opacity + translateY, the same
+   compositor-only recipe every other moving layer here uses; positions/
+   timings are hardcoded per-mote (inline style in AmbientBackground.tsx),
+   not randomized at runtime, so the layout is stable across mounts instead
+   of reshuffling. */
+.ambient-mote {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.95) 0%, transparent 72%);
+  opacity: 0;
+  animation-name: ambient-mote-rise;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes ambient-mote-rise {
+  0% {
+    transform: translateY(0) scale(0.8);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.75;
+  }
+  50% {
+    opacity: 0.45;
+  }
+  85% {
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(-16vh) scale(1.15);
+    opacity: 0;
+  }
 }
 
 .ambient-bg--paused .ambient-conic,
 .ambient-bg--paused .ambient-conic-2,
 .ambient-bg--paused .ambient-blob-1,
-.ambient-bg--paused .ambient-blob-2 {
+.ambient-bg--paused .ambient-blob-2,
+.ambient-bg--paused .ambient-mote {
   animation-play-state: paused;
 }
 
@@ -248,7 +313,8 @@
   .ambient-conic,
   .ambient-conic-2,
   .ambient-blob-1,
-  .ambient-blob-2 {
+  .ambient-blob-2,
+  .ambient-mote {
     animation: none;
   }
 }
