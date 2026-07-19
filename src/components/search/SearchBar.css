@@ -15,16 +15,16 @@
   color: var(--ink-3);
   border-radius: var(--pill);
   background: var(--aura-panel-bg);
-  backdrop-filter: blur(var(--aura-blur));
-  -webkit-backdrop-filter: blur(var(--aura-blur));
-  box-shadow: var(--glass-highlight), var(--glass-ambient);
+  backdrop-filter: blur(var(--aura-blur)) saturate(1.4);
+  -webkit-backdrop-filter: blur(var(--aura-blur)) saturate(1.4);
+  box-shadow: var(--glass-highlight), var(--glass-shadow-lg), var(--glass-ambient);
   transition: box-shadow var(--dur) var(--ease), color var(--dur) var(--ease);
 }
 
 .searchbar:hover,
 .searchbar:focus-visible {
   color: var(--accent);
-  box-shadow: var(--glass-highlight), var(--glass-ambient), 0 0 0 4px var(--accent-dim);
+  box-shadow: var(--glass-highlight), var(--glass-shadow-lg), var(--glass-ambient), 0 0 0 3px var(--accent-dim-2);
 }
 
 .searchbar svg {
