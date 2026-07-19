@@ -50,8 +50,14 @@ export default function Navbar({ status, onOpenSearch, revealBrandMark, theme, o
   // real depth too -- an inline style always wins over any CSS box-shadow
   // rule regardless of specificity, so the highlight has to be baked into
   // this motion value rather than left in a static CSS rule that scroll
-  // would just override every frame.
-  const boxShadow = useTransform(shadowAlpha, (a) => `var(--glass-highlight), 0 8px 24px -8px rgba(23, 21, 15, ${a})`);
+  // would just override every frame. Third layer is new for the galactic
+  // pass -- a soft cosmic-blue glow underneath, same reason it has to live
+  // here and not in Navbar.css: Navbar.css's own box-shadow attempts would
+  // just lose to this inline style regardless of specificity.
+  const boxShadow = useTransform(
+    shadowAlpha,
+    (a) => `var(--glass-highlight), 0 8px 24px -8px rgba(23, 21, 15, ${a}), 0 4px 32px -14px color-mix(in srgb, var(--cosmic-b) 40%, transparent)`,
+  );
 
   const [menuOpen, setMenuOpen] = useState(false);
 

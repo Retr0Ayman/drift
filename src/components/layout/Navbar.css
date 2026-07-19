@@ -10,15 +10,23 @@
   pointer-events: none;
 }
 
+/* Galactic pass: pushed further than the other frost surfaces (searchbar,
+   GlassPanel's own frost variant both stay at their existing 1.15) since
+   this is the one glass surface on screen at all times -- the richest
+   "instrument panel" reading, more of the cosmic scene's actual color
+   bleeding through the blur, rather than a uniform site-wide bump that'd
+   risk over-saturating card content. Border blends less white in (35%
+   instead of 45%) for the same reason -- more of the real magenta/blue
+   cosmic-a/b hue shows at the rim instead of being diluted toward grey. */
 .navbar {
   pointer-events: auto;
   width: 100%;
   max-width: 1240px;
   border-radius: var(--pill);
   background: var(--aura-panel-bg);
-  backdrop-filter: blur(var(--aura-blur)) saturate(1.15);
-  -webkit-backdrop-filter: blur(var(--aura-blur)) saturate(1.15);
-  border: 1px solid color-mix(in srgb, color-mix(in srgb, var(--aura-a), var(--aura-b)) 45%, white);
+  backdrop-filter: blur(var(--aura-blur)) saturate(1.35);
+  -webkit-backdrop-filter: blur(var(--aura-blur)) saturate(1.35);
+  border: 1px solid color-mix(in srgb, color-mix(in srgb, var(--aura-a), var(--aura-b)) 35%, white);
   transform-origin: top center;
 }
 
@@ -36,6 +44,12 @@
   cursor: pointer;
 }
 
+/* Soft cosmic glow behind the mark -- a small static "power core" glint,
+   same restraint as --ai-glow-shadow elsewhere (static, no animation,
+   just a box-shadow) so the one piece of chrome that's always on screen
+   carries a touch of the same magenta/blue the wallpaper and every other
+   glass surface now do, instead of reading as flat black regardless of
+   what's behind it. */
 .navbar-mark {
   width: 42px;
   height: 42px;
@@ -45,6 +59,7 @@
   background: var(--ink);
   color: var(--bg-0);
   flex: none;
+  box-shadow: 0 0 16px -4px color-mix(in srgb, var(--cosmic-a) 55%, transparent);
 }
 
 .navbar-mark svg {
@@ -157,7 +172,7 @@
 
 .navbar-links a:hover {
   color: var(--ink);
-  background: var(--glass-bg);
+  background: color-mix(in srgb, var(--glass-bg-strong) 75%, var(--cosmic-b) 12%);
 }
 
 .navbar-search-slot {

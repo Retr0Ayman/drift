@@ -168,6 +168,15 @@ select {
    independently of the ::after cursor-glint below; transform, never
    background-position, specifically so this stays cheap even with a dozen
    .liquid-sheen surfaces visible at once on a catalog grid. */
+/* Expanded for the galactic pass: two faint cosmic-tinted stops
+   (magenta near the top streak, blue further along) alongside the
+   original plain-white highlight -- the VisionOS material cue this is
+   modeled on doesn't just catch light, it picks up a wash of whatever
+   colored environment is behind/around it. Since the wallpaper itself
+   is always the same cosmic magenta/blue scene now (see .ambient-bg's
+   own comment), every glass surface subtly reads as lit BY that scene
+   specifically, not by generic white light -- still additive, still a
+   single static gradient, no new cost. */
 .liquid-sheen::before {
   content: "";
   position: absolute;
@@ -180,8 +189,9 @@ select {
   background: linear-gradient(
     115deg,
     rgba(255, 255, 255, 0.32) 0%,
-    transparent 18%,
-    transparent 62%,
+    color-mix(in srgb, var(--cosmic-a) 10%, transparent) 20%,
+    transparent 40%,
+    color-mix(in srgb, var(--cosmic-b) 12%, transparent) 64%,
     rgba(255, 255, 255, 0.1) 84%,
     transparent 100%
   );
@@ -192,8 +202,9 @@ select {
     background: linear-gradient(
       115deg,
       rgba(255, 255, 255, 0.08) 0%,
-      transparent 18%,
-      transparent 62%,
+      color-mix(in srgb, var(--cosmic-a) 12%, transparent) 20%,
+      transparent 40%,
+      color-mix(in srgb, var(--cosmic-b) 14%, transparent) 64%,
       rgba(255, 255, 255, 0.03) 84%,
       transparent 100%
     );
@@ -204,8 +215,9 @@ select {
   background: linear-gradient(
     115deg,
     rgba(255, 255, 255, 0.08) 0%,
-    transparent 18%,
-    transparent 62%,
+    color-mix(in srgb, var(--cosmic-a) 12%, transparent) 20%,
+    transparent 40%,
+    color-mix(in srgb, var(--cosmic-b) 14%, transparent) 64%,
     rgba(255, 255, 255, 0.03) 84%,
     transparent 100%
   );
@@ -215,8 +227,9 @@ select {
   background: linear-gradient(
     115deg,
     rgba(255, 255, 255, 0.32) 0%,
-    transparent 18%,
-    transparent 62%,
+    color-mix(in srgb, var(--cosmic-a) 10%, transparent) 20%,
+    transparent 40%,
+    color-mix(in srgb, var(--cosmic-b) 12%, transparent) 64%,
     rgba(255, 255, 255, 0.1) 84%,
     transparent 100%
   );
@@ -248,7 +261,12 @@ select {
    leaves a panel, and it fades in from wherever --sheen-x/y last landed
    rather than snapping. Falls back to a fixed off-center position when no
    pointermove has touched this panel yet (reduced motion, or before the
-   first move) -- still looks intentional on hover, just doesn't track. */
+   first move) -- still looks intentional on hover, just doesn't track.
+   Galactic pass: a cosmic-tinted ring (magenta in light mode, blue in
+   dark) now sits just outside the bright white core, like a thin prism
+   fringe at the edge of the highlight -- the same "picks up the color of
+   the scene around it" cue .liquid-sheen::before's own update documents,
+   applied to the interactive glint instead of the static streak. */
 .liquid-sheen::after {
   content: "";
   position: absolute;
@@ -262,7 +280,8 @@ select {
     circle 220px at var(--sheen-x, 70%) var(--sheen-y, 20%),
     rgba(255, 255, 255, 0.92) 0%,
     rgba(255, 255, 255, 0.4) 35%,
-    transparent 72%
+    color-mix(in srgb, var(--cosmic-a) 22%, transparent) 58%,
+    transparent 78%
   );
 }
 
@@ -276,7 +295,8 @@ select {
       circle 220px at var(--sheen-x, 70%) var(--sheen-y, 20%),
       rgba(255, 255, 255, 0.5) 0%,
       rgba(255, 255, 255, 0.2) 35%,
-      transparent 72%
+      color-mix(in srgb, var(--cosmic-b) 26%, transparent) 58%,
+      transparent 78%
     );
   }
 }
@@ -286,7 +306,8 @@ select {
     circle 220px at var(--sheen-x, 70%) var(--sheen-y, 20%),
     rgba(255, 255, 255, 0.5) 0%,
     rgba(255, 255, 255, 0.2) 35%,
-    transparent 72%
+    color-mix(in srgb, var(--cosmic-b) 26%, transparent) 58%,
+    transparent 78%
   );
 }
 
@@ -295,7 +316,8 @@ select {
     circle 220px at var(--sheen-x, 70%) var(--sheen-y, 20%),
     rgba(255, 255, 255, 0.92) 0%,
     rgba(255, 255, 255, 0.4) 35%,
-    transparent 72%
+    color-mix(in srgb, var(--cosmic-a) 22%, transparent) 58%,
+    transparent 78%
   );
 }
 

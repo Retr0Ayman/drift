@@ -82,6 +82,12 @@
      reasoning as --ambient-vignette above. */
   --cosmic-a: #ff2ea6;
   --cosmic-b: #2f5bff;
+  /* Third cosmic accent -- warm star/planet-lit tone (real starfields are
+     never uniformly white; K-type/M-type stars read warm-amber against
+     the cooler blue-white of hotter ones). Used for star color variance
+     and the sunlit face of .ambient-planet, never the nebula clouds
+     themselves (those stay the magenta/blue pair above). */
+  --cosmic-c: #ffb46b;
 
   /* Text that sits directly on the ambient wallpaper with no card behind
      it (hero h1/h2 page titles, their eyebrow/meta labels -- Hero.css,
@@ -104,7 +110,7 @@
      split off. */
   --aura-a: #6b4fa055;
   --aura-b: #1f7a6c55;
-  --aura-blur: 18px;
+  --aura-blur: 20px;
 
   /* "Apple Intelligence" glow palette -- a warm pink/magenta/blue/gold
      sweep, deliberately distinct from --aura-a/--aura-b's cooler purple/

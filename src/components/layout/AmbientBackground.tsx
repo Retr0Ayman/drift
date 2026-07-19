@@ -122,8 +122,11 @@ export default function AmbientBackground() {
         ))}
       </div>
       <div className="ambient-vault" />
+      <div className="ambient-milkyway" />
+      <div className="ambient-milkyway-stars" />
       <div className="ambient-stars ambient-stars--a" />
       <div className="ambient-stars ambient-stars--b" />
+      <div className="ambient-planet" />
       <div className="ambient-grain" />
     </div>
   );
