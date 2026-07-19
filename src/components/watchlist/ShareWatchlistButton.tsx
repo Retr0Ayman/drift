@@ -6,7 +6,7 @@ export default function ShareWatchlistButton({ watched }: { watched: string[] })
   if (!watched.length) return null;
 
   async function handleShare() {
-    const url = `${window.location.origin}${window.location.pathname}#/watchlist?share=${watched.join(",")}`;
+    const url = `${window.location.origin}/watchlist?share=${watched.join(",")}`;
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
