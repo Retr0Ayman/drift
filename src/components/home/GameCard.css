@@ -1,11 +1,11 @@
 .game-card-link {
   display: block;
-  border-radius: 32px;
+  border-radius: var(--r-2xl);
 }
 
 .game-card {
   cursor: pointer;
-  border-radius: 32px;
+  border-radius: var(--r-2xl);
   transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1),
     border-color var(--dur) var(--ease);
 }
@@ -28,7 +28,7 @@
   position: relative;
   height: 208px;
   margin: 10px 10px 0;
-  border-radius: 24px;
+  border-radius: var(--r-xl);
   overflow: hidden;
   background: linear-gradient(135deg, var(--glass-bg-strong), var(--bg-2));
 }

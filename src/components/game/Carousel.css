@@ -98,5 +98,5 @@
 .carousel-dot--on {
   background: #fff;
   width: 20px;
-  border-radius: 6px;
+  border-radius: var(--r-md);
 }

@@ -114,6 +114,23 @@
   --r-sm: 4px;
   --pill: 999px;
 
+  /* Two more stops for the large surfaces the --r-sm/md/lg trio was never
+     sized for -- clickable grid-card containers (game-card, group-card,
+     publisher-card) and page-floating frosted panels (command palette).
+     Same discipline as the rest of the scale: every component in a given
+     tier points at the shared token instead of hand-tuning its own px
+     value, which is how these ended up at 20/24/26/32px in four different
+     places before this token existed. */
+  --r-xl: 16px;
+  --r-2xl: 22px;
+
+  /* Square icon/logo badges (navbar mark, footer mark, detail-stat
+     badges, scene-group badges, publisher logos) -- one shared radius
+     regardless of the badge's own box size, so they read as the same
+     "squircle" shape family site-wide instead of each being tuned
+     separately (they'd previously drifted to 9/11/11/14px). */
+  --r-badge: 10px;
+
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
   --dur-fast: 160ms;
   --dur: 280ms;

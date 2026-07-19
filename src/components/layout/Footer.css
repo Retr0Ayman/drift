@@ -27,7 +27,7 @@
 .footer-mark {
   width: 26px;
   height: 26px;
-  border-radius: 9px;
+  border-radius: var(--r-badge);
   display: grid;
   place-items: center;
   background: var(--ink);

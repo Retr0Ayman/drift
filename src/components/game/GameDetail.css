@@ -120,7 +120,7 @@
 .detail-stat-badge {
   width: 34px;
   height: 34px;
-  border-radius: 9px;
+  border-radius: var(--r-badge);
   display: grid;
   place-items: center;
   font-weight: 800;
@@ -272,7 +272,7 @@
   width: 52px;
   height: 52px;
   flex: none;
-  border-radius: var(--r-sm);
+  border-radius: var(--r-badge);
   display: grid;
   place-items: center;
   font-size: 0.72rem;

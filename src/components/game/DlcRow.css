@@ -56,7 +56,7 @@
 .dlc-row-body img {
   width: 100%;
   max-width: 340px;
-  border-radius: 10px;
+  border-radius: var(--r-lg);
   display: block;
   margin-bottom: 10px;
   border: 1px solid var(--glass-border);

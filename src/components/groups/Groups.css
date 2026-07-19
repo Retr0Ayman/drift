@@ -133,7 +133,7 @@
 
 .group-card {
   padding: 20px;
-  border-radius: 26px;
+  border-radius: var(--r-2xl);
   cursor: pointer;
   transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1),
     border-color var(--dur) var(--ease);
@@ -159,7 +159,7 @@
 .group-badge {
   width: 36px;
   height: 36px;
-  border-radius: 11px;
+  border-radius: var(--r-badge);
   display: grid;
   place-items: center;
   font-weight: 800;
@@ -378,7 +378,7 @@
 .group-rel-cover {
   position: relative;
   height: 150px;
-  border-radius: 20px;
+  border-radius: var(--r-xl);
   overflow: hidden;
   margin-bottom: 10px;
   background: linear-gradient(135deg, var(--glass-bg-strong), var(--bg-2));
