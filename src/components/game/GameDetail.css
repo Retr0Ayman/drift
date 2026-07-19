@@ -205,12 +205,18 @@
   font-weight: 500;
 }
 
+.detail-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
 .legend-dot {
   display: inline-block;
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  margin-right: 5px;
+  flex: none;
 }
 
 .legend-dot--cur {
