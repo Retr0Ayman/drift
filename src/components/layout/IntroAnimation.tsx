@@ -31,6 +31,19 @@ export default function IntroAnimation({ onDone }: IntroAnimationProps) {
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   function finish() {
+    // Removed first, not just in the effect's cleanup below -- this
+    // component itself never unmounts (it's rendered unconditionally at
+    // Layout's root for the whole session; only its overlay child
+    // conditionally renders via `phase`), so the effect's cleanup never
+    // runs from a normal "the intro is done" transition, only from an
+    // actual unmount that never happens. Without this, the listener stayed
+    // attached for the rest of the session and finish() fired again on
+    // every subsequent keystroke anywhere on the site -- including typing
+    // into the search palette -- each time redundantly resetting
+    // document.body.style.overflow, which stomped on Radix Dialog's own
+    // scroll-lock overflow:hidden while the palette was open and produced
+    // a real, reproduced-live scroll-to-bottom jump.
+    window.removeEventListener("keydown", finish);
     timers.current.forEach(clearTimeout);
     document.body.style.overflow = "";
     setPhase("done");

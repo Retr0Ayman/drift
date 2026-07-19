@@ -21,8 +21,27 @@
    characteristic vibrancy rather than reading as plain fogged glass. */
 .cmdk-content {
   position: fixed;
-  top: 14vh;
+  top: 20vh;
   left: 50%;
+  /* .liquid-sheen (globals.css) also sets its own position: relative, for
+     an unrelated reason -- giving its own ::before/::after pseudo-elements
+     a positioning context on surfaces that are normally position:static
+     (cards, the navbar pill, etc). Same specificity, so whichever rule's
+     stylesheet loads later wins the cascade -- CONFIRMED live this was
+     silently clobbering position:fixed here, and it's a real, serious bug,
+     not just a style nit: with position:relative winning, this dialog
+     rendered as a normal in-flow element crammed at the very bottom of
+     <body> (Dialog.Portal appends there), not actually fixed to the
+     viewport at all -- explains the dialog visibly growing document
+     height, and the scroll-to-bottom jump on open/close/typing this was
+     originally meant to fix (a focused/typing element deep in flow at the
+     bottom of a tall document is exactly what the browser's native
+     "keep this in view" scrolling targets). The .cmdk-content.liquid-sheen
+     compound-selector rule further down wins on specificity (0,2,0 beats
+     0,1,0) regardless of load order, which is the correct fix -- position:
+     fixed already provides its own positioning context for the sheen
+     pseudo-elements, so there was never a reason for relative to apply
+     here in the first place. */
   transform: translateX(-50%);
   width: min(560px, 92vw);
   max-height: 60vh;
@@ -37,6 +56,12 @@
   flex-direction: column;
   overflow: hidden;
   animation: cmdk-content-in 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Wins over .liquid-sheen's position: relative via specificity (0,2,0 vs
+   0,1,0), not load order -- see the long comment on .cmdk-content above. */
+.cmdk-content.liquid-sheen {
+  position: fixed;
 }
 
 .cmdk-visually-hidden {

@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
+import { useLenis } from "lenis/react";
 import { useNavigate } from "react-router-dom";
 import { useAutocomplete, type Suggestion } from "../../hooks/useAutocomplete";
 import { parseSearchIntent } from "../../lib/searchIntent";
@@ -30,9 +31,26 @@ export default function CommandPalette({ games, catalogStatus, onLiveGameResolve
   const [activeIndex, setActiveIndex] = useState(-1);
   const [resolving, setResolving] = useState(false);
   const navigate = useNavigate();
+  const resultsRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const triggerRef = useRef<HTMLElement | null>(null);
   const { results, loading, assisted, assisting } = useAutocomplete(query, games);
   const intent = useMemo(() => parseSearchIntent(query), [query]);
   const franchiseMatch = useMemo(() => matchFranchise(query), [query]);
+  // Belt-and-suspenders: pause the global root Lenis instance (SmoothScroll.
+  // tsx) for as long as the palette is open, so its own wheel/touch handling
+  // never fights Radix Dialog's modal scroll-lock while a user might be
+  // scrolling the results list. The real bug that caused the jump-to-bottom
+  // this was originally added alongside turned out to be unrelated to Lenis
+  // -- see CommandPalette.css's long comment on .cmdk-content -- but this is
+  // still good hygiene independent of that fix.
+  const lenis = useLenis();
+
+  useEffect(() => {
+    if (!lenis) return;
+    if (open) lenis.stop();
+    else lenis.start();
+  }, [open, lenis]);
 
   useEffect(() => {
     function onKey(e: globalThis.KeyboardEvent) {
@@ -49,8 +67,25 @@ export default function CommandPalette({ games, catalogStatus, onLiveGameResolve
     if (!open) {
       setQuery("");
       setActiveIndex(-1);
+      return;
     }
+    // Captured here (not read fresh in onCloseAutoFocus) since by the time
+    // that fires the trigger has already lost focus to the dialog itself --
+    // this is whatever had focus at the moment of opening, i.e. the real
+    // trigger (SearchBar's button, or whatever was focused when Cmd/Ctrl+K
+    // fired).
+    triggerRef.current = document.activeElement as HTMLElement | null;
   }, [open]);
+
+  // Keeps the highlighted row in view as arrow keys move past the visible
+  // .cmdk-results window -- the same "active item always visible" behavior
+  // Spotlight/Finder's own keyboard nav has, which plain overflow-y: auto
+  // alone doesn't give you.
+  useEffect(() => {
+    if (activeIndex < 0) return;
+    const active = resultsRef.current?.querySelector(".cmdk-row--active");
+    active?.scrollIntoView({ block: "nearest" });
+  }, [activeIndex]);
 
   const localResults = results.filter((r) => r.kind === "local");
   const liveResults = results.filter((r) => r.kind === "live");
@@ -124,7 +159,35 @@ export default function CommandPalette({ games, catalogStatus, onLiveGameResolve
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="cmdk-overlay" />
-        <Dialog.Content className="cmdk-content liquid-sheen" aria-describedby={undefined}>
+        <Dialog.Content
+          className="cmdk-content liquid-sheen"
+          aria-describedby={undefined}
+          // Radix's own default onOpenAutoFocus/onCloseAutoFocus call plain
+          // .focus() (no { preventScroll: true }) on the input/trigger. That
+          // was never actually safe here: this dialog is rendered through
+          // Dialog.Portal at the very end of <body>, so if position:fixed
+          // ever fails to apply for any reason (it did -- see CommandPalette
+          // .css's long comment on .cmdk-content for the real bug, a CSS
+          // specificity collision with .liquid-sheen that had this whole
+          // dialog rendering in-flow near the bottom of the document), a
+          // plain .focus() call's native "scroll the newly-focused element
+          // into view" behavior lands on the real, in-flow position instead
+          // of the intended fixed one -- confirmed live via a scrollY trace,
+          // an instant jump to exactly document.scrollHeight - clientHeight
+          // on both open and close. The CSS fix alone resolves the root
+          // cause, but overriding these two handlers to use
+          // { preventScroll: true } costs nothing and removes an entire
+          // class of "some future style change breaks position:fixed again"
+          // risk for free.
+          onOpenAutoFocus={(e) => {
+            e.preventDefault();
+            inputRef.current?.focus({ preventScroll: true });
+          }}
+          onCloseAutoFocus={(e) => {
+            e.preventDefault();
+            triggerRef.current?.focus({ preventScroll: true });
+          }}
+        >
           <Dialog.Title className="cmdk-visually-hidden">Search orlaz</Dialog.Title>
           <div className="cmdk-input-row">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -132,7 +195,7 @@ export default function CommandPalette({ games, catalogStatus, onLiveGameResolve
               <path d="m20 20-3.5-3.5" />
             </svg>
             <input
-              autoFocus
+              ref={inputRef}
               placeholder="Search titles, groups, publishers…"
               value={query}
               onChange={(e) => {
@@ -144,7 +207,7 @@ export default function CommandPalette({ games, catalogStatus, onLiveGameResolve
             <kbd className="cmdk-esc">ESC</kbd>
           </div>
 
-          <div className="cmdk-results">
+          <div className="cmdk-results" ref={resultsRef}>
             {intent ? (
               <button
                 className={`cmdk-intent cmdk-row${(rowCursor += 1) === activeIndex ? " cmdk-row--active" : ""}`}
