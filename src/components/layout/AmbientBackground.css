@@ -1,35 +1,35 @@
-/* Replaces the old metaball/goo background (12 small blob clusters, each
-   wrapped in an SVG `filter: url(#ambient-goo)` reference filter -- forces
-   a re-rasterize of the whole filtered subtree on every animated tick, not
-   just a recomposite). This version has zero live filters anywhere: the
-   mesh layer is a fully static `background` (radial-gradients painted once,
-   nothing animates them), the conic layer only ever animates `transform`
-   (GPU-composited, no repaint), and the grain layer is a static pre-
-   rendered SVG data-URI `background-image`, not a live `<feTurbulence>`
-   resampling anything every frame. See .ambient-conic's own comment for
-   the (long) measured trail of what got tried and rejected along the way
-   -- both `filter: blur()` and `mix-blend-mode` looked appealing for
-   softening the conic layer but measured expensive even at small sizes, so
-   neither made it into what ships. Net result measured above the old goo
-   version's own real fps on the same test page. */
-/* Opaque deep-space base -- deliberately NOT theme-conditional (no
-   --bg-0/--ink involved). This wallpaper is meant to always read as a
-   cosmic vault, in both light and dark UI mode, per an explicit "always
-   deep space, not theme-adaptive" decision -- see the git log for this
-   change. Fully opaque (no transparent stops) so body's own theme-driven
-   --bg-0 never shows through underneath; every other layer here
-   (.ambient-mesh/.ambient-conic/.ambient-vault/.ambient-stars) paints on
-   top of this, not instead of it. Solid --bg-1 cards elsewhere on the
-   page keep following the light/dark toggle normally -- only this fixed
-   backdrop layer, and the loose on-canvas heading text that sits directly
-   on it (see globals.css's --canvas-ink), had to stop doing that. */
+/* Plasma-liquid pass: this used to be a "cosmic vault" wallpaper (starfield,
+   Milky Way band, a planet) -- all removed. What's left leans fully into
+   the lava-lamp side of the old effect: a dark liquid base plate with
+   several large, saturated color blobs drifting and merging across it. Zero
+   live filters anywhere, same discipline the original metaball/goo removal
+   established: the mesh layer is a fully static `background`
+   (radial-gradients painted once, nothing animates them), every blob only
+   ever animates `transform`/`opacity` (GPU-composited, no repaint), and the
+   grain layer is a static pre-rendered SVG data-URI `background-image`, not
+   a live `<feTurbulence>` resampling anything every frame. See
+   .ambient-blob-1's own comment for the measured cost trail that ruled out
+   `filter: blur()` and `mix-blend-mode` for softening these layers. */
+/* Opaque near-black base -- deliberately NOT theme-conditional (no
+   --bg-0/--ink involved). This wallpaper is meant to always read as dark
+   liquid with color suspended in it, in both light and dark UI mode, same
+   "always this scene, not theme-adaptive" decision the old cosmic-vault
+   version made -- see the git log. Fully opaque (no transparent stops) so
+   body's own theme-driven --bg-0 never shows through underneath; every
+   other layer here (.ambient-mesh, the .ambient-blob-* set, .ambient-vault)
+   paints on top of this, not instead of it. Solid --bg-1 cards elsewhere on the page
+   keep following the light/dark toggle normally -- only this fixed backdrop
+   layer, and the loose on-canvas heading text that sits directly on it (see
+   globals.css's --canvas-ink), had to stop doing that. Neutral obsidian
+   rather than the old version's navy-black -- the color now comes entirely
+   from the blobs floating in it, not from the vessel itself. */
 .ambient-bg {
   position: fixed;
   inset: 0;
   z-index: 0;
   overflow: hidden;
   pointer-events: none;
-  background: radial-gradient(ellipse 140% 90% at 50% -10%, #1a1533 0%, #0c0a1c 45%, #050409 100%);
+  background: radial-gradient(ellipse 140% 90% at 50% -10%, #1a1220 0%, #0d0810 45%, #06040a 100%);
 }
 
 /* Everything that drifts with the pointer (AmbientBackground.tsx) lives in
@@ -68,7 +68,7 @@
 .ambient-mesh {
   position: absolute;
   inset: 0;
-  opacity: 0.58;
+  opacity: 0.62;
   background:
     radial-gradient(ellipse 62% 55% at 6% 8%,
       color-mix(in srgb, var(--ambient-primary, #6b4fa0) 70%, var(--cosmic-a, #ff2ea6) 30%) 0%, transparent 72%),
@@ -82,126 +82,39 @@
       color-mix(in srgb, var(--ambient-primary, #6b4fa0) 70%, var(--cosmic-a, #ff2ea6) 30%) 0%, transparent 72%);
 }
 
-/* A bare conic-gradient reads as a hard-edged sunburst/pinwheel radiating
-   from its exact center -- conic-gradient's angular color stops are
-   inherently sharp, unlike a radial-gradient's soft distance-based
-   falloff. The obvious fix is `filter: blur()`, and an obvious way to
-   animate the rotation is a `mix-blend-mode` wash over an animated
-   `@property`-registered angle (the same technique globals.css's
-   .aura-ring spin already uses safely for the search bar). Both were
-   tried here and both measured expensive (Playwright rAF-fps sampling,
-   present-vs-removed, same methodology every prior round of this
-   background used) even after shrinking the blurred box down to a small
-   pre-scale size and switching the rotation to a compositor-only
-   `transform: rotate()`: filter:blur() alone measured ~7fps, mix-blend-
-   mode alone ~22fps, against a 60fps true baseline with neither -- both
-   individually costly regardless of blur radius or box size, not just in
-   combination. That's the same "presence-triggered, size-independent"
-   signature GlassPanel.css already documented for backdrop-filter in
-   headless Chromium's software-rendering fallback (never reproduced on a
-   real GPU compositor there) -- plausibly the same story here, but
-   unconfirmed without real hardware to check against, so this shipped
-   without either rather than trust an unverifiable number.
-
-   What ships instead: plain opacity, the same mechanism .ambient-mesh
-   already uses successfully, pushed low (0.16) with wide transparent
-   bands between each color stop so the unblurred conic-gradient reads as
-   a faint rotating tint over the mesh rather than a sharp sunburst.
-   Measured ~47fps for this layer alone (mesh+grain layers cost ~0 on
-   their own, confirmed independently) -- above the old goo background's
-   own ~30fps on the identical test page. If a future change wants blur or
-   blend-mode back, re-measure present-vs-removed on a REAL headed
-   browser first, not headless. */
-.ambient-conic {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 60vmax;
-  height: 60vmax;
-  margin-top: -30vmax;
-  margin-left: -30vmax;
-  opacity: 0.24;
-  background: conic-gradient(
-    from 0deg,
-    color-mix(in srgb, var(--ambient-primary, #6b4fa0) 70%, var(--cosmic-a, #ff2ea6) 30%),
-    transparent 30%,
-    color-mix(in srgb, var(--ambient-secondary, #4a3570) 70%, var(--cosmic-b, #2f5bff) 30%) 40%,
-    transparent 63%,
-    color-mix(in srgb, color-mix(in srgb, var(--ambient-primary, #6b4fa0), var(--ambient-secondary, #4a3570)) 60%, var(--cosmic-a, #ff2ea6) 40%) 73%,
-    transparent 96%,
-    color-mix(in srgb, var(--ambient-primary, #6b4fa0) 70%, var(--cosmic-a, #ff2ea6) 30%)
-  );
-  transform: scale(2.7);
-  animation: ambient-mesh-spin 150s linear infinite;
-  will-change: transform;
-}
-
-@keyframes ambient-mesh-spin {
-  0% {
-    transform: scale(2.7) rotate(0deg);
-  }
-  100% {
-    transform: scale(2.7) rotate(360deg);
-  }
-}
-
-/* Second conic layer, same cheap recipe as .ambient-conic above (plain
-   opacity, compositor-only transform, no blur/blend-mode) -- offset
-   off-center, spinning the opposite direction at a slower speed, and
-   starting from a different angle so it never lines up with the first
-   layer's bands. Two conic sweeps drifting at different rates read as
-   real parallax depth instead of one flat rotating tint. */
-.ambient-conic-2 {
-  position: absolute;
-  top: 38%;
-  left: 62%;
-  width: 68vmax;
-  height: 68vmax;
-  margin-top: -34vmax;
-  margin-left: -34vmax;
-  opacity: 0.18;
-  background: conic-gradient(
-    from 200deg,
-    color-mix(in srgb, var(--ambient-secondary, #4a3570) 70%, var(--cosmic-b, #2f5bff) 30%),
-    transparent 26%,
-    color-mix(in srgb, var(--ambient-primary, #6b4fa0) 70%, var(--cosmic-a, #ff2ea6) 30%) 42%,
-    transparent 66%,
-    color-mix(in srgb, color-mix(in srgb, var(--ambient-secondary, #4a3570), var(--ambient-primary, #6b4fa0)) 60%, var(--cosmic-b, #2f5bff) 40%) 78%,
-    transparent 98%
-  );
-  transform: scale(2.3);
-  animation: ambient-mesh-spin-reverse 210s linear infinite;
-  will-change: transform;
-}
-
-@keyframes ambient-mesh-spin-reverse {
-  0% {
-    transform: scale(2.3) rotate(360deg);
-  }
-  100% {
-    transform: scale(2.3) rotate(0deg);
-  }
-}
-
-/* Two soft radial blobs that breathe and drift slowly via transform only
-   (translate + scale, the same compositor-only recipe .ambient-conic above
-   already validated -- animating background-position/gradient stops
+/* Four soft radial blobs that breathe and drift slowly via transform only
+   (translate + scale -- animating background-position/gradient stops
    instead would force a repaint every frame, not just a recomposite).
-   Anchored at left-mid-lower and right-mid-upper, deliberately away from
-   the five fixed .ambient-mesh anchor points (both corners + center), so
-   these add genuinely new movement instead of re-animating ground the
-   static mesh already covers. Long (52s/64s), non-symmetric easing so the
-   motion reads as organic drift rather than a mechanical bounce. */
+   This is the direct replacement for what used to be two rotating
+   conic-gradient sweeps here: a bare conic-gradient reads as a hard-edged
+   sunburst/pinwheel, which is wrong for a lava-lamp read regardless of
+   cost, and the obvious softeners (`filter: blur()`, a `mix-blend-mode`
+   wash) both measured expensive even at small sizes in earlier rounds of
+   this background (Playwright rAF-fps sampling, present-vs-removed:
+   filter:blur() alone ~7fps, mix-blend-mode alone ~22fps, against a 60fps
+   baseline with neither) -- the same "presence-triggered, size-independent"
+   cost signature GlassPanel.css documents for backdrop-filter in headless
+   Chromium specifically, so re-measure on a real headed browser before
+   ever reaching for either again. Four independently-timed radial blobs
+   instead: same plain-opacity, compositor-only-transform recipe that
+   already priced out near-zero for the two blobs this replaces one-for-
+   one, just aimed at looking like drifting colored wax instead of a
+   rotating tint. Anchored away from the five fixed .ambient-mesh points
+   (both corners + center) so they add genuinely new movement and overlap
+   into each other -- the actual "merge and separate" lava-lamp cue --
+   rather than re-animating ground the static mesh already covers. Long
+   (52-96s), non-round, non-symmetric durations/easings so the four never
+   fall into a visible sync pattern. */
 .ambient-blob-1 {
   position: absolute;
   top: 62%;
   left: 18%;
-  width: 46vmax;
-  height: 46vmax;
-  margin-top: -23vmax;
-  margin-left: -23vmax;
-  opacity: 0.34;
-  background: radial-gradient(circle, color-mix(in srgb, var(--ambient-primary, #6b4fa0) 65%, var(--cosmic-a, #ff2ea6) 35%) 0%, transparent 70%);
+  width: 48vmax;
+  height: 48vmax;
+  margin-top: -24vmax;
+  margin-left: -24vmax;
+  opacity: 0.42;
+  background: radial-gradient(circle, color-mix(in srgb, var(--ambient-primary, #6b4fa0) 55%, var(--cosmic-a, #ff2ea6) 45%) 0%, transparent 70%);
   animation: ambient-blob-drift-1 78s ease-in-out infinite;
   will-change: transform;
 }
@@ -212,10 +125,10 @@
     transform: translate(0, 0) scale(1);
   }
   35% {
-    transform: translate(4vmax, -3vmax) scale(1.12);
+    transform: translate(6vmax, -4vmax) scale(1.18);
   }
   70% {
-    transform: translate(-3vmax, 2vmax) scale(0.92);
+    transform: translate(-4vmax, 3vmax) scale(0.88);
   }
 }
 
@@ -223,12 +136,12 @@
   position: absolute;
   top: 28%;
   left: 80%;
-  width: 42vmax;
-  height: 42vmax;
-  margin-top: -21vmax;
-  margin-left: -21vmax;
-  opacity: 0.3;
-  background: radial-gradient(circle, color-mix(in srgb, var(--ambient-secondary, #4a3570) 65%, var(--cosmic-b, #2f5bff) 35%) 0%, transparent 70%);
+  width: 44vmax;
+  height: 44vmax;
+  margin-top: -22vmax;
+  margin-left: -22vmax;
+  opacity: 0.38;
+  background: radial-gradient(circle, color-mix(in srgb, var(--ambient-secondary, #4a3570) 55%, var(--cosmic-b, #2f5bff) 45%) 0%, transparent 70%);
   animation: ambient-blob-drift-2 96s ease-in-out infinite;
   will-change: transform;
 }
@@ -239,174 +152,101 @@
     transform: translate(0, 0) scale(1);
   }
   40% {
-    transform: translate(-4vmax, 3vmax) scale(0.9);
+    transform: translate(-5vmax, 4vmax) scale(0.85);
   }
   75% {
-    transform: translate(3vmax, -2vmax) scale(1.1);
+    transform: translate(4vmax, -3vmax) scale(1.15);
   }
 }
 
-/* Vault vignette -- a soft depth cue, deepening toward the edges like
-   looking up into a dome/vault rather than at a flat backdrop. Static
+/* Third blob -- hot molten orange (--cosmic-c), the color this scene was
+   missing once the planet/starfield that used to carry it were removed.
+   Anchored bottom-center-ish, opposite-direction drift from blob-1/2 so it
+   reads as a distinct piece of wax sliding through the other two rather
+   than moving in lockstep. */
+.ambient-blob-3 {
+  position: absolute;
+  top: 82%;
+  left: 55%;
+  width: 40vmax;
+  height: 40vmax;
+  margin-top: -20vmax;
+  margin-left: -20vmax;
+  opacity: 0.34;
+  background: radial-gradient(circle, color-mix(in srgb, var(--cosmic-c, #ff7a3d) 70%, var(--ambient-primary, #6b4fa0) 30%) 0%, transparent 70%);
+  animation: ambient-blob-drift-3 64s ease-in-out infinite;
+  will-change: transform;
+}
+
+@keyframes ambient-blob-drift-3 {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  45% {
+    transform: translate(-6vmax, -3vmax) scale(1.14);
+  }
+  80% {
+    transform: translate(3vmax, 4vmax) scale(0.9);
+  }
+}
+
+/* Fourth blob -- a magenta/blue mix (both cosmic hues at once, no game
+   accent), small and fast relative to the other three so it reads as a
+   quicker bead of color weaving between the slower, larger blobs instead
+   of just a fifth copy of the same motion. Anchored top-center. */
+.ambient-blob-4 {
+  position: absolute;
+  top: 12%;
+  left: 42%;
+  width: 34vmax;
+  height: 34vmax;
+  margin-top: -17vmax;
+  margin-left: -17vmax;
+  opacity: 0.3;
+  background: radial-gradient(circle, color-mix(in srgb, var(--cosmic-a, #ff2ea6), var(--cosmic-b, #2f5bff)) 0%, transparent 72%);
+  animation: ambient-blob-drift-4 52s ease-in-out infinite;
+  will-change: transform;
+}
+
+@keyframes ambient-blob-drift-4 {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  38% {
+    transform: translate(4vmax, 5vmax) scale(0.9);
+  }
+  72% {
+    transform: translate(-5vmax, -3vmax) scale(1.16);
+  }
+}
+
+/* Vignette -- a soft depth cue, deepening toward the edges like looking
+   into a liquid-filled vessel rather than at a flat backdrop. Static
    radial-gradient, no animation, no filter -- cheapest possible layer.
-   Sits above the mesh/conic/blob swirl (outside .ambient-parallax, same
+   Sits above the mesh/blob swirl (outside .ambient-parallax, same
    reasoning as .ambient-grain below: a vignette that itself panned with
-   the pointer would read as swimming, not as fixed depth) and below the
-   starfield, so stars stay crisp all the way to the edge instead of
-   getting dimmed along with the backdrop under them. */
+   the pointer would read as swimming, not as fixed depth). */
 .ambient-vault {
   position: absolute;
   inset: 0;
   background: radial-gradient(ellipse 80% 70% at 50% 40%, transparent 45%, var(--ambient-vignette, rgba(60, 50, 90, 0.16)) 100%);
 }
 
-/* Starfield -- a hand-placed (not randomized) scatter of small dots baked
-   into one static SVG tile, same "paint once, never regenerate" approach
-   .ambient-grain already uses for its noise. Two copies of the same tile
-   at different pan offsets, each cross-fading opacity on its own slow,
-   out-of-phase loop, is what gives an uneven, organic twinkle across the
-   whole field without animating dozens of individual DOM nodes -- plain
-   opacity, compositor-only, cheap regardless of how many stars are baked
-   into the tile. Always white/tinted, not theme-conditional -- the
-   wallpaper itself is always deep space now (see .ambient-bg's own
-   comment), so there's no pale backdrop left for dots to vanish against.
-   ~20% of the circles carry an explicit fill (warm amber or cool blue-
-   white) instead of the group's plain white -- real starfields have real
-   color-temperature variation, not uniformly white points, and a handful
-   of tinted stars reads as photographic rather than a generic "dots"
-   pattern. */
-.ambient-stars {
-  position: absolute;
-  inset: 0;
-  background-size: 300px 300px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cg fill='white'%3E%3Ccircle cx='24' cy='38' r='1.2' opacity='0.9' fill='%23ffcf94'/%3E%3Ccircle cx='58' cy='15' r='0.8' opacity='0.6'/%3E%3Ccircle cx='91' cy='52' r='1.4' opacity='0.8'/%3E%3Ccircle cx='130' cy='22' r='0.9' opacity='0.5' fill='%23bcd7ff'/%3E%3Ccircle cx='168' cy='60' r='1.1' opacity='0.7'/%3E%3Ccircle cx='205' cy='18' r='0.7' opacity='0.4'/%3E%3Ccircle cx='240' cy='45' r='1.3' opacity='0.85'/%3E%3Ccircle cx='275' cy='70' r='0.9' opacity='0.55'/%3E%3Ccircle cx='12' cy='95' r='1' opacity='0.6'/%3E%3Ccircle cx='48' cy='120' r='1.5' opacity='0.9'/%3E%3Ccircle cx='85' cy='140' r='0.8' opacity='0.45'/%3E%3Ccircle cx='120' cy='105' r='1.2' opacity='0.75'/%3E%3Ccircle cx='155' cy='130' r='0.9' opacity='0.5'/%3E%3Ccircle cx='190' cy='150' r='1.4' opacity='0.95' fill='%23ffcf94'/%3E%3Ccircle cx='225' cy='110' r='0.7' opacity='0.4'/%3E%3Ccircle cx='260' cy='135' r='1.1' opacity='0.65'/%3E%3Ccircle cx='290' cy='160' r='0.9' opacity='0.5'/%3E%3Ccircle cx='20' cy='175' r='1.3' opacity='0.8' fill='%23bcd7ff'/%3E%3Ccircle cx='55' cy='200' r='0.8' opacity='0.45'/%3E%3Ccircle cx='95' cy='220' r='1.5' opacity='0.9' fill='%23bcd7ff'/%3E%3Ccircle cx='135' cy='190' r='0.9' opacity='0.55'/%3E%3Ccircle cx='170' cy='215' r='1.2' opacity='0.7'/%3E%3Ccircle cx='210' cy='235' r='0.8' opacity='0.4'/%3E%3Ccircle cx='245' cy='205' r='1.4' opacity='0.85' fill='%23ffcf94'/%3E%3Ccircle cx='280' cy='240' r='1' opacity='0.6'/%3E%3Ccircle cx='30' cy='255' r='1.1' opacity='0.65'/%3E%3Ccircle cx='65' cy='280' r='0.9' opacity='0.5'/%3E%3Ccircle cx='100' cy='265' r='1.3' opacity='0.8' fill='%23ffcf94'/%3E%3Ccircle cx='145' cy='250' r='0.8' opacity='0.45'/%3E%3Ccircle cx='185' cy='275' r='1.5' opacity='0.9'/%3E%3Ccircle cx='220' cy='260' r='0.9' opacity='0.55'/%3E%3Ccircle cx='255' cy='285' r='1.2' opacity='0.7'/%3E%3Ccircle cx='290' cy='255' r='0.8' opacity='0.4'/%3E%3C/g%3E%3C/svg%3E");
-}
-
-.ambient-stars--a {
-  opacity: 0.5;
-  animation: ambient-star-twinkle-a 7s ease-in-out infinite;
-}
-
-.ambient-stars--b {
-  background-position: 150px 150px;
-  opacity: 0.35;
-  animation: ambient-star-twinkle-b 10s ease-in-out infinite;
-}
-
-@keyframes ambient-star-twinkle-a {
-  0%,
-  100% {
-    opacity: 0.3;
-  }
-  50% {
-    opacity: 0.7;
-  }
-}
-
-@keyframes ambient-star-twinkle-b {
-  0%,
-  100% {
-    opacity: 0.5;
-  }
-  50% {
-    opacity: 0.2;
-  }
-}
-
-/* Milky Way band -- a soft diagonal glow with denser stars along it, the
-   single most recognizable "this is a real sky, not a random scatter"
-   cue in actual astrophotography. Two layers, both static (no animation,
-   no filter, no blend-mode -- same cheap-by-default discipline as every
-   other layer here): a soft linear-gradient glow for the dust-lane light,
-   and the SAME starfield tile as .ambient-stars above but scaled down
-   (denser-looking) and held at higher opacity, both clipped to one
-   rotated strip so the extra star density reads as concentrated along
-   the band rather than uniformly brighter everywhere. Sits above the
-   vault vignette so the band doesn't get dimmed like the backdrop under
-   it, below the main starfield so those stars still read as the
-   "foreground" layer. */
-.ambient-milkyway {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 240vmax;
-  height: 42vmax;
-  margin-top: -21vmax;
-  margin-left: -120vmax;
-  transform: rotate(-27deg);
-  opacity: 0.55;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(200, 195, 255, 0.05) 30%,
-    rgba(225, 220, 255, 0.14) 48%,
-    rgba(255, 250, 245, 0.16) 52%,
-    rgba(200, 195, 255, 0.1) 70%,
-    transparent 100%
-  );
-}
-
-.ambient-milkyway-stars {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 240vmax;
-  height: 42vmax;
-  margin-top: -21vmax;
-  margin-left: -120vmax;
-  transform: rotate(-27deg);
-  opacity: 0.65;
-  -webkit-mask-image: radial-gradient(ellipse 46% 60% at 50% 50%, black 35%, transparent 100%);
-  mask-image: radial-gradient(ellipse 46% 60% at 50% 50%, black 35%, transparent 100%);
-  background-size: 130px 130px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cg fill='white'%3E%3Ccircle cx='24' cy='38' r='1.2' opacity='0.9' fill='%23ffcf94'/%3E%3Ccircle cx='58' cy='15' r='0.8' opacity='0.6'/%3E%3Ccircle cx='91' cy='52' r='1.4' opacity='0.8'/%3E%3Ccircle cx='130' cy='22' r='0.9' opacity='0.5' fill='%23bcd7ff'/%3E%3Ccircle cx='168' cy='60' r='1.1' opacity='0.7'/%3E%3Ccircle cx='205' cy='18' r='0.7' opacity='0.4'/%3E%3Ccircle cx='240' cy='45' r='1.3' opacity='0.85'/%3E%3Ccircle cx='275' cy='70' r='0.9' opacity='0.55'/%3E%3Ccircle cx='12' cy='95' r='1' opacity='0.6'/%3E%3Ccircle cx='48' cy='120' r='1.5' opacity='0.9'/%3E%3Ccircle cx='85' cy='140' r='0.8' opacity='0.45'/%3E%3Ccircle cx='120' cy='105' r='1.2' opacity='0.75'/%3E%3Ccircle cx='155' cy='130' r='0.9' opacity='0.5'/%3E%3Ccircle cx='190' cy='150' r='1.4' opacity='0.95' fill='%23ffcf94'/%3E%3Ccircle cx='225' cy='110' r='0.7' opacity='0.4'/%3E%3Ccircle cx='260' cy='135' r='1.1' opacity='0.65'/%3E%3Ccircle cx='290' cy='160' r='0.9' opacity='0.5'/%3E%3Ccircle cx='20' cy='175' r='1.3' opacity='0.8' fill='%23bcd7ff'/%3E%3Ccircle cx='55' cy='200' r='0.8' opacity='0.45'/%3E%3Ccircle cx='95' cy='220' r='1.5' opacity='0.9' fill='%23bcd7ff'/%3E%3Ccircle cx='135' cy='190' r='0.9' opacity='0.55'/%3E%3Ccircle cx='170' cy='215' r='1.2' opacity='0.7'/%3E%3Ccircle cx='210' cy='235' r='0.8' opacity='0.4'/%3E%3Ccircle cx='245' cy='205' r='1.4' opacity='0.85' fill='%23ffcf94'/%3E%3Ccircle cx='280' cy='240' r='1' opacity='0.6'/%3E%3Ccircle cx='30' cy='255' r='1.1' opacity='0.65'/%3E%3Ccircle cx='65' cy='280' r='0.9' opacity='0.5'/%3E%3Ccircle cx='100' cy='265' r='1.3' opacity='0.8' fill='%23ffcf94'/%3E%3Ccircle cx='145' cy='250' r='0.8' opacity='0.45'/%3E%3Ccircle cx='185' cy='275' r='1.5' opacity='0.9'/%3E%3Ccircle cx='220' cy='260' r='0.9' opacity='0.55'/%3E%3Ccircle cx='255' cy='285' r='1.2' opacity='0.7'/%3E%3Ccircle cx='290' cy='255' r='0.8' opacity='0.4'/%3E%3C/g%3E%3C/svg%3E");
-}
-
-/* A CSS-only planet, no image asset -- three layered radial-gradients do
-   the work a photo would: a bright sunlit crescent offset toward one
-   edge, a base sphere gradient that darkens toward the opposite limb,
-   and an inset shadow deep enough to read as the planet's own night
-   side rather than a flat circle. The outer box-shadow is a soft
-   atmosphere/glow halo, colored from the same cosmic-b the nebula
-   clouds use so it reads as part of the same scene, not a bolted-on
-   sticker. Anchored off-canvas at a corner (partially cropped by
-   .ambient-bg's own overflow: hidden) -- a full, centered planet reads
-   as a logo; a large one looming at the edge of frame reads as scale/
-   depth, the classic sci-fi wallpaper move. */
-.ambient-planet {
-  position: absolute;
-  bottom: -14vmax;
-  right: -12vmax;
-  width: 44vmax;
-  height: 44vmax;
-  border-radius: 50%;
-  opacity: 0.92;
-  background: radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.45) 0%, transparent 30%),
-    radial-gradient(
-      circle at 38% 34%,
-      color-mix(in srgb, var(--cosmic-c) 55%, white) 0%,
-      color-mix(in srgb, var(--cosmic-b) 65%, black) 55%,
-      #060510 100%
-    );
-  box-shadow: inset -20px -20px 70px rgba(0, 0, 0, 0.65), 0 0 100px -12px color-mix(in srgb, var(--cosmic-b) 45%, transparent);
-}
-
 /* Static pre-rendered noise (an SVG feTurbulence baked into a data-URI
    background-image, tiled), not a live filter -- the browser rasterizes
    this once, same as any other background-image, instead of resampling a
    turbulence function every frame the way an applied `filter` would.
-   Perf pass: mix-blend-mode: overlay removed -- it read fine when this
-   layer only sat above one rotating conic layer over an otherwise-static
-   mesh, but the galactic pass added a second conic, two blobs, four
-   motes, and two twinkling star layers underneath it, and a blend mode
-   has to be recomputed every time ANYTHING it's compositing against
-   changes, not just when this layer's own content does. At this point
-   that's every single frame, continuously, for as long as the tab is
-   open -- exactly the "measured expensive even standalone" cost this
-   file's own .ambient-conic comment already documents for blend-modes
-   elsewhere. Plain opacity at this same low value (0.035) is visually
-   indistinguishable from the overlay-blended version and costs nothing
-   beyond the one-time paint of a static background-image. */
+   Perf pass: mix-blend-mode: overlay removed -- a blend mode has to be
+   recomputed every time ANYTHING it's compositing against changes, not
+   just when this layer's own content does, and with a mesh, four blobs,
+   and motes underneath it that's every single frame, continuously, for as
+   long as the tab is open -- exactly the "measured expensive even
+   standalone" cost this file's own .ambient-blob-1 comment documents for
+   blend-modes elsewhere. Plain opacity at this same low value (0.035) is
+   visually indistinguishable from the overlay-blended version and costs
+   nothing beyond the one-time paint of a static background-image. */
 .ambient-grain {
   position: absolute;
   inset: 0;
@@ -452,24 +292,20 @@
   }
 }
 
-.ambient-bg--paused .ambient-conic,
-.ambient-bg--paused .ambient-conic-2,
 .ambient-bg--paused .ambient-blob-1,
 .ambient-bg--paused .ambient-blob-2,
-.ambient-bg--paused .ambient-mote,
-.ambient-bg--paused .ambient-stars--a,
-.ambient-bg--paused .ambient-stars--b {
+.ambient-bg--paused .ambient-blob-3,
+.ambient-bg--paused .ambient-blob-4,
+.ambient-bg--paused .ambient-mote {
   animation-play-state: paused;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ambient-conic,
-  .ambient-conic-2,
   .ambient-blob-1,
   .ambient-blob-2,
-  .ambient-mote,
-  .ambient-stars--a,
-  .ambient-stars--b {
+  .ambient-blob-3,
+  .ambient-blob-4,
+  .ambient-mote {
     animation: none;
   }
 }

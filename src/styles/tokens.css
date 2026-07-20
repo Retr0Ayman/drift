@@ -64,30 +64,32 @@
      own filter/blend-mode cost trap. */
   --ethereal-glow: 0 0 60px -18px rgba(255, 255, 255, 0.8);
 
-  /* Vault vignette -- a soft depth cue for the ambient background's cosmic
-     layer (AmbientBackground.css's .ambient-vault), deepening toward the
-     edges like looking up into a dome rather than at a flat backdrop.
-     Deliberately NOT theme-conditional -- the wallpaper itself is always
-     deep space regardless of the light/dark toggle (see .ambient-bg's own
-     comment), so this only ever needs the one true-near-black value. */
+  /* Vignette -- a soft depth cue for the ambient background's plasma layer
+     (AmbientBackground.css's .ambient-vault), deepening toward the edges
+     like looking into a liquid-filled vessel rather than at a flat
+     backdrop. Deliberately NOT theme-conditional -- the wallpaper itself
+     is always this dark scene regardless of the light/dark toggle (see
+     .ambient-bg's own comment), so this only ever needs the one
+     true-near-black value. */
   --ambient-vignette: rgba(2, 2, 8, 0.65);
 
-  /* Fixed cosmic accents -- nebula clouds (.ambient-mesh/.ambient-conic/
+  /* Fixed plasma accents -- the drifting blobs (.ambient-mesh/
      .ambient-blob-*) blend these with each game's own extracted accent
      pair (--ambient-primary/secondary) rather than either alone: pure
-     per-game tinting read as generic colored blobs with no "space"
-     identity, pure fixed color lost per-game variety entirely. Hot
-     magenta + deep cosmic blue is the real-nebula-photography pairing
-     (emission vs. reflection nebulae). Not theme-conditional, same
-     reasoning as --ambient-vignette above. */
+     per-game tinting reads as generic colored blobs with no consistent
+     identity, pure fixed color loses per-game variety entirely. Hot
+     magenta + electric blue is the base plasma pairing; still named
+     "cosmic" (pre-dates the plasma-liquid pass) rather than renamed, since
+     every glass surface's .liquid-sheen streak (globals.css) and the aura
+     ring (Navbar/CommandPalette/SearchBar) also read these same three
+     variables and a rename would touch all of them for no behavior change.
+     Not theme-conditional, same reasoning as --ambient-vignette above. */
   --cosmic-a: #ff2ea6;
   --cosmic-b: #2f5bff;
-  /* Third cosmic accent -- warm star/planet-lit tone (real starfields are
-     never uniformly white; K-type/M-type stars read warm-amber against
-     the cooler blue-white of hotter ones). Used for star color variance
-     and the sunlit face of .ambient-planet, never the nebula clouds
-     themselves (those stay the magenta/blue pair above). */
-  --cosmic-c: #ffb46b;
+  /* Third plasma accent -- molten orange, the hottest-reading hue in the
+     set. Used for .ambient-blob-3 and wherever a third, warmer accent is
+     wanted alongside the magenta/blue pair above. */
+  --cosmic-c: #ff7a3d;
 
   /* Text that sits directly on the ambient wallpaper with no card behind
      it (hero h1/h2 page titles, their eyebrow/meta labels -- Hero.css,
