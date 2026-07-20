@@ -10,6 +10,21 @@
   pointer-events: none;
 }
 
+/* Constrains the two floating capsules together to the same combined
+   footprint the old single .navbar used (max-width: 1240px), so this
+   split reads as "one navbar redesigned into two pieces", not a wider or
+   narrower bar. gap is real negative space -- the galactic wallpaper
+   shows through between the two capsules, which is the whole point of
+   splitting them (visionOS/dock-style distinct floating panels, not one
+   continuous surface). */
+.navbar-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  max-width: 1240px;
+}
+
 /* Galactic pass: pushed further than the other frost surfaces (searchbar,
    GlassPanel's own frost variant both stay at their existing 1.15) since
    this is the one glass surface on screen at all times -- the richest
@@ -17,17 +32,60 @@
    bleeding through the blur, rather than a uniform site-wide bump that'd
    risk over-saturating card content. Border blends less white in (35%
    instead of 45%) for the same reason -- more of the real magenta/blue
-   cosmic-a/b hue shows at the rim instead of being diluted toward grey. */
-.navbar {
+   cosmic-a/b hue shows at the rim instead of being diluted toward grey.
+   Shared by both capsules -- .navbar-brand and .navbar-main differ only
+   in their flex sizing (below), not in the glass treatment itself. */
+.navbar-brand,
+.navbar-main {
   pointer-events: auto;
-  width: 100%;
-  max-width: 1240px;
   border-radius: var(--pill);
   background: var(--aura-panel-bg);
   backdrop-filter: blur(var(--aura-blur)) saturate(1.35);
   -webkit-backdrop-filter: blur(var(--aura-blur)) saturate(1.35);
   border: 1px solid color-mix(in srgb, color-mix(in srgb, var(--aura-a), var(--aura-b)) 35%, white);
   transform-origin: top center;
+}
+
+.navbar-brand {
+  flex: none;
+  display: flex;
+  align-items: center;
+}
+
+.navbar-main {
+  flex: 1;
+  min-width: 0;
+}
+
+/* A thin cosmic gradient line along the very top inside edge of each
+   capsule -- a real DOM child, not a third pseudo-element, since
+   .liquid-sheen already claims ::before (idle streak) and ::after
+   (cursor glint) on this same element. Static, no animation -- same
+   discipline as everything else added this pass. Fixed-px inset (not a
+   percentage) so the bar's straight ends stay inside the pill's flat top
+   region regardless of capsule width -- both ends are fully semicircular
+   at this height (border-radius: var(--pill) on a ~60-65px-tall capsule
+   works out to roughly a 30px corner radius), so overflow: hidden isn't
+   needed to keep the bar's square corners from poking past the curve.
+   Deliberately NOT clipping this element's overflow: the mobile dropdown
+   (.navbar-links, absolutely positioned below .navbar-main) needs to
+   render outside this capsule's own box -- overflow: hidden here would
+   silently clip that dropdown along with the intended glow-bar corners,
+   which is exactly what happened before this fix. */
+.navbar-topglow {
+  position: absolute;
+  top: 0;
+  left: 34px;
+  right: 34px;
+  height: 1.5px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--cosmic-a) 70%, transparent) 25%,
+    color-mix(in srgb, var(--cosmic-b) 70%, transparent) 75%,
+    transparent 100%
+  );
+  pointer-events: none;
 }
 
 .navbar-inner {
@@ -42,6 +100,7 @@
   align-items: center;
   gap: 12px;
   cursor: pointer;
+  padding: 10px 20px 10px 14px;
 }
 
 /* Soft cosmic glow behind the mark -- a small static "power core" glint,
@@ -161,6 +220,7 @@
 }
 
 .navbar-links a {
+  position: relative;
   font-size: var(--fs-sm);
   font-weight: 650;
   color: var(--ink-2);
@@ -173,6 +233,27 @@
 .navbar-links a:hover {
   color: var(--ink);
   background: color-mix(in srgb, var(--glass-bg-strong) 75%, var(--cosmic-b) 12%);
+}
+
+/* Active-page indicator -- there was no way to tell which page you were on
+   from the navbar before this. A cosmic-gradient underline glow rather
+   than a filled pill background, so it reads as "current position" (a
+   HUD-style locator) instead of just another hover state. Static, no
+   animation. */
+.navbar-links a.active {
+  color: var(--ink);
+}
+
+.navbar-links a.active::after {
+  content: "";
+  position: absolute;
+  left: 15px;
+  right: 15px;
+  bottom: 4px;
+  height: 2px;
+  border-radius: var(--pill);
+  background: linear-gradient(90deg, var(--cosmic-a), var(--cosmic-b));
+  box-shadow: 0 0 8px -1px color-mix(in srgb, var(--cosmic-b) 60%, transparent);
 }
 
 .navbar-search-slot {
@@ -199,6 +280,41 @@
   font-size: 0.66rem;
   letter-spacing: 0.5px;
   padding: 6px 11px;
+}
+
+.navbar-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Telemetry-style pulsing dot, "live" tone only -- a real status light
+   instead of just a colored word, the same "this is a real-time readout"
+   cue the rest of this pass leans on. Plain opacity keyframe (no size/
+   position change, no filter), so this stays cheap even though it's
+   always animating while status is live. */
+.navbar-live-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: navbar-live-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes navbar-live-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .navbar-live-dot {
+    animation: none;
+  }
 }
 
 @media (max-width: 860px) {
@@ -237,6 +353,12 @@
     padding: 12px 14px;
   }
 
+  .navbar-links a.active::after {
+    left: 14px;
+    right: 14px;
+    bottom: 2px;
+  }
+
   .navbar-search-slot {
     display: none;
   }
@@ -254,7 +376,9 @@
    essential piece of this row (a nice-to-know sync indicator, not a
    control), so it's what gives way here -- narrower than the 860px
    breakpoint above so it stays visible on every width that actually has
-   room for it (tablets, larger phones). */
+   room for it (tablets, larger phones). Below 860px, .navbar-brand also
+   shrinks its own padding so the two-capsule split doesn't eat into the
+   already-tight space the single-bar layout was tuned for. */
 @media (max-width: 480px) {
   .navbar-status-group {
     display: none;
@@ -263,5 +387,13 @@
   .navbar-inner {
     gap: 10px;
     padding: 10px 8px 10px 14px;
+  }
+
+  .navbar-logo {
+    padding: 8px 12px 8px 10px;
+  }
+
+  .navbar-row {
+    gap: 6px;
   }
 }
