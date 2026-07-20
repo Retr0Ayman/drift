@@ -134,6 +134,7 @@
 .group-card {
   padding: 20px;
   border-radius: var(--r-2xl);
+  overflow: hidden;
   cursor: pointer;
   transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1),
     border-color var(--dur) var(--ease);
