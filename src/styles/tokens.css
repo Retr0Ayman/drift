@@ -110,7 +110,18 @@
      split off. */
   --aura-a: #6b4fa055;
   --aura-b: #1f7a6c55;
-  --aura-blur: 20px;
+  /* Perf pass: pulled back from 20px -- backdrop-filter blur is one of the
+     single most expensive things a browser can do per-frame, and every
+     surface using it (navbar, search bar, GlassPanel's frost/frost-
+     strong/aura variants) sits directly over the ambient background's own
+     continuously-animating layers, so the backdrop actually being blurred
+     changes every frame regardless of whether the glass panel itself is
+     static. 15px keeps the same clearly-frosted look at meaningfully
+     lower GPU cost than 20px, especially on integrated graphics/mobile
+     where backdrop-filter tends to cost far more than on a desktop
+     discrete GPU (GlassPanel.css's own comment documents a real
+     headless-vs-headed measurement gap for this exact property). */
+  --aura-blur: 15px;
 
   /* "Apple Intelligence" glow palette -- a warm pink/magenta/blue/gold
      sweep, deliberately distinct from --aura-a/--aura-b's cooler purple/

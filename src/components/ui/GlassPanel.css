@@ -62,10 +62,18 @@
    software-rendering worst case that doesn't reflect actual users. Re-
    verify any future change here in a real headed browser, not headless,
    if the numbers look alarming. */
+/* Perf pass: saturate pulled back from 1.4 to 1.25 -- this is the variant
+   that ends up on screen the MOST times at once (every GameCard/release-
+   card tile on a catalog grid), so it's the highest-leverage place to
+   trim backdrop-filter cost for anyone on weaker/integrated graphics,
+   even though the comment above already found this fine on a real
+   discrete-GPU desktop specifically. blur radius itself now comes from
+   --aura-blur (tokens.css), already pulled back from 20px to 15px for
+   the same reason -- 33px here instead of the old 44px. */
 .glass-panel--frost-strong {
   background: color-mix(in srgb, var(--aura-panel-bg) 55%, transparent);
-  -webkit-backdrop-filter: blur(calc(var(--aura-blur) * 2.2)) saturate(1.4);
-  backdrop-filter: blur(calc(var(--aura-blur) * 2.2)) saturate(1.4);
+  -webkit-backdrop-filter: blur(calc(var(--aura-blur) * 2.2)) saturate(1.25);
+  backdrop-filter: blur(calc(var(--aura-blur) * 2.2)) saturate(1.25);
   border: 1px solid color-mix(in srgb, color-mix(in srgb, var(--aura-a), var(--aura-b)) 45%, white);
   box-shadow: var(--glass-highlight), var(--glass-shadow-lg), var(--glass-ambient), var(--ethereal-glow);
 }

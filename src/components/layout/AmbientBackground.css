@@ -395,15 +395,22 @@
    background-image, tiled), not a live filter -- the browser rasterizes
    this once, same as any other background-image, instead of resampling a
    turbulence function every frame the way an applied `filter` would.
-   mix-blend-mode: overlay + a low opacity is what gives the tactile,
-   editorial paper-grain feel without darkening or lightening the page --
-   overlay preserves pure black/white in the underlying stack while
-   pushing midtones either direction based on the noise. */
+   Perf pass: mix-blend-mode: overlay removed -- it read fine when this
+   layer only sat above one rotating conic layer over an otherwise-static
+   mesh, but the galactic pass added a second conic, two blobs, four
+   motes, and two twinkling star layers underneath it, and a blend mode
+   has to be recomputed every time ANYTHING it's compositing against
+   changes, not just when this layer's own content does. At this point
+   that's every single frame, continuously, for as long as the tab is
+   open -- exactly the "measured expensive even standalone" cost this
+   file's own .ambient-conic comment already documents for blend-modes
+   elsewhere. Plain opacity at this same low value (0.035) is visually
+   indistinguishable from the overlay-blended version and costs nothing
+   beyond the one-time paint of a static background-image. */
 .ambient-grain {
   position: absolute;
   inset: 0;
   opacity: 0.035;
-  mix-blend-mode: overlay;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n' color-interpolation-filters='sRGB'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch' result='t'/%3E%3CfeColorMatrix in='t' type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.6 0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
   background-size: 200px 200px;
 }
