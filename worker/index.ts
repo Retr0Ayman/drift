@@ -31,6 +31,8 @@ import { runDrmBackfillTick } from "./backfill/drmBackfillRun";
 import { runFirstSeenReconcileTick } from "./backfill/reconcileFirstSeen";
 import { runStaleRefreshTick } from "./backfill/refreshStale";
 import { runEnrichmentRepairTick } from "./backfill/repairEnrichment";
+import { runGroupReliabilityTick } from "./backfill/groupReliability";
+import { handleGroupReliability } from "./routes/groupReliability";
 
 /* This is a Worker with static assets (wrangler.jsonc `main` + `assets`), not
    classic Cloudflare Pages -- confirmed live: the workers.dev domain and
@@ -72,6 +74,7 @@ const ROUTES: Record<string, Handler> = {
   "/api/feed.xml": handleFeed,
   "/api/search-assist": handleSearchAssist,
   "/api/catalog": handleCatalog,
+  "/api/group-reliability": handleGroupReliability,
 };
 
 export default {
@@ -96,13 +99,20 @@ export default {
 
   // Five cron patterns (see wrangler.jsonc's `triggers.crons`), dispatched
   // by which one fired: the original 15-minute trigger runs the Discord
-  // alerts (worker/scheduled.ts), the small steady-state D1 sync, AND
+  // alerts (worker/scheduled.ts), the small steady-state D1 sync,
   // worker/backfill/refreshStale.ts's independent Steam-metadata freshness
   // sweep (oldest-updated-first, small batch, keyed off each game's own
   // already-known appid -- unlike steady-state sync, this one isn't gated
   // on any recent crack/xREL activity, since a game can go stale on Steam's
   // side with zero cracking-scene activity to ever re-trigger a check
-  // otherwise); a separate, more frequent trigger drives the resumable
+  // otherwise), AND worker/backfill/groupReliability.ts's group-reliability
+  // star-rating recompute -- a pure D1 aggregate over the releases table
+  // already sitting there (no external HTTP calls), so it piggybacks on
+  // this slot rather than needing its own trigger (Cloudflare's 5-cron cap
+  // is already fully spent, see below). Internally throttled to roughly
+  // once an hour (RECOMPUTE_INTERVAL_MS) since the underlying data only
+  // shifts a little between 15-minute ticks; a separate, more frequent
+  // trigger drives the resumable
   // historical backfill (worker/backfill/run.ts) until it completes, then
   // becomes a cheap no-op forever after -- see that file's own comment for
   // why this needs its own faster cadence instead of piggybacking on the
@@ -144,6 +154,8 @@ export default {
       ctx.waitUntil(Promise.all([runDrmBackfillTick(env), runFirstSeenReconcileTick(env), runEnrichmentRepairTick(env)]));
       return;
     }
-    ctx.waitUntil(Promise.all([runScheduledAlert(env), runSteadyStateSync(env), runStaleRefreshTick(env)]));
+    ctx.waitUntil(
+      Promise.all([runScheduledAlert(env), runSteadyStateSync(env), runStaleRefreshTick(env), runGroupReliabilityTick(env)]),
+    );
   },
 };

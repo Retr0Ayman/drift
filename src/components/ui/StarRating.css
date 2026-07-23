@@ -1,0 +1,32 @@
+.star-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  cursor: help;
+}
+
+.star-rating-star {
+  position: relative;
+  display: inline-block;
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+.star-rating-star-empty {
+  color: var(--ink-4);
+}
+
+.star-rating-star-fill {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  color: var(--accent);
+}
+
+.star-rating--unrated {
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  color: var(--ink-3);
+  letter-spacing: 0.2px;
+}
