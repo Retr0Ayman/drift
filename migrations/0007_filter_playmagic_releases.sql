@@ -1,0 +1,15 @@
+-- Real, confirmed-live data-quality fix, not a categorization change:
+-- PLAYMAGiC is a trainer-making outfit (game trainers/mods, e.g. "THIEF.
+-- Definitive.Edition.Plus.6.Trainer-PLAYMAGiC" -- a tiny companion trainer
+-- tool, not a DRM bypass), not a release/crack group at all. xREL itself
+-- files these under ext_info.type "master_game" same as a real crack
+-- though, so they passed worker/backfill/parse.ts's groupRowsByTitle
+-- filter and landed in D1 crediting PLAYMAGiC as if it had cracked 5 real
+-- games -- confirmed live via /api/catalog before this migration: Thief,
+-- Tales of Xillia Remastered, Dragon Age: The Veilguard, Need for Speed
+-- Rivals, Max Payne 3. worker/backfill/parse.ts and src/lib/catalog.ts
+-- both now exclude group_name "PLAYMAGiC" going forward (see
+-- isTrainerGroup in worker/shared/constants.ts / src/lib/constants.ts) --
+-- this migration removes the rows already sitting in D1 from before that
+-- fix landed.
+DELETE FROM releases WHERE LOWER(group_name) = 'playmagic';

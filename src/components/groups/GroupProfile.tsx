@@ -4,13 +4,15 @@ import type { Game, Release } from "../../types/game";
 import { useCatalog } from "../../hooks/useCatalog";
 import { useGroupReleases } from "../../hooks/useGroupReleases";
 import { usePlatformP2PIndex } from "../../hooks/usePlatformP2PIndex";
+import { useGroupReliability } from "../../hooks/useGroupReliability";
 import { allReleases } from "../../lib/groups";
 import { colorForName, coverImg, fmtDateMs, recencyStatusFor, relOutdated, releaseTs, slugify } from "../../lib/format";
-import { STARRED_GROUPS } from "../../lib/constants";
+import { STARRED_GROUPS, isP2PGroup } from "../../lib/constants";
 import { buildLiveGameFromRows, mergeP2PReleases, releaseFromRow } from "../../lib/catalog";
 import GlassPanel from "../ui/GlassPanel";
 import Reveal from "../ui/Reveal";
 import AiSummary from "../ui/AiSummary";
+import StarRating from "../ui/StarRating";
 import ReleaseCard from "../game/ReleaseCard";
 import { usePageMeta } from "../../hooks/usePageMeta";
 import "./Groups.css";
@@ -92,6 +94,7 @@ export default function GroupProfile() {
   const navigate = useNavigate();
   const { games, mergeOne } = useCatalog();
   const { index: p2pIndex } = usePlatformP2PIndex();
+  const { data: reliability } = useGroupReliability();
   const seedMatches = allReleases(games).filter(({ r }) => slugify(r.group || "unknown") === key);
 
   // The exact display name (needed for the live query) only comes from a
@@ -215,7 +218,8 @@ export default function GroupProfile() {
           </div>
           <div>
             <div className="grouphead-tag">
-              Scene Group{STARRED_GROUPS.includes(key || "") ? " · Starred" : ""}
+              {isP2PGroup(name) ? "P2P Group" : "Scene Group"}
+              {STARRED_GROUPS.includes(key || "") ? " · Starred" : ""}
             </div>
             <h1>{name}</h1>
             <div className="grouphead-meta">
@@ -240,7 +244,8 @@ export default function GroupProfile() {
               facts={{
                 "Releases tracked": rows.length,
                 Leaning: isRepackGroupProfile ? "Repack group" : `${leaning}-leaning`,
-                Starred: STARRED_GROUPS.includes(key || "") ? "yes (P2P-only group)" : "no",
+                "Group type": isP2PGroup(name) ? "P2P/non-scene" : "Scene",
+                Starred: STARRED_GROUPS.includes(key || "") ? "yes (directly polled)" : "no",
                 "Recent titles": rows.slice(0, 8).map((r) => r.game.title),
               }}
             />
@@ -262,6 +267,19 @@ export default function GroupProfile() {
             <div className="group-stat-n">{daysSince == null ? "—" : daysSince}</div>
             <div className="group-stat-l">Days since last crack</div>
           </GlassPanel>
+          {!isRepackGroupProfile ? (
+            <GlassPanel className="group-stat" frost>
+              <div className="group-stat-n group-stat-n--sm">
+                <StarRating
+                  stars={reliability[key || ""]?.stars ?? null}
+                  genuineCount={reliability[key || ""]?.genuine_count ?? 0}
+                  correctionCount={reliability[key || ""]?.correction_count ?? 0}
+                  avgFixDays={reliability[key || ""]?.avg_fix_days ?? null}
+                />
+              </div>
+              <div className="group-stat-l">Crack reliability</div>
+            </GlassPanel>
+          ) : null}
         </div>
       </Reveal>
 

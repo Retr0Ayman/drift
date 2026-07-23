@@ -1,5 +1,5 @@
 import type { RawXrelRelease } from "../shared/xrel";
-import { methodForGroup, isRepackGroup, isAnonymousUpload, isWindowsRelease } from "../shared/constants";
+import { methodForGroup, isRepackGroup, isAnonymousUpload, isWindowsRelease, isTrainerGroup } from "../shared/constants";
 
 /* Hand-synced port of src/lib/catalog.ts's title/version/build parsing and
    src/lib/format.ts's slugify -- the worker and frontend bundle
@@ -216,6 +216,11 @@ export function groupRowsByTitle(rows: RawXrelRelease[]): Map<string, ParsedGame
     const ext = rel.ext_info || {};
     if (ext.type && ext.type !== "master_game") continue;
     if (!isWindowsRelease(rel.dirname || "")) continue;
+    // PLAYMAGiC is a trainer-making outfit, not a release group -- xREL
+    // mislabels its trainer drops as ext_info.type "master_game" same as a
+    // real crack, so this exclusion has to be explicit, not covered by the
+    // type check above. See isTrainerGroup's own comment.
+    if (isTrainerGroup(rel.group_name || "")) continue;
     const extTitle = ext.title;
     if (!extTitle) continue;
     const title = correctedTitleFromDirname(extTitle, rel.dirname || "");

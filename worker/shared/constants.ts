@@ -33,6 +33,50 @@ export const isRepackGroup = (g: string): boolean => REPACK_GROUPS.has(normGroup
 
 export const isAnonymousUpload = (g: string): boolean => normGroup(g) === "p2p";
 
+/* PLAYMAGiC is not a release group at all -- confirmed live (real friend-
+   reported tip, then verified against production D1 via /api/catalog):
+   it's a trainer-making outfit (game trainers/mods, e.g. "THIEF.Definitive.
+   Edition.Plus.6.Trainer-PLAYMAGiC"), yet xREL itself files these under
+   ext_info.type "master_game" just like a real crack, so they were passing
+   groupRowsByTitle's "real Windows master_game" filter and landing in D1
+   crediting PLAYMAGiC as if it had cracked Thief, Tales of Xillia
+   Remastered, Dragon Age: The Veilguard, Need for Speed Rivals, and Max
+   Payne 3 (all 5 confirmed live before migrations/0007 removed the already-
+   polluted rows). This is a data-quality exclusion, not a category like
+   is_repack/isAnonymousUpload -- a trainer isn't a crack OR a repack of
+   one, it has no business being tracked as a release at all. */
+export const isTrainerGroup = (g: string): boolean => normGroup(g) === "playmagic";
+
+/* P2P/non-scene classification for the Groups page's P2P-vs-Scene filter --
+   deliberately separate from STARRED_GROUPS above, which exists only to
+   decide "does this group need direct/individual xREL polling because it's
+   invisible to the main browse feed" (a data-completeness concern). This
+   list answers a different question -- "is this group's distribution
+   channel genuinely P2P/non-scene, so the badge on its card should say
+   P2P, not Scene" -- for groups that already have real presence in D1 via
+   the deep/archive backfills (title-search-driven, so P2P repacks/cracks
+   of already-known titles get swept in) without needing to be starred.
+   Every name here is confirmed-live, same "extend it, never guess at it"
+   bar REPACK_GROUPS already holds itself to -- verified two ways: (a)
+   real, exact-group-name release rows exist in xREL's search API, and
+   (b) those rows come back in xREL's own `p2p_results` bucket, not
+   `results` (scene), which is xREL's own real classification, not a
+   guess layered on top of it. GOG/Black_Box/3DM/FCKDRM were checked the
+   same way and dropped: GOG and Black_Box never turned up as a real
+   group_name at all (only as an unrelated installer tag / TV show), 3DM's
+   matches were all a different "3DMax"/"3DMark" group/software, and
+   FCKDRM's real releases come back overwhelmingly in xREL's own `results`
+   (scene) bucket, not `p2p_results` -- so FCKDRM is genuinely scene, not
+   P2P, and stays unclassified (defaults to Scene) rather than being
+   force-fit onto this list. EMPRESS is the one surprise from that same
+   live check: assumed scene going in, but its real releases come back
+   entirely under `p2p_results` too -- EMPRESS is independent/P2P-
+   distributed by xREL's own data, not scene, even though its crack
+   METHOD (methodForGroup below) is still correctly "trad". */
+const P2P_GROUPS = new Set([...REPACK_GROUPS, ...["ShadowEagle", "ALI213", "RVTFiX", "EMPRESS"].map(normGroup)]);
+
+export const isP2PGroup = (g: string): boolean => P2P_GROUPS.has(normGroup(g)) || STARRED_GROUPS.map(normGroup).includes(normGroup(g));
+
 /* Confirmed live: some P2P groups (e.g. golemnight) dump console games
    under Sony's own internal content-ID prefixes instead of writing a
    literal platform name in the dirname -- "The.Witcher.3.Wild.Hunt.GOTY.

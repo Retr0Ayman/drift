@@ -1,6 +1,6 @@
 import type { Game, Release } from "../types/game";
 import { slugify } from "./format";
-import { methodForGroup, isRepackGroup, isAnonymousUpload, isWindowsRelease } from "./constants";
+import { methodForGroup, isRepackGroup, isAnonymousUpload, isWindowsRelease, isTrainerGroup } from "./constants";
 import { normalizeTitle } from "./companies";
 import type { XrelReleaseRow } from "./xrel";
 
@@ -165,6 +165,9 @@ export function parseReleaseRows(list: RawRelease[]): Record<string, PartialGame
     const ext = rel.ext_info || {};
     if (ext.type && ext.type !== "master_game") continue;
     if (!isWindowsRelease(rel.dirname || "")) continue;
+    // PLAYMAGiC is a trainer-making outfit, not a release group -- see
+    // isTrainerGroup's own comment in ./constants.ts.
+    if (isTrainerGroup(rel.group_name || "")) continue;
     const title = ext.title;
     if (!title) continue;
     const key = ext.id || title;

@@ -37,9 +37,19 @@ export default function GameCard({ game }: { game: Game }) {
                     : st === "unv"
                       ? "Unverified — no confirmed crack build number for this release yet"
                       : "Current — matches or beats the latest Steam build";
+                // Same "never let a repack/anonymous upload read as if it
+                // cracked the game" rule ReleaseCard/CrackTimeline already
+                // apply -- this compact card-grid pill was the one place
+                // still rendering "TRAD · RIDDICK" indistinguishably from a
+                // genuine crack credit.
+                const label = r.isAnonymous
+                  ? "P2P · Anonymous"
+                  : r.isRepack
+                    ? `Repack · ${r.group}`
+                    : `${r.method === "hv" ? "HV" : "TRAD"} · ${r.group}`;
                 return (
-                  <Pill key={i} tone={r.method} title={markerTitle}>
-                    {r.method === "hv" ? "HV" : "TRAD"} · {r.group}
+                  <Pill key={i} tone={r.isRepack || r.isAnonymous ? "neutral" : r.method} title={markerTitle}>
+                    {label}
                     {st !== "cur" ? <i className={`method-status-dot method-status-dot--${st}`} /> : null}
                   </Pill>
                 );

@@ -1,6 +1,6 @@
 import type { Game, Release } from "../types/game";
 import { relOutdated, releaseTs, slugify } from "./format";
-import { STARRED_GROUPS } from "./constants";
+import { STARRED_GROUPS, isP2PGroup } from "./constants";
 
 export interface GameRelease {
   g: Game;
@@ -15,7 +15,18 @@ export interface GroupEntry {
   trad: number;
   out: number;
   lastTs: number;
+  /* Needs direct/individual xREL polling (voices38, DenuvOwO) -- drives the
+     star badge + pinned-to-top card treatment. NOT the same thing as "is
+     this a P2P group" below; see isP2PGroup's own comment for why these
+     two questions are deliberately answered separately now. */
   starred: boolean;
+  /* Real P2P/non-scene classification (isP2PGroup) -- drives the Groups
+     page's P2P-vs-Scene filter and card badge. Every starred group is also
+     P2P (STARRED_GROUPS is a subset), but plenty of real P2P groups
+     (RIDDICK, ShadowEagle, ALI213, RVTFiX, EMPRESS, the curated repack
+     groups) already have real release rows in D1 via the deep/archive
+     backfills without needing to be individually polled. */
+  isP2P: boolean;
 }
 
 /* Every release already carries its own {group, method}; a group's
@@ -47,7 +58,17 @@ export function groupsIndex(games: Game[], extra: GroupEntry[] = []): GroupEntry
     const name = r.group || "unknown";
     const key = slugify(name);
     if (!map[key]) {
-      map[key] = { key, name, count: 0, hv: 0, trad: 0, out: 0, lastTs: 0, starred: STARRED_GROUPS.includes(key) };
+      map[key] = {
+        key,
+        name,
+        count: 0,
+        hv: 0,
+        trad: 0,
+        out: 0,
+        lastTs: 0,
+        starred: STARRED_GROUPS.includes(key),
+        isP2P: isP2PGroup(name),
+      };
     }
     map[key].count++;
     map[key][r.method]++;

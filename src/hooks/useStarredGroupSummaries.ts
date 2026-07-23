@@ -75,6 +75,7 @@ export function useStarredGroupSummaries(games: Game[]): { summaries: GroupEntry
             out: 0,
             lastTs,
             starred: true,
+            isP2P: true,
           };
         }),
       );

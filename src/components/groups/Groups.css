@@ -183,6 +183,11 @@
   font-size: 0.86rem;
 }
 
+.group-p2p-tag {
+  font-size: 0.58rem;
+  padding: 2px 7px;
+}
+
 .group-count {
   font-size: 0.74rem;
   color: var(--ink-2);
@@ -208,10 +213,17 @@
   border-radius: var(--pill);
 }
 
+.group-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 12px;
+}
+
 .group-last {
   font-size: 0.68rem;
   color: var(--ink-3);
-  margin-top: 10px;
   font-weight: 500;
 }
 

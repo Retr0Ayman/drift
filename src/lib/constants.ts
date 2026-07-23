@@ -43,6 +43,28 @@ export const isRepackGroup = (g: string): boolean => REPACK_GROUPS.has(normGroup
 
 export const isAnonymousUpload = (g: string): boolean => normGroup(g) === "p2p";
 
+/* PLAYMAGiC is not a release group at all -- confirmed live: it's a
+   trainer-making outfit (game trainers/mods, e.g. "THIEF.Definitive.
+   Edition.Plus.6.Trainer-PLAYMAGiC"), not a crack/repack group, yet xREL
+   files these under ext_info.type "master_game" just like a real crack.
+   Mirrors worker/shared/constants.ts's own copy -- see that file's comment
+   for the full confirmed-live investigation (5 real games in production D1
+   had a PLAYMAGiC row before migrations/0007 removed them). */
+export const isTrainerGroup = (g: string): boolean => normGroup(g) === "playmagic";
+
+/* P2P/non-scene classification for the Groups page's P2P-vs-Scene filter --
+   mirrors worker/shared/constants.ts's own P2P_GROUPS; see that file's
+   comment for the full confirmed-live investigation (which candidates were
+   verified real via xREL's own scene-vs-p2p_results split, and which ones
+   -- GOG, Black_Box, 3DM, FCKDRM -- were checked and dropped for not
+   holding up against real data). Deliberately separate from STARRED_GROUPS
+   above: starring is about polling groups xREL's browse feed can't reach,
+   this is about which already-tracked groups' badge should say P2P. */
+const P2P_GROUPS = new Set([...REPACK_GROUPS, ...["ShadowEagle", "ALI213", "RVTFiX", "EMPRESS"].map(normGroup)]);
+
+export const isP2PGroup = (g: string): boolean =>
+  P2P_GROUPS.has(normGroup(g)) || STARRED_GROUPS.map(normGroup).includes(normGroup(g));
+
 /* This is a Windows/Steam-build tracker specifically -- a release tagged
    for another platform has nothing to do with the Steam Windows build being
    compared against, and showing one as if it were a PC crack is actively
