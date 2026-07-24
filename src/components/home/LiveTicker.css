@@ -111,13 +111,13 @@
   background: var(--glass-bg-strong);
 }
 
-.live-ticker-title {
+.live-ticker-headline {
   font-size: 0.82rem;
   font-weight: 650;
   color: var(--ink);
 }
 
-.live-ticker-group {
+.live-ticker-meta {
   font-size: 0.74rem;
   font-weight: 600;
   color: var(--ink-3);
@@ -148,7 +148,7 @@
     padding: 8px 14px;
   }
 
-  .live-ticker-group {
+  .live-ticker-meta {
     display: none;
   }
 }
