@@ -23,13 +23,21 @@
    globals.css's --canvas-ink), had to stop doing that. Neutral obsidian
    rather than the old version's navy-black -- the color now comes entirely
    from the blobs floating in it, not from the vessel itself. */
+/* Lava-lamp glossy pass: pushed darker and less purple-tinted than the
+   previous plasma-liquid base -- a near-neutral-black vessel is what makes
+   the now-glossy, more saturated blobs (see .ambient-blob-1 etc below)
+   read as distinctly lit spheres floating in it, same reasoning a real
+   lava lamp's dark base does. Still a single static radial-gradient, still
+   fully opaque (no transparent stops -- body's own theme-driven --bg-0
+   must never show through), still NOT theme-conditional -- same "always
+   this scene" decision the git log already documents. */
 .ambient-bg {
   position: fixed;
   inset: 0;
   z-index: 0;
   overflow: hidden;
   pointer-events: none;
-  background: radial-gradient(ellipse 140% 90% at 50% -10%, #1a1220 0%, #0d0810 45%, #06040a 100%);
+  background: radial-gradient(ellipse 140% 90% at 50% -10%, #120c16 0%, #08050b 45%, #020103 100%);
 }
 
 /* Everything that drifts with the pointer (AmbientBackground.tsx) lives in
@@ -65,10 +73,17 @@
    higher than the old pale-ethereal version (0.42 -> 0.58) since this now
    paints over .ambient-bg's near-black base instead of a pale body
    background -- the same alpha reads much fainter against black. */
+/* Glossy pass: pulled back from 0.62 -- against the now-darker .ambient-bg
+   base, a full-viewport wash at the old opacity competed with the point
+   of a lava-lamp look (distinct glossy blobs suspended in a dark vessel,
+   not an even colored fog). Lower opacity lets more of the near-black
+   base read through between/around the blobs so they read as separate
+   lit objects, same reasoning the reference image's black backdrop
+   documents. */
 .ambient-mesh {
   position: absolute;
   inset: 0;
-  opacity: 0.62;
+  opacity: 0.46;
   background:
     radial-gradient(ellipse 62% 55% at 6% 8%,
       color-mix(in srgb, var(--ambient-primary, #6b4fa0) 70%, var(--cosmic-a, #ff2ea6) 30%) 0%, transparent 72%),
@@ -104,7 +119,25 @@
    into each other -- the actual "merge and separate" lava-lamp cue --
    rather than re-animating ground the static mesh already covers. Long
    (52-96s), non-round, non-symmetric durations/easings so the four never
-   fall into a visible sync pattern. */
+   fall into a visible sync pattern.
+
+   Glossy-shading pass: each blob's `background` is now TWO stacked radial-
+   gradients (CSS layers multiple background-image values on one property,
+   first-listed paints on top) instead of one -- a small, off-center bright
+   highlight layered over the original centered color-falloff layer, which
+   is what makes a flat blurred color patch read as a lit, glossy 3D sphere
+   instead. Deliberately NOT an SVG goo filter (feGaussianBlur +
+   feColorMatrix threshold): that's the technique the reference brief
+   assumed was still here, but it never survived this file's own earlier
+   perf pass (see the fps numbers just above) -- reintroducing a live
+   filter/blend-mode would undo exactly the cost work this file documents,
+   which the same brief also explicitly says not to regress. Two static
+   gradients is still one-time-paint + compositor-only-transform, same
+   cost class as the single-gradient version this replaces. Highlight
+   offset (28% 24%) is the same for all four blobs -- one consistent
+   upper-left light source reads as physically real lighting; a different
+   offset per blob would read as four independently glowing objects
+   instead of one scene lit from one direction. */
 .ambient-blob-1 {
   position: absolute;
   top: 62%;
@@ -114,7 +147,11 @@
   margin-top: -24vmax;
   margin-left: -24vmax;
   opacity: 0.42;
-  background: radial-gradient(circle, color-mix(in srgb, var(--ambient-primary, #6b4fa0) 55%, var(--cosmic-a, #ff2ea6) 45%) 0%, transparent 70%);
+  background:
+    radial-gradient(circle at 28% 24%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.15) 16%, transparent 34%),
+    radial-gradient(circle, color-mix(in srgb, var(--ambient-primary, #6b4fa0) 55%, var(--cosmic-a, #ff2ea6) 45%) 0%,
+      color-mix(in srgb, var(--ambient-primary, #6b4fa0) 55%, var(--cosmic-a, #ff2ea6) 45%) 38%,
+      color-mix(in srgb, var(--ambient-primary, #6b4fa0) 40%, black 20%) 62%, transparent 70%);
   animation: ambient-blob-drift-1 78s ease-in-out infinite;
   will-change: transform;
 }
@@ -141,7 +178,11 @@
   margin-top: -22vmax;
   margin-left: -22vmax;
   opacity: 0.38;
-  background: radial-gradient(circle, color-mix(in srgb, var(--ambient-secondary, #4a3570) 55%, var(--cosmic-b, #2f5bff) 45%) 0%, transparent 70%);
+  background:
+    radial-gradient(circle at 28% 24%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.15) 16%, transparent 34%),
+    radial-gradient(circle, color-mix(in srgb, var(--ambient-secondary, #4a3570) 55%, var(--cosmic-b, #2f5bff) 45%) 0%,
+      color-mix(in srgb, var(--ambient-secondary, #4a3570) 55%, var(--cosmic-b, #2f5bff) 45%) 38%,
+      color-mix(in srgb, var(--ambient-secondary, #4a3570) 40%, black 20%) 62%, transparent 70%);
   animation: ambient-blob-drift-2 96s ease-in-out infinite;
   will-change: transform;
 }
@@ -173,7 +214,11 @@
   margin-top: -20vmax;
   margin-left: -20vmax;
   opacity: 0.34;
-  background: radial-gradient(circle, color-mix(in srgb, var(--cosmic-c, #ff7a3d) 70%, var(--ambient-primary, #6b4fa0) 30%) 0%, transparent 70%);
+  background:
+    radial-gradient(circle at 28% 24%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.15) 16%, transparent 34%),
+    radial-gradient(circle, color-mix(in srgb, var(--cosmic-c, #ff7a3d) 70%, var(--ambient-primary, #6b4fa0) 30%) 0%,
+      color-mix(in srgb, var(--cosmic-c, #ff7a3d) 70%, var(--ambient-primary, #6b4fa0) 30%) 38%,
+      color-mix(in srgb, var(--cosmic-c, #ff7a3d) 45%, black 20%) 62%, transparent 70%);
   animation: ambient-blob-drift-3 64s ease-in-out infinite;
   will-change: transform;
 }
@@ -204,7 +249,11 @@
   margin-top: -17vmax;
   margin-left: -17vmax;
   opacity: 0.3;
-  background: radial-gradient(circle, color-mix(in srgb, var(--cosmic-a, #ff2ea6), var(--cosmic-b, #2f5bff)) 0%, transparent 72%);
+  background:
+    radial-gradient(circle at 28% 24%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.15) 16%, transparent 34%),
+    radial-gradient(circle, color-mix(in srgb, var(--cosmic-a, #ff2ea6), var(--cosmic-b, #2f5bff)) 0%,
+      color-mix(in srgb, var(--cosmic-a, #ff2ea6), var(--cosmic-b, #2f5bff)) 38%,
+      color-mix(in srgb, color-mix(in srgb, var(--cosmic-a, #ff2ea6), var(--cosmic-b, #2f5bff)) 60%, black 25%) 62%, transparent 72%);
   animation: ambient-blob-drift-4 52s ease-in-out infinite;
   will-change: transform;
 }
