@@ -161,28 +161,21 @@ select {
   isolation: isolate;
 }
 
-/* Idle drift on top of the static streak above -- a slow transform-only
-   oscillation (translate + scale, the same compositor-only recipe
-   AmbientBackground.css's blobs already validated) so glass panels feel
-   lit and alive even at rest, not just on hover/cursor-track. Runs
-   independently of the ::after cursor-glint below; transform, never
-   background-position, specifically so this stays cheap even with a dozen
-   .liquid-sheen surfaces visible at once on a catalog grid. */
-/* Expanded for the galactic pass: two faint cosmic-tinted stops
-   (magenta near the top streak, blue further along) alongside the
-   original plain-white highlight -- the VisionOS material cue this is
-   modeled on doesn't just catch light, it picks up a wash of whatever
-   colored environment is behind/around it. Since the wallpaper itself
-   is always the same cosmic magenta/blue scene now (see .ambient-bg's
-   own comment), every glass surface subtly reads as lit BY that scene
-   specifically, not by generic white light -- still additive, still a
-   single static gradient, no new cost. */
-/* Theme consolidation: one value now, the (formerly dark-mode-only) dimmer
-   variant -- a bright 0.32-alpha white streak was tuned for a light glass
-   fill catching light against a page background; the fill underneath is
-   always the darker translucent one now (GlassPanel.css), so the dimmer
-   catch-light reads correctly as "real glass" instead of a blown-out
-   streak. */
+/* FIX (confirmed live, post corner-clipping fix): this used to idle-drift
+   (liquid-idle-drift, translate -3%/-2% -> 3%/2% every 19s) on top of the
+   static streak below. Confirmed live as a real, distracting artifact,
+   not a subtle glass cue -- now that tile corner-clipping correctly
+   respects border-radius, this streak's full diagonal sweep is fully
+   visible (previously partially masked by the clipping bug) on every
+   surface carrying this class at once (every GameCard/group-card tile on
+   a grid, the search bar, the navbar pills), all animating in the same
+   unstaggered 19s cycle simultaneously -- read as a distracting moving
+   white shape sliding across tiles/search bar, especially now that the
+   background itself (many small glossy blobs) already carries plenty of
+   visual motion/interest and doesn't need this competing for attention.
+   Kept the static highlight itself (the real "glass catches light" cue
+   this comment block's own reasoning still holds for) -- removed only
+   the animation and the keyframe it drove. */
 .liquid-sheen::before {
   content: "";
   position: absolute;
@@ -190,8 +183,6 @@ select {
   z-index: -1;
   border-radius: inherit;
   pointer-events: none;
-  animation: liquid-idle-drift 19s ease-in-out infinite;
-  will-change: transform;
   background: linear-gradient(
     115deg,
     rgba(255, 255, 255, 0.08) 0%,
@@ -201,22 +192,6 @@ select {
     rgba(255, 255, 255, 0.03) 84%,
     transparent 100%
   );
-}
-
-@keyframes liquid-idle-drift {
-  0%,
-  100% {
-    transform: translate(-3%, -2%) scale(1.03);
-  }
-  50% {
-    transform: translate(3%, 2%) scale(0.99);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .liquid-sheen::before {
-    animation: none;
-  }
 }
 
 .back-link {

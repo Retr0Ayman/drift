@@ -1,42 +1,26 @@
-/* THIRD lava-lamp pass -- confirmed live (real screenshot, real production
-   CSS fetch) that the previous two passes never actually delivered the
-   requested look, and the root cause was found and fixed here: the
-   PREVIOUS version kept a leftover `.ambient-mesh` layer from the earlier
-   "plasma-liquid" design -- a full-viewport, 5-point, 46%-opacity soft
-   color wash with no shape, no edge, no highlight. That wash sat on top
-   of the darker base and 4 glossy blobs from pass 2, and at that size/
-   opacity it visually dominated everything else, which is exactly why the
-   site kept reading as "soft purple/blue blur" no matter how dark the
-   base got or how glossy the blobs got underneath it. `.ambient-mesh` is
-   deleted entirely in this pass, not just dimmed further -- the blobs
-   below are now the ONLY color layer, so what's on screen is genuinely
-   "near-black vessel + distinct glossy blobs," not "wash + blobs
-   underneath it."
-
-   Real SVG goo/metaball filter (feGaussianBlur + feColorMatrix) was
-   deliberately NOT reintroduced, on the user's own explicit choice after
-   being shown the real historical cost data: commit 963d166 first added
-   it bounded to ~620px; commit 72d8d74 widened it to full-viewport (12
-   clusters); commit 6945a70 ripped it back out because that combination
-   measured ~30fps against a 60fps baseline (real Playwright rAF
-   sampling). This pass reaches the same VISUAL goal -- distinct glossy
-   spheres that read as merging into each other -- via generously
-   overlapping large radial-gradient blobs with a strong offset specular
-   highlight each, still zero live filters, zero blend-modes, still
-   transform/opacity-only animation (compositor-only, no repaint). */
+/* FOURTH-pass geometry fix stays load-bearing here (near-black base, tight
+   per-blob falloff so real black is visible between/around blobs) -- see
+   the git log for the full "why" (a real headless screenshot + sharp
+   pixel-sample proved a wash-like appearance was pure blob-overlap
+   geometry, not a hidden filter, and the fix was smaller/tighter blobs).
+   This pass only rebalances COUNT: confirmed live that 5 large-ish blobs
+   (18-30vmax) read as too sparse/blocky against the reference mockup,
+   which wants many small glossy blobs scattered across the whole
+   viewport. Rewritten to a data-driven set (BLOBS array in
+   AmbientBackground.tsx, same "hardcoded, not randomized at runtime, for
+   a stable/reproducible layout" convention MOTES below already
+   established) rendered through ONE shared base rule + a handful of
+   small color-only "role" modifier classes, instead of N hand-written
+   blob-N blocks -- scales to 20+ instances without 20+ copies of the same
+   CSS. */
 .ambient-bg {
   position: fixed;
   inset: 0;
   z-index: 0;
   overflow: hidden;
   pointer-events: none;
-  /* True near-black, not a purple-black -- the #120c16 stop from pass 2
-     was still visibly purple across most of the viewport (that ellipse's
-     140% width / -10% top anchor covers nearly the whole screen with its
-     lightest stop). Flatter, darker gradient this time: the lightest
-     point is barely lifted off pure black, specifically so it can never
-     read as "a dark purple wash" again on its own -- all the actual color
-     now has to come from the blobs. */
+  /* True near-black, not a purple-black -- unchanged from the geometry-fix
+     pass, still correct. */
   background: radial-gradient(ellipse 130% 85% at 50% -6%, #0c0810 0%, #050308 55%, #020103 100%);
 }
 
@@ -52,222 +36,82 @@
   inset: -32px;
 }
 
-/* Five glossy blobs, one at each corner plus one small connecting accent
-   at dead center -- spread across the full viewport by POSITION (all four
-   corners + center), but each individually small (18-30vmax radius-worth,
-   roughly half pass-3's size) with a tight color-to-transparent falloff
-   (fully transparent by 54-56% of the shape's own radius, not 70-72%) --
-   see this file's own "FOURTH pass, geometry fix" comment further down
-   for the real, screenshot-and-pixel-sample-confirmed reason pass 3's
-   larger/softer blobs still read as a blur: at that size, five of them
-   physically covered the entire viewport at once with no gap of near-
-   black anywhere for a distinct edge to read against. Smaller + tighter
-   means real near-black is visible between and around blobs now, and
-   where two still drift close enough to touch, their edges overlap only
-   partially -- a genuine "flowing into each other" moment, not a
-   permanent full-screen wash.
-
-   Each blob's `background` stacks TWO radial-gradients (first-listed
-   paints on top): a bright, off-center specular highlight (same offset,
-   30% 26%, for every blob -- one consistent upper-left light source reads
-   as real lighting; a different offset per blob would read as
-   independently glowing objects instead of one lit scene) over the base
-   color falloff, which itself has three explicit stops (bright core, same
-   color out to about a third of the radius, then darkened toward the rim
-   before the transparent edge) so each blob reads as a lit sphere with
-   real form, not a flat disc.
-
-   Exactly three hues per the approved mockup -- blue (--cosmic-b,
-   #3fc4f0), magenta/pink (--cosmic-a, #ef3d86), purple (--cosmic-c,
-   #7b3ff2) -- reused across the five blobs (repeating a hue at a
-   non-adjacent position, not inventing a fourth). Blobs 1/3 read
-   --ambient-primary and blob 2 reads --ambient-secondary (both unset on
-   every page except a game detail page, see useAmbientAccent.ts) blended
-   55/45 with a fixed cosmic hue -- on a game page these shift toward that
-   game's real cover-art color while keeping this site's own saturated
-   character; on every other page (Groups, Digest, Publishers, Watchlist,
-   home) the var()'s own fallback literal IS one of the three mockup hues,
-   so the default palette is exactly blue/magenta/purple, never the old
-   muted --ambient-primary fallback (#6b4fa0) leaking through. Blobs 4/5
-   are fixed cosmic-only (no per-game reactivity) -- full-coverage anchors
-   that keep the scene's own identity present even on a game page whose
-   two accent colors might otherwise dominate every blob. */
-/* FOURTH pass, geometry fix -- confirmed via a real headless-Chromium
-   screenshot (msedge --headless --screenshot) and pixel-sampled with
-   sharp against the live page: center pixel came back #5b1f60, nowhere
-   near the #050308 base, and grep across every CSS file confirmed there
-   is NO filter/backdrop-filter/mix-blend-mode anywhere in this layer's
-   chain (Navbar/Carousel/CommandPalette/SearchBar have backdrop-filter,
-   .ambient-bg/.ambient-parallax/.ambient-blob-* do not). The "blur" look
-   was never a filter -- it was geometry: blobs sized 46-58vmax with a
-   gradual 0%->72% color-to-transparent falloff, five of them, on a
-   typical viewport, meant every one of them physically overlapped every
-   other one across virtually the entire screen -- there was no gap of
-   near-black base left ANYWHERE for a distinct edge to read against, so
-   the composite looked identical to a blur despite being five perfectly
-   sharp (if very gradually-fading) circles. Fix is smaller blobs (~27-
-   30vmax, roughly half the previous radius) with a MUCH tighter falloff
-   (transparent by 54-58% of radius instead of 70-72%) so each one reads
-   as a bounded shape with real near-black visible between and around
-   them -- verified this time with the same screenshot+pixel-sample
-   method before calling it done, see the completion report. */
-.ambient-blob-1 {
+/* Shared shape for every blob instance -- position/size/opacity/timing all
+   come from inline style (per-instance, from AmbientBackground.tsx's BLOBS
+   array), same as .ambient-mote below already does. --dx/--dy/--ds (drift
+   distance/scale) and --dur/--delay (timing) are CSS custom properties set
+   per instance so ONE @keyframes rule drives all of them instead of one
+   keyframe block per blob -- the thing that made 5 hand-written blobs
+   already verbose and would have made 20 unmanageable. */
+.ambient-blob {
   position: absolute;
-  top: 16%;
-  left: 12%;
-  width: 30vmax;
-  height: 30vmax;
-  margin-top: -15vmax;
-  margin-left: -15vmax;
-  opacity: 0.6;
-  background:
-    radial-gradient(circle at 30% 26%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.3) 10%, transparent 24%),
-    radial-gradient(circle, color-mix(in srgb, var(--ambient-primary, #3fc4f0) 55%, var(--cosmic-b, #3fc4f0) 45%) 0%,
-      color-mix(in srgb, var(--ambient-primary, #3fc4f0) 55%, var(--cosmic-b, #3fc4f0) 45%) 32%,
-      color-mix(in srgb, var(--ambient-primary, #3fc4f0) 45%, black 25%) 46%, transparent 56%);
-  animation: ambient-blob-drift-1 72s ease-in-out infinite;
   will-change: transform;
+  animation: ambient-blob-drift var(--dur, 70s) ease-in-out infinite;
+  animation-delay: var(--delay, 0s);
 }
 
-@keyframes ambient-blob-drift-1 {
-  0%,
-  100% {
-    transform: translate(0, 0) scale(1);
-  }
-  35% {
-    transform: translate(4vmax, -3vmax) scale(1.16);
-  }
-  70% {
-    transform: translate(-3vmax, 2vmax) scale(0.9);
-  }
-}
-
-.ambient-blob-2 {
-  position: absolute;
-  top: 18%;
-  left: 88%;
-  width: 28vmax;
-  height: 28vmax;
-  margin-top: -14vmax;
-  margin-left: -14vmax;
-  opacity: 0.58;
-  background:
-    radial-gradient(circle at 30% 26%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.3) 10%, transparent 24%),
-    radial-gradient(circle, color-mix(in srgb, var(--ambient-secondary, #ef3d86) 55%, var(--cosmic-a, #ef3d86) 45%) 0%,
-      color-mix(in srgb, var(--ambient-secondary, #ef3d86) 55%, var(--cosmic-a, #ef3d86) 45%) 32%,
-      color-mix(in srgb, var(--ambient-secondary, #ef3d86) 45%, black 25%) 46%, transparent 56%);
-  animation: ambient-blob-drift-2 90s ease-in-out infinite;
-  will-change: transform;
-}
-
-@keyframes ambient-blob-drift-2 {
+@keyframes ambient-blob-drift {
   0%,
   100% {
     transform: translate(0, 0) scale(1);
   }
   40% {
-    transform: translate(-3vmax, 3vmax) scale(0.87);
+    transform: translate(var(--dx, 3vmax), var(--dy, -2vmax)) scale(var(--ds, 1.14));
   }
   75% {
-    transform: translate(3vmax, -2vmax) scale(1.14);
+    transform: translate(calc(var(--dx, 3vmax) * -0.65), calc(var(--dy, -2vmax) * -0.55)) scale(calc(2 - var(--ds, 1.14)));
   }
 }
 
-.ambient-blob-3 {
-  position: absolute;
-  top: 84%;
-  left: 15%;
-  width: 29vmax;
-  height: 29vmax;
-  margin-top: -14.5vmax;
-  margin-left: -14.5vmax;
-  opacity: 0.58;
+/* Five color "roles" -- exactly the three approved-mockup hues (blue
+   --cosmic-b #3fc4f0, magenta/pink --cosmic-a #ef3d86, purple --cosmic-c
+   #7b3ff2) plus two that blend in the game-page-reactive accent pair
+   (--ambient-primary/--ambient-secondary, useAmbientAccent.ts) so a
+   meaningful chunk of the field shifts toward that game's real cover-art
+   color while the rest stay fixed-palette anchors -- same reasoning the
+   previous 5-blob version's role split documented, just applied to
+   however many instances use each role now instead of exactly one each.
+   Every role stacks the same two layers (first-listed paints on top): a
+   bright off-center specular highlight (30% 26%, one consistent
+   upper-left light source for every blob) over a three-stop color falloff
+   (bright core, same color to ~1/3 radius, darkened rim, transparent by
+   ~56% of radius -- the tight falloff from the geometry-fix pass, kept
+   exactly). */
+.ambient-blob--primary {
   background:
     radial-gradient(circle at 30% 26%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.3) 10%, transparent 24%),
-    radial-gradient(circle, color-mix(in srgb, var(--ambient-primary, #7b3ff2) 55%, var(--cosmic-c, #7b3ff2) 45%) 0%,
-      color-mix(in srgb, var(--ambient-primary, #7b3ff2) 55%, var(--cosmic-c, #7b3ff2) 45%) 32%,
-      color-mix(in srgb, var(--ambient-primary, #7b3ff2) 45%, black 25%) 46%, transparent 56%);
-  animation: ambient-blob-drift-3 60s ease-in-out infinite;
-  will-change: transform;
+    radial-gradient(circle, color-mix(in srgb, var(--ambient-primary, #3fc4f0) 55%, var(--cosmic-b, #3fc4f0) 45%) 0%,
+      color-mix(in srgb, var(--ambient-primary, #3fc4f0) 55%, var(--cosmic-b, #3fc4f0) 45%) 32%,
+      color-mix(in srgb, var(--ambient-primary, #3fc4f0) 45%, black 25%) 46%, transparent 56%);
 }
 
-@keyframes ambient-blob-drift-3 {
-  0%,
-  100% {
-    transform: translate(0, 0) scale(1);
-  }
-  45% {
-    transform: translate(-4vmax, -3vmax) scale(1.13);
-  }
-  80% {
-    transform: translate(3vmax, 3vmax) scale(0.89);
-  }
-}
-
-.ambient-blob-4 {
-  position: absolute;
-  top: 82%;
-  left: 86%;
-  width: 27vmax;
-  height: 27vmax;
-  margin-top: -13.5vmax;
-  margin-left: -13.5vmax;
-  opacity: 0.55;
+.ambient-blob--secondary {
   background:
     radial-gradient(circle at 30% 26%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.3) 10%, transparent 24%),
-    radial-gradient(circle, color-mix(in srgb, var(--cosmic-c, #7b3ff2) 55%, var(--cosmic-b, #3fc4f0) 45%) 0%,
-      color-mix(in srgb, var(--cosmic-c, #7b3ff2) 55%, var(--cosmic-b, #3fc4f0) 45%) 32%,
+    radial-gradient(circle, color-mix(in srgb, var(--ambient-secondary, #ef3d86) 55%, var(--cosmic-a, #ef3d86) 45%) 0%,
+      color-mix(in srgb, var(--ambient-secondary, #ef3d86) 55%, var(--cosmic-a, #ef3d86) 45%) 32%,
+      color-mix(in srgb, var(--ambient-secondary, #ef3d86) 45%, black 25%) 46%, transparent 56%);
+}
+
+.ambient-blob--a {
+  background:
+    radial-gradient(circle at 30% 26%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.3) 10%, transparent 24%),
+    radial-gradient(circle, var(--cosmic-a, #ef3d86) 0%, var(--cosmic-a, #ef3d86) 32%,
+      color-mix(in srgb, var(--cosmic-a, #ef3d86) 45%, black 25%) 46%, transparent 56%);
+}
+
+.ambient-blob--b {
+  background:
+    radial-gradient(circle at 30% 26%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.3) 10%, transparent 24%),
+    radial-gradient(circle, var(--cosmic-b, #3fc4f0) 0%, var(--cosmic-b, #3fc4f0) 32%,
+      color-mix(in srgb, var(--cosmic-b, #3fc4f0) 45%, black 25%) 46%, transparent 56%);
+}
+
+.ambient-blob--c {
+  background:
+    radial-gradient(circle at 30% 26%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.3) 10%, transparent 24%),
+    radial-gradient(circle, var(--cosmic-c, #7b3ff2) 0%, var(--cosmic-c, #7b3ff2) 32%,
       color-mix(in srgb, var(--cosmic-c, #7b3ff2) 45%, black 25%) 46%, transparent 56%);
-  animation: ambient-blob-drift-4 48s ease-in-out infinite;
-  will-change: transform;
-}
-
-@keyframes ambient-blob-drift-4 {
-  0%,
-  100% {
-    transform: translate(0, 0) scale(1);
-  }
-  38% {
-    transform: translate(3vmax, 4vmax) scale(0.88);
-  }
-  72% {
-    transform: translate(-3vmax, -2vmax) scale(1.15);
-  }
-}
-
-/* Fifth blob -- dead center, no per-game reactivity (pure cosmic blend),
-   deliberately the smallest -- a small connecting accent, not another
-   full-size pileup in the one spot every corner blob's drift already
-   passes near. */
-.ambient-blob-5 {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 18vmax;
-  height: 18vmax;
-  margin-top: -9vmax;
-  margin-left: -9vmax;
-  opacity: 0.4;
-  background:
-    radial-gradient(circle at 30% 26%, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.28) 10%, transparent 24%),
-    radial-gradient(circle, color-mix(in srgb, var(--cosmic-a, #ef3d86) 50%, var(--cosmic-c, #7b3ff2) 50%) 0%,
-      color-mix(in srgb, var(--cosmic-a, #ef3d86) 50%, var(--cosmic-c, #7b3ff2) 50%) 30%,
-      color-mix(in srgb, var(--cosmic-a, #ef3d86) 45%, black 25%) 44%, transparent 54%);
-  animation: ambient-blob-drift-5 84s ease-in-out infinite;
-  will-change: transform;
-}
-
-@keyframes ambient-blob-drift-5 {
-  0%,
-  100% {
-    transform: translate(0, 0) scale(1);
-  }
-  33% {
-    transform: translate(-2.5vmax, 2.5vmax) scale(1.12);
-  }
-  68% {
-    transform: translate(3vmax, -2vmax) scale(0.91);
-  }
 }
 
 /* Vignette -- a soft depth cue, deepening toward the edges like looking
@@ -328,21 +172,13 @@
   }
 }
 
-.ambient-bg--paused .ambient-blob-1,
-.ambient-bg--paused .ambient-blob-2,
-.ambient-bg--paused .ambient-blob-3,
-.ambient-bg--paused .ambient-blob-4,
-.ambient-bg--paused .ambient-blob-5,
+.ambient-bg--paused .ambient-blob,
 .ambient-bg--paused .ambient-mote {
   animation-play-state: paused;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ambient-blob-1,
-  .ambient-blob-2,
-  .ambient-blob-3,
-  .ambient-blob-4,
-  .ambient-blob-5,
+  .ambient-blob,
   .ambient-mote {
     animation: none;
   }
