@@ -1,0 +1,14 @@
+-- Tracks when each game's DRM/protection tags were last verified against
+-- PCGamingWiki (worker/backfill/pcgamingwiki.ts) -- worker/backfill/
+-- drmBackfillRun.ts's original pass only ever walks the table ONCE
+-- (drm_backfill_phase -> "done", then never again), so a real, later DRM
+-- change on PCGamingWiki's side (confirmed live: 007: First Light had its
+-- Denuvo removed and orlaz's own tags column kept showing it indefinitely,
+-- since nothing ever re-queried an already-visited row) had no way to ever
+-- reach this site's data. NULL (never checked) sorts first in SQLite's
+-- default ASC ordering, so the new oldest-checked-first recheck cycle
+-- naturally visits every never-checked row before cycling back through
+-- already-checked ones, same "deliberately never reaches a terminal done
+-- state" discipline worker/backfill/refreshStale.ts already uses for
+-- Steam-metadata freshness.
+ALTER TABLE games ADD COLUMN drm_checked_at INTEGER;

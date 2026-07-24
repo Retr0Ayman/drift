@@ -125,16 +125,21 @@ export default {
   // (worker/backfill/archiveRun.ts), the largest of the five -- expect it
   // to run for days; a fifth walks every existing games row exactly once to
   // reconcile the false-Denuvo tag backlog against a real PCGamingWiki
-  // lookup (worker/backfill/drmBackfillRun.ts) AND, alongside it, keeps
-  // sweeping the false-crack-timing backlog against real xREL group
-  // history (worker/backfill/reconcileFirstSeen.ts) AND, also sharing this
-  // slot, repairing the false-blank-metadata backlog left by the appid-
-  // echoed-on-failure bug (worker/backfill/repairEnrichment.ts's own
-  // comment) -- Cloudflare caps a Worker at 5 cron triggers (confirmed
+  // lookup (worker/backfill/drmBackfillRun.ts's runDrmBackfillTick), then
+  // -- once that one-time pass reaches "done" -- switches this same slot
+  // over to an ongoing oldest-checked-first DRM recheck (runDrmRecheckTick)
+  // that cycles the whole table forever, so a real later DRM change on
+  // PCGamingWiki's side (a title getting Denuvo removed, say) doesn't sit
+  // stale indefinitely just because its row was already visited once. AND,
+  // alongside it, keeps sweeping the false-crack-timing backlog against
+  // real xREL group history (worker/backfill/reconcileFirstSeen.ts) AND,
+  // also sharing this slot, repairing the false-blank-metadata backlog left
+  // by the appid-echoed-on-failure bug (worker/backfill/repairEnrichment.ts's
+  // own comment) -- Cloudflare caps a Worker at 5 cron triggers (confirmed
   // live), so this one slot now carries three unrelated one-time/ongoing
   // reconciliation tasks, same as the 15-minute trigger already combining
-  // two unrelated tasks. Like the first-seen reconciliation and unlike the
-  // DRM backfill, the enrichment repair deliberately never reaches a
+  // two unrelated tasks. Like the first-seen reconciliation and the DRM
+  // recheck, the enrichment repair deliberately never reaches a
   // terminal "done" state -- a row a tick attempts and still fails (Steam
   // having a bad moment right now) must stay eligible for a later tick, not
   // get marked "visited" and skipped forever. waitUntil so none of these

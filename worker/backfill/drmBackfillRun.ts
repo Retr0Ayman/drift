@@ -28,7 +28,10 @@ interface GameRow {
 
 export async function runDrmBackfillTick(env: Env): Promise<void> {
   const db = env.orlaz_catalog;
-  if ((await getBackfillState(db, "drm_backfill_phase")) === "done") return;
+  if ((await getBackfillState(db, "drm_backfill_phase")) === "done") {
+    await runDrmRecheckTick(env);
+    return;
+  }
 
   const cursor = (await getBackfillState(db, "drm_backfill_cursor")) || "";
   const { results } = await db
@@ -51,4 +54,41 @@ export async function runDrmBackfillTick(env: Env): Promise<void> {
   if (statements.length) await db.batch(statements);
 
   await setBackfillState(db, "drm_backfill_cursor", rows[rows.length - 1].id);
+}
+
+// Small and cheap, shares the DRM_BACKFILL_CRON slot (runs every 5
+// minutes, see worker/index.ts) alongside the one-time backlog pass above.
+const RECHECK_BATCH_SIZE = 40;
+
+/* FIX (confirmed gap, 2026-07-24): the one-time pass above walks every row
+   exactly once, then permanently stops (drm_backfill_phase = "done") --
+   nothing ever re-queries an already-visited row after that, so a real,
+   later DRM change on PCGamingWiki's side (e.g. 007: First Light having
+   its Denuvo removed post-launch) had no path to ever reach this site's
+   tags column; it would show the stale "Denuvo" tag forever. This is the
+   ongoing side: oldest-checked-first (drm_checked_at, migrations/0009 --
+   NULL/never-checked rows sort first in SQLite's default ASC order), small
+   batch, cycles the whole games table forever -- same "deliberately never
+   reaches a terminal done state" discipline runEnrichmentRepairTick already
+   uses, so a real DRM removal (or addition) eventually gets picked up
+   automatically instead of needing another manual one-off backfill. */
+export async function runDrmRecheckTick(env: Env): Promise<void> {
+  const db = env.orlaz_catalog;
+  const { results } = await db
+    .prepare("SELECT id, appid FROM games WHERE appid IS NOT NULL ORDER BY drm_checked_at ASC LIMIT ?")
+    .bind(RECHECK_BATCH_SIZE)
+    .all<{ id: string; appid: number }>();
+  const rows = results || [];
+  if (!rows.length) return;
+
+  const drm = await lookupDrmForAppids(rows.map((r) => r.appid));
+  const now = Date.now();
+  const statements = rows.map((r) =>
+    drm.has(r.appid)
+      ? db.prepare("UPDATE games SET tags = ?, drm_checked_at = ? WHERE id = ?").bind(JSON.stringify(drm.get(r.appid)), now, r.id)
+      : // no PCGamingWiki match this time either -- still stamp drm_checked_at so this row
+        // cycles to the back of the queue instead of being retried every single tick forever
+        db.prepare("UPDATE games SET drm_checked_at = ? WHERE id = ?").bind(now, r.id),
+  );
+  await db.batch(statements);
 }
