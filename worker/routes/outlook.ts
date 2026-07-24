@@ -37,6 +37,12 @@ const SYSTEM_PROMPT =
   "that distinction matters more than currency; if it was cracked unusually fast or leaked early, that's " +
   "often the most interesting fact available. Use the real numbers given (build gap, day count) rather than " +
   "vague words like \"recently\" or \"a while ago\" when a specific number is available.\n\n" +
+  "If the tracked crack is outdated AND its method is hypervisor, remember that hypervisor bypasses are tied to " +
+  "one specific game build by nature of the method -- an anti-tamper update on literally the next patch " +
+  "routinely breaks them, so being outdated is normal, expected behavior for that method, not a sign of a " +
+  "neglected or lower-quality release. Frame it that way (e.g. \"typical for hypervisor cracks\") rather than " +
+  "as a red flag, unless the facts given show a meaningfully large build gap that suggests it's fallen unusually " +
+  "far behind.\n\n" +
   "When no Protection fact is given below, you were not told what DRM or anti-cheat (if any) this game uses -- " +
   "do not name or guess one (e.g. Denuvo, EAC/Easy Anti-Cheat, BattlEye, VMProtect, Arxan, SecuROM, StarForce, " +
   "or any other specific product), even if a game like this typically has one. You may still freely describe " +

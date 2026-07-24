@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import type { Game, Release } from "../../types/game";
-import { relStatus, fmtBuild, slugify, crackTimingLabel, type RecencyStatus } from "../../lib/format";
+import { relStatus, fmtBuild, slugify, crackTimingLabel, hvOutdatedReason, type RecencyStatus } from "../../lib/format";
 import Pill, { type PillTone } from "../ui/Pill";
 import DrmTag from "../ui/DrmTag";
 import GlassPanel from "../ui/GlassPanel";
@@ -41,6 +41,28 @@ export default function ReleaseCard({ game, release, recencyStatus }: ReleaseCar
   const groupKey = slugify(release.group || "unknown");
   const cardVariant = release.isRepack || release.isAnonymous ? "neutral" : release.method;
 
+  // Hypervisor bypasses are tied to one specific build by nature of the
+  // method -- flagging that the exact same "Outdated" way a stale
+  // traditional crack gets flagged reads as a quality problem when it
+  // usually isn't one. "expected" swaps the pill to the neutral "unv" tone
+  // (FIX: "unc"/likely-outdated's own orange-red is visually just as
+  // alarming as "out"'s orange -- confirmed live side by side, barely
+  // distinguishable -- "unv"'s muted grey-tan is the tone this design
+  // system already uses for "no judgment being made," the actually correct
+  // register for "this isn't a quality signal"); "behind-peers" (another hv
+  // release for this game already caught up) is a real, group-specific
+  // signal, so it keeps the normal alarming treatment, just with a tooltip
+  // that says why.
+  const hvReason = hvOutdatedReason(game, release, displayStatus === "out" || displayStatus === "likely-outdated");
+  const flagLabel = hvReason === "expected" ? "Outdated (expected)" : FLAG_LABEL[displayStatus];
+  const flagTone = hvReason === "expected" ? "unv" : FLAG_TONE[displayStatus];
+  const flagTitle =
+    hvReason === "expected"
+      ? "Hypervisor cracks are tied to a specific game build and routinely need re-patching after any update -- this is normal, expected behavior for this crack method, not a sign of a neglected release."
+      : hvReason === "behind-peers"
+        ? "Another tracked hypervisor release for this game has already caught up to the current build -- this one specifically has fallen behind, not just ordinary hypervisor build-lag."
+        : undefined;
+
   // Two distinct facts, not one blended line: the group's real first-ever
   // crack (firstSeenDate/Build, falling back to date/build for rows from
   // before the backfill) vs. whatever this group's latest update landed
@@ -55,7 +77,9 @@ export default function ReleaseCard({ game, release, recencyStatus }: ReleaseCar
     <GlassPanel className={`release-card release-card--${cardVariant}`} frostStrong>
       <div className="release-top">
         <span className="release-method">{release.isRepack ? "Repack" : release.isAnonymous ? "Anonymous" : release.label}</span>
-        <Pill tone={FLAG_TONE[displayStatus]}>{FLAG_LABEL[displayStatus]}</Pill>
+        <Pill tone={flagTone} title={flagTitle}>
+          {flagLabel}
+        </Pill>
         {release.updateCount && release.updateCount > 1 ? (
           <span className="release-updated">Updated {release.updateCount}×</span>
         ) : null}
@@ -131,7 +155,7 @@ export default function ReleaseCard({ game, release, recencyStatus }: ReleaseCar
               honest, common data, not missing data. Pill-styled to match the
               "version label next to a build-number pill" reference look,
               same tone the status pill above already uses for this state. */}
-          <Pill tone={FLAG_TONE[displayStatus]} className="release-build-pill">
+          <Pill tone={flagTone} className="release-build-pill">
             {release.build != null ? fmtBuild(release.build) : "Unverified"}
           </Pill>
         </div>

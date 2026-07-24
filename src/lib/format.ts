@@ -59,6 +59,35 @@ export function recencyStatusFor(release: Release, allReleases: Release[]): Rece
   return ts >= maxTs ? "likely-current" : "likely-outdated";
 }
 
+export type HvOutdatedReason = "expected" | "behind-peers";
+
+/* A hypervisor bypass is tied to one specific Steam build by nature of the
+   method -- Denuvo's anti-tamper update on literally the next patch
+   routinely breaks it, that's how hypervisor cracks work, not a sign the
+   group stopped maintaining theirs. Comparing that against the exact same
+   staleness bar relStatus/recencyStatusFor use for a traditional crack
+   produces a technically-true-but-misleading "Outdated" flag. Only call
+   this once the caller already knows the release is flagged out/likely-
+   outdated (relStatus === "out", or recencyStatusFor === "likely-outdated"
+   for a build-less hv release) -- distinguishes two real cases:
+     - "expected": no OTHER tracked hv release for this same game has
+       caught up to the new build either -- ordinary, method-inherent
+       staleness every hv crack for this title currently shares.
+     - "behind-peers": another hv release for this same game already IS
+       current (or likely-current, recency-wise) -- a real, group-specific
+       signal that this particular release specifically hasn't kept pace,
+       not just "hv work in progress" for the whole game. */
+export function hvOutdatedReason(game: Game, release: Release, isFlaggedOutdated: boolean): HvOutdatedReason | null {
+  if (release.method !== "hv" || !isFlaggedOutdated) return null;
+  const peers = (game.releases || []).filter((r) => r !== release && r.method === "hv");
+  const peerCaughtUp = peers.some((r) => {
+    const ps = relStatus(game, r);
+    if (ps === "cur") return true;
+    return ps === "unv" && recencyStatusFor(r, game.releases || []) === "likely-current";
+  });
+  return peerCaughtUp ? "behind-peers" : "expected";
+}
+
 /* Which crack to lead with when a game has more than one: higher build
    (closer to/matching the current Steam build) wins outright regardless of
    method -- a hypervisor bypass that's still current beats a traditional

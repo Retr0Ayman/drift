@@ -46,6 +46,9 @@ const SYSTEM_PROMPT =
   "more than one exists, the practical difference between them (e.g. hypervisor vs. traditional reliability); " +
   "whether the tracked crack has kept up with the game's own latest update, using the given crack status " +
   "(current/outdated/unverified); and whether any tracked release is a repack rather than an original crack, " +
+  "(if writing about a hypervisor release that's outdated, note that's normal/expected for that method -- " +
+  "hypervisor bypasses are tied to one specific build and routinely break on the very next patch, so it's not " +
+  "on its own a sign of a neglected release the way it would be for a traditional crack), " +
   "and what that means for the user, only if repack data is given. If the given facts don't support one of " +
   "those angles (e.g. nothing cracked yet, or only one release with no repack/method contrast to make), ask " +
   "about whatever real crack-status information IS available instead of falling back to a bio-fact question -- " +

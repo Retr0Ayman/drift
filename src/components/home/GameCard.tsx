@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import GlassPanel from "../ui/GlassPanel";
 import Pill from "../ui/Pill";
 import type { Game } from "../../types/game";
-import { coverImg, fmtBuild, gStatus, relStatus, sortReleasesByPriority, statusMeta, versionLabel } from "../../lib/format";
+import { coverImg, fmtBuild, gStatus, hvOutdatedReason, relStatus, sortReleasesByPriority, statusMeta, versionLabel } from "../../lib/format";
 import "./GameCard.css";
 
 export default function GameCard({ game }: { game: Game }) {
@@ -41,9 +41,12 @@ export default function GameCard({ game }: { game: Game }) {
             {releases.length ? (
               releases.map((r, i) => {
                 const st = relStatus(game, r);
+                const hvReason = hvOutdatedReason(game, r, st === "out");
                 const markerTitle =
                   st === "out"
-                    ? "Outdated — this crack build trails the latest Steam build"
+                    ? hvReason === "expected"
+                      ? "Outdated (expected) — hypervisor cracks are tied to a specific build and routinely need re-patching after any update, this isn't a sign of a neglected release"
+                      : "Outdated — this crack build trails the latest Steam build"
                     : st === "unv"
                       ? "Unverified — no confirmed crack build number for this release yet"
                       : "Current — matches or beats the latest Steam build";
