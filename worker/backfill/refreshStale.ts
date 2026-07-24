@@ -1,11 +1,19 @@
 import type { Env } from "../shared/env";
-import { enrichFromSteam } from "./resolve";
-import { getStaleGames, refreshStaleGame } from "./db";
+import { fetchBuildInfo } from "../shared/steam";
+import { getStaleGames, refreshBuildOnly } from "./db";
 
-// Small and cheap, run every 15 minutes forever (see worker/index.ts) --
-// a full sweep of the catalog takes a while at this size, that's fine,
-// this is a background freshness sweep, not a real-time need.
-const REFRESH_BATCH_SIZE = 12;
+// FIX (confirmed live, real complaint: stale/wrong current-build numbers):
+// 12/tick meant a full sweep of this catalog's ~2000 games took roughly a
+// day and a half (12 * 4 ticks/hour = 48/hour) -- any game with no recent
+// crack activity to otherwise trigger a recheck could show a current
+// build number well over a day out of date. Bumped an order of magnitude:
+// safe now that this tick only ever does ONE cheap fetchBuildInfo call per
+// game (see refreshBuildOnly's own comment for why this stopped using the
+// heavy full-enrichment path), parallelized below so the wall-clock cost
+// of a bigger batch stays close to the slowest single call, not the sum
+// of all of them. 150/tick cycles the whole catalog in a few hours
+// instead of days.
+const REFRESH_BATCH_SIZE = 150;
 
 /* CONFIRMED (design gap, not a specific game caught wrong): every other
    mechanism that keeps a game's Steam metadata (current_build above all)
@@ -19,22 +27,27 @@ const REFRESH_BATCH_SIZE = 12;
    would silently be comparing against a stale number forever. This tick
    is the independent side: oldest-updated-first, re-fetch straight from
    Steam via the game's own already-known appid (no re-resolve needed),
-   regardless of any cracking activity. Same silent-skip-one-failure
-   pattern every other tick in this file uses -- one game's Steam call
-   having a bad moment must not stall the rest of this tick's batch. */
+   regardless of any cracking activity. Every row in the batch fetches
+   concurrently, each independently caught -- one game's Steam call
+   having a bad moment must not stall (or slow down) the rest of this
+   tick's batch. A row whose fetch fails or returns no build id is simply
+   left alone (not written, not even its updated_at bumped) so it stays
+   at the front of the oldest-first queue and gets retried next tick,
+   same behavior this tick already had before this change. */
 export async function runStaleRefreshTick(env: Env): Promise<{ refreshed: number }> {
   const db = env.orlaz_catalog;
   const rows = await getStaleGames(db, REFRESH_BATCH_SIZE);
-  let refreshed = 0;
-  for (const row of rows) {
-    try {
-      const enrichment = await enrichFromSteam(env, row.appid);
-      if (!enrichment) continue;
-      await refreshStaleGame(db, row.id, row.title, enrichment);
-      refreshed++;
-    } catch {
-      // skip, move on to the next game in this tick's batch
-    }
-  }
-  return { refreshed };
+  const results = await Promise.all(
+    rows.map(async (row) => {
+      try {
+        const { buildId, buildUpdatedAt } = await fetchBuildInfo(String(row.appid));
+        if (buildId == null) return false;
+        await refreshBuildOnly(db, row.id, buildId, buildUpdatedAt);
+        return true;
+      } catch {
+        return false;
+      }
+    }),
+  );
+  return { refreshed: results.filter(Boolean).length };
 }

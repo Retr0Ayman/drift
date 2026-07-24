@@ -130,6 +130,31 @@ export async function refreshStaleGame(db: D1Database, id: string, currentTitle:
     .run();
 }
 
+/* Lightweight counterpart to refreshStaleGame above -- current_build/
+   current_build_updated_at/updated_at ONLY, not the full title/genre/
+   accent-color/DRM-tag re-enrichment refreshStaleGame's enrichFromSteam
+   call also does. worker/backfill/refreshStale.ts's whole point per its
+   own doc comment is keeping "current_build above all" fresh for games
+   with no recent crack activity to otherwise trigger a recheck -- the
+   heavier full-enrichment call was making that dedicated tick expensive
+   enough (image accent extraction, a PCGamingWiki Cargo query, a header-
+   URL resolve, on top of the Steam calls) that it could only afford a
+   small batch per 15-minute tick, so a stale build number could sit
+   uncorrected for well over a day at this catalog's real size. Steam's
+   own fetchBuildInfo (worker/shared/steam.ts) is a single plain fetch --
+   swapping to it here lets this tick's batch size scale up by an order
+   of magnitude for the exact thing it's actually meant to keep current. */
+export async function refreshBuildOnly(db: D1Database, id: string, buildId: number | null, buildUpdatedAt: number | null): Promise<void> {
+  await db
+    .prepare("UPDATE games SET current_build = ?, current_build_updated_at = ?, updated_at = ? WHERE id = ?")
+    .bind(buildId, buildUpdatedAt, Date.now(), id)
+    .run();
+}
+
+export async function refreshHeaderOnly(db: D1Database, id: string, header: string): Promise<void> {
+  await db.prepare("UPDATE games SET header = ? WHERE id = ?").bind(header, id).run();
+}
+
 // Safely under D1's bound-parameter ceiling per statement (confirmed live
 // during the /api/catalog fix: 100 worked, 101 didn't) -- chunked so an
 // existence check never risks hitting that limit even on a large tick.
