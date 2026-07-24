@@ -1,6 +1,9 @@
 import type { Handler } from "../shared/types";
 import { json } from "../shared/http";
 import { callGroq } from "../shared/groq";
+import { handleAppdetails } from "./appdetails";
+import { fetchReviewSummary } from "../shared/steam";
+import type { Env } from "../shared/env";
 
 interface FactRequest {
   title: string;
@@ -11,6 +14,72 @@ interface FactRequest {
   reviewPct?: number;
   metacritic?: number;
   dlcCount?: number;
+  /* When given, handleFact fetches its own real, current appdetails +
+     review-summary data server-side (see fetchLiveFacts below) instead of
+     relying only on whatever the client already had -- D1 doesn't store
+     achievement counts, feature categories, or real review volume/label
+     for the live catalog, so without this those angles were only ever
+     reachable for the small hand-authored SEED_GAMES set. */
+  appid?: number;
+}
+
+// A whitelist, not the raw category list Steam returns -- most of it
+// (Steam Cloud, Trading Cards, Family Sharing, HDR available, Remote Play
+// on TV, captions) is platform/infra boilerplate that isn't an interesting
+// fact about the GAME. Only the subset that says something real about how
+// it plays.
+const INTERESTING_CATEGORIES = new Set([
+  "Co-op",
+  "Online Co-op",
+  "LAN Co-op",
+  "Multi-player",
+  "Single-player",
+  "PvP",
+  "Online PvP",
+  "MMO",
+  "Cross-Platform Multiplayer",
+  "Full controller support",
+  "VR Support",
+  "VR Supported",
+  "Includes level editor",
+  "Steam Workshop",
+]);
+
+interface LiveFacts {
+  categories: string[];
+  achievementsTotal: number | null;
+  reviewScoreDesc: string | null;
+  reviewCount: number | null;
+  reviewPositivePct: number | null;
+}
+
+/* Confirmed live (curl against real appids): Steam's appdetails response
+   already includes `categories` and `achievements.total`, just never
+   parsed out before now (see appdetails.ts's own slim object); review data
+   is a genuinely separate endpoint (store.steampowered.com/appreviews),
+   not part of appdetails at all. Calls handleAppdetails directly as a
+   function (same synthetic-same-origin-Request pattern worker/scheduled.ts's
+   collectCandidates already uses) rather than a real self-fetch -- same
+   Cloudflare edge cache (cacheTtlByStatus) either way, no extra network hop. */
+async function fetchLiveFacts(env: Env, appid: number): Promise<LiveFacts> {
+  const [detailsRes, reviews] = await Promise.all([
+    handleAppdetails({ request: new Request(`https://internal.invalid/api/appdetails?appid=${appid}`), env }),
+    fetchReviewSummary(String(appid)),
+  ]);
+  let categories: string[] = [];
+  let achievementsTotal: number | null = null;
+  if (detailsRes.ok) {
+    const d = (await detailsRes.json()) as { categories?: string[]; achievementsTotal?: number | null };
+    categories = (d.categories || []).filter((c) => INTERESTING_CATEGORIES.has(c));
+    achievementsTotal = d.achievementsTotal ?? null;
+  }
+  return {
+    categories,
+    achievementsTotal,
+    reviewScoreDesc: reviews.scoreDesc,
+    reviewCount: reviews.totalReviews,
+    reviewPositivePct: reviews.positivePct,
+  };
 }
 
 /* Same grounding discipline as summary.ts/faq.ts: strictly limited to the
@@ -49,9 +118,10 @@ interface FactRequest {
 const SYSTEM_PROMPT =
   "You write a single short, well-phrased sentence about a video game for a crack/build-status tracking " +
   "site's \"Did you know\" box. You are STRICTLY grounded in the facts given -- title, developer, genres, " +
-  "release date, franchise if given, review score/Metacritic if given, DLC count if given, and today's date -- " +
-  "never invent plot details, lore, sales figures, awards, or any fact not explicitly given, and never invent a " +
-  "review score or DLC count when those fields are absent below. This includes franchise duration/legacy " +
+  "release date, franchise if given, review score/label/count if given, Metacritic if given, DLC count if " +
+  "given, achievement count if given, gameplay feature tags if given, and today's date -- never invent plot " +
+  "details, lore, sales figures, awards, or any fact not explicitly given, and never invent a review score, " +
+  "achievement count, or DLC count when those fields are absent below. This includes franchise duration/legacy " +
   "claims: you are told the franchise NAME only, never its start date, entry count, or history. Even if you " +
   "happen to know from training that a named franchise is old or well-known, treat that as information you do " +
   "not have here and must not use -- do not use ANY of these words or their synonyms about the franchise: " +
@@ -71,11 +141,20 @@ const SYSTEM_PROMPT =
   "- Genre combination: a specific, non-obvious way its genres intersect -- not just listing them back.\n" +
   "- Developer credit: name the developer plainly -- do not editorialize about their reputation or pedigree, " +
   "that is never something the given facts actually support.\n" +
-  "- Critical reception: cite the real review score and/or Metacritic score plainly (e.g. \"holds a 94% " +
+  "- Critical reception: cite the real review score/label and/or Metacritic score plainly (e.g. \"holds a 94% " +
   "positive rating on Steam\" or \"sits at 82 on Metacritic\") when given, without editorializing about quality " +
-  "beyond the number itself.\n" +
+  "beyond the number itself. When a Steam review count is given alongside the score, citing the actual volume " +
+  "(e.g. \"across more than 168,000 reviews\") is often the sharper, more specific detail -- Steam's own " +
+  "review label (e.g. \"Overwhelmingly Positive\") is real data you may quote directly when given, it is " +
+  "Steam's own classification, not your editorializing.\n" +
   "- Content scope: cite the real DLC/expansion count plainly when given and notable (zero, one, or a " +
-  "double-digit count are all worth stating), without inventing what any of that content actually is.\n\n" +
+  "double-digit count are all worth stating), without inventing what any of that content actually is.\n" +
+  "- Achievements: cite the real Steam achievement count plainly when given and nonzero (e.g. \"ships with 55 " +
+  "Steam achievements\") -- a notably high or low count (zero, or a double/triple-digit count) is more worth " +
+  "citing than a middling one.\n" +
+  "- Gameplay features: when real feature tags are given (e.g. co-op, controller support, VR support), name " +
+  "the specific one(s) actually given plainly -- never claim a feature (multiplayer, controller support, VR, " +
+  "etc.) that isn't literally in the given tags, and never infer one from the genre alone.\n\n" +
   "When more than one angle is genuinely supported by the facts, prefer whichever produces the sharpest, most " +
   "specific, or most surprising detail -- a precise number, an unusual genre pairing, a real review score, a " +
   "notable timing gap -- over the flattest available restatement of a field. Variety of sentence shape is not " +
@@ -89,16 +168,27 @@ const SYSTEM_PROMPT =
   "name as a plain subject, sometimes a genre word, sometimes a short subordinate clause -- the point is that " +
   "reading five of these in a row should not reveal a repeated shape. One sentence only, no preamble, no quotes.";
 
-function buildFacts(body: FactRequest): string {
+function buildFacts(body: FactRequest, live?: LiveFacts): string {
+  // live review data (real, server-fetched) takes priority over
+  // body.reviewPct (only ever real for the small hand-authored SEED_GAMES
+  // set -- see FactRequest's own appid comment) when both are present.
+  const reviewCount = live?.reviewCount ?? null;
+  const reviewPct = live?.reviewPositivePct ?? body.reviewPct ?? null;
+  const reviewLabel = live?.reviewScoreDesc ?? null;
+
   const lines = [
     `Title: ${body.title}`,
     body.developer ? `Developer: ${body.developer}` : null,
     body.genres?.length ? `Genres: ${body.genres.join(", ")}` : null,
     body.released ? `Released: ${body.released}` : null,
     body.franchise ? `Franchise: ${body.franchise}` : null,
-    body.reviewPct != null ? `Steam review score: ${body.reviewPct}% positive` : null,
+    reviewPct != null ? `Steam review score: ${reviewPct}% positive` : null,
+    reviewLabel ? `Steam's own review label: ${reviewLabel}` : null,
+    reviewCount != null ? `Total Steam review count: ${reviewCount.toLocaleString("en-US")}` : null,
     body.metacritic != null ? `Metacritic score: ${body.metacritic}` : null,
     body.dlcCount != null ? `Number of DLC/expansions: ${body.dlcCount}` : null,
+    live?.achievementsTotal ? `Number of Steam achievements: ${live.achievementsTotal}` : null,
+    live?.categories.length ? `Gameplay feature tags: ${live.categories.join(", ")}` : null,
     `Today's date: ${new Date().toISOString().slice(0, 10)}`,
   ];
   return lines.filter(Boolean).join("\n");
@@ -129,9 +219,11 @@ export const handleFact: Handler = async ({ request, env }) => {
   }
   if (!body.title) return json({ error: "title required" }, 60, 400);
 
+  const live = body.appid ? await fetchLiveFacts(env, body.appid) : undefined;
+
   const messages = [
     { role: "system" as const, content: SYSTEM_PROMPT },
-    { role: "user" as const, content: buildFacts(body) },
+    { role: "user" as const, content: buildFacts(body, live) },
   ];
 
   let { text, error } = await callGroq(env, messages, { maxTokens: 80, temperature: 0.75 });

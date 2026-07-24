@@ -18,6 +18,8 @@ interface SteamAppData {
   pc_requirements?: { minimum?: string; recommended?: string } | unknown[];
   is_free?: boolean;
   price_overview?: { final_formatted?: string; final?: number; currency?: string };
+  categories?: Array<{ description: string }>;
+  achievements?: { total?: number };
 }
 interface SteamAppDetailsResponse {
   [appid: string]: { success: boolean; data: SteamAppData };
@@ -98,6 +100,8 @@ export const handleAppdetails: Handler = async ({ request }) => {
     // Raw USD amount (cc=us above pins the region, so this is always USD when
     // present) for real currency conversion -- final is in whole cents.
     priceUsd: d.is_free ? 0 : d.price_overview?.final != null ? d.price_overview.final / 100 : null,
+    categories: (d.categories || []).map((c) => c.description),
+    achievementsTotal: d.achievements?.total ?? null,
     currentBuild: buildInfo.buildId,
     // Real Steam-side timestamp of when this build was published (see
     // fetchBuildInfo's own comment) -- what survivalHrs()/GameDetail's

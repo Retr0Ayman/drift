@@ -28,6 +28,7 @@ export default function GameFact({ game }: { game: Game }) {
       reviewPct: game.reviewPct,
       metacritic: game.metacritic,
       dlcCount: game.dlc?.length,
+      appid: game.appid ?? undefined,
     }).then((res) => {
       if (cancelled) return;
       setFact(res.fact);

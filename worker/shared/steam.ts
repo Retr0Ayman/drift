@@ -93,6 +93,41 @@ export async function resolveHighResHeader(appid: number, fallbackHeader: string
   return fallbackHeader;
 }
 
+export interface ReviewSummary {
+  scoreDesc: string | null; // Steam's own qualitative label, e.g. "Overwhelmingly Positive"
+  totalReviews: number | null;
+  positivePct: number | null;
+}
+
+/* Steam's public, unauthenticated appreviews endpoint (confirmed live,
+   distinct from appdetails -- review data isn't part of that response at
+   all). num_per_page=0 -- only query_summary is needed here, not the
+   actual review text, so this skips paying for it. Used to give GameDetail's
+   "Did you know" fact generator (worker/routes/fact.ts) real review
+   volume/label data instead of the reviewPct field, which in practice was
+   only ever populated for the small hand-authored SEED_GAMES set -- no
+   live-catalog game had a real review score wired in before this. */
+export async function fetchReviewSummary(appid: string): Promise<ReviewSummary> {
+  try {
+    const r = await fetch(
+      `https://store.steampowered.com/appreviews/${appid}?json=1&language=all&purchase_type=all&num_per_page=0`,
+      { cf: { cacheTtlByStatus: { "200-299": 3600, "300-599": 0 } } } as RequestInit,
+    );
+    const j = (await r.json()) as {
+      query_summary?: { review_score_desc?: string; total_reviews?: number; total_positive?: number };
+    };
+    const q = j.query_summary;
+    if (!q || !q.total_reviews) return { scoreDesc: null, totalReviews: null, positivePct: null };
+    return {
+      scoreDesc: q.review_score_desc || null,
+      totalReviews: q.total_reviews,
+      positivePct: q.total_positive != null ? Math.round((q.total_positive / q.total_reviews) * 100) : null,
+    };
+  } catch {
+    return { scoreDesc: null, totalReviews: null, positivePct: null };
+  }
+}
+
 export function parseYear(s?: string | null): number | null {
   const m = s && s.match(/\b(19|20)\d{2}\b/);
   return m ? Number(m[0]) : null;

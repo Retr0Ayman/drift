@@ -1,8 +1,11 @@
-// v2: bumped -- worker/routes/fact.ts picked up a grounding backstop and a
-// variety rewrite after v1 entries were already cached, so pre-fix visitors
-// were stuck with fabricated-franchise or repetitive-shape facts forever
-// with no way to notice. A v1 entry is a dead key now, never read again.
-const CACHE_PREFIX = "drift.fact.v2.";
+// v3: bumped -- worker/routes/fact.ts now pulls real, live achievement
+// count/feature tags/review volume+label per game (previously reviewPct
+// was only ever real for the hand-authored SEED_GAMES set; achievements
+// and feature tags weren't used at all), which measurably changes what a
+// generated fact can say. A v2 entry was generated against the old, more
+// data-starved prompt and would otherwise keep showing a flatter fact
+// forever with no way to pick up the improvement.
+const CACHE_PREFIX = "drift.fact.v3.";
 
 export interface FactResult {
   fact: string | null;
@@ -18,6 +21,10 @@ export interface FactInput {
   reviewPct?: number;
   metacritic?: number;
   dlcCount?: number;
+  /* Real appid -- lets worker/routes/fact.ts fetch its own live Steam
+     achievement count/feature tags/review summary server-side. Omitted for
+     synthetic/seed games with no real Steam listing to fetch. */
+  appid?: number;
 }
 
 // Cached per game id in localStorage -- generated once, not regenerated
