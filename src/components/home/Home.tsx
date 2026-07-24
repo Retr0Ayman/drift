@@ -89,10 +89,21 @@ export default function Home() {
     }
   }
 
+  // Hero's Live Signal stats jump straight to the matching filtered
+  // catalogue view -- a real status change on Home's own state, not a
+  // ?status= link. Home only reads that query param on first mount (see
+  // the comment above), so a same-route Link would silently do nothing
+  // the vast majority of the time this gets clicked (Hero only ever
+  // renders here, meaning whoever clicks it is already on this page).
+  function jumpToStatus(next: StatusFilter) {
+    setStatus(next);
+    document.querySelector(".catalogue")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   return (
     <>
       <LiveTicker games={games} />
-      <Hero games={games} />
+      <Hero games={games} onJumpToStatus={jumpToStatus} />
       <GameGrid
         games={pageItems}
         initialLoading={loading && games.length === 0}

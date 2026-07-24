@@ -178,6 +178,25 @@
   border-radius: var(--r-xl);
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
+  /* Reset for the two tiles Hero.tsx renders as a real <button> (Hypervisor
+     cracks / Currently outdated, when onJumpToStatus is wired) -- same
+     visual chip either way, width:100%/text-align:left/font undo the
+     button's own defaults so it's indistinguishable from the plain <div>
+     tiles until you hover or focus it. */
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+
+.hero-signal-stat--action {
+  cursor: pointer;
+}
+
+.hero-signal-stat--action:hover,
+.hero-signal-stat--action:focus-visible {
+  background: var(--glass-bg-strong);
+  border-color: var(--glass-border-strong);
 }
 
 .hero-signal-icon {

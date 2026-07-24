@@ -1,4 +1,4 @@
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, type ReactNode } from "react";
 import { motion, useScroll, useTransform } from "motion/react";
 import OrlazWordmark from "../ui/illustrations/OrlazWordmark";
 import GlassPanel from "../ui/GlassPanel";
@@ -6,6 +6,7 @@ import { usePrefersReducedMotion } from "../../hooks/usePrefersReducedMotion";
 import { gStatus, anyOutdated, releaseTs } from "../../lib/format";
 import { gTimestamp } from "../../lib/catalog";
 import type { Game } from "../../types/game";
+import type { StatusFilter } from "../../lib/filters";
 import "./Hero.css";
 
 const ACTIVITY_DAYS = 14;
@@ -33,7 +34,37 @@ function activityBuckets(games: Game[]): number[] {
   return buckets;
 }
 
-export default function Hero({ games }: { games: Game[] }) {
+/* Renders as a real <button> (keyboard/focus-accessible, real click
+   semantics) when a handler is passed, or a plain <div> otherwise --
+   "Titles tracked"/"Most recent crack" have no single sensible filter
+   target, so they stay inert, while "Hypervisor cracks"/"Currently
+   outdated" become real shortcuts. Same class either way so the four
+   tiles read as one consistent grid regardless of which are clickable. */
+function StatTile({ onClick, title, children }: { onClick?: () => void; title?: string; children: ReactNode }) {
+  if (!onClick) {
+    return <div className="hero-signal-stat">{children}</div>;
+  }
+  return (
+    <button type="button" className="hero-signal-stat hero-signal-stat--action" onClick={onClick} title={title}>
+      {children}
+    </button>
+  );
+}
+
+interface HeroProps {
+  games: Game[];
+  /* Optional: when provided, "Hypervisor cracks" / "Currently outdated"
+     become real shortcuts into Home's own filter state instead of inert
+     numbers -- see Home.tsx's jumpToStatus for why this has to be a
+     callback into existing state rather than a ?status= link (Home only
+     reads that param on first mount, so a same-route link would silently
+     no-op the vast majority of the time this gets clicked). Left optional
+     so Hero still renders standalone (tests, storybook-style usage)
+     without wiring a Home instance behind it. */
+  onJumpToStatus?: (status: StatusFilter) => void;
+}
+
+export default function Hero({ games, onJumpToStatus }: HeroProps) {
   const reduced = usePrefersReducedMotion();
   const ref = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
@@ -110,7 +141,10 @@ export default function Hero({ games }: { games: Game[] }) {
                 <span className="hero-signal-n">{stats.total ? stats.total : "—"}</span>
                 <span className="hero-signal-l">Titles tracked</span>
               </div>
-              <div className="hero-signal-stat">
+              <StatTile
+                onClick={onJumpToStatus && stats.hv ? () => onJumpToStatus("hv") : undefined}
+                title={onJumpToStatus && stats.hv ? "Jump to hypervisor-cracked titles" : undefined}
+              >
                 <span className="hero-signal-icon" style={{ color: "var(--hv)" }}>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" />
@@ -120,8 +154,11 @@ export default function Hero({ games }: { games: Game[] }) {
                   {stats.total ? stats.hv : "—"}
                 </span>
                 <span className="hero-signal-l">Hypervisor cracks</span>
-              </div>
-              <div className="hero-signal-stat">
+              </StatTile>
+              <StatTile
+                onClick={onJumpToStatus && stats.outdated ? () => onJumpToStatus("outdated") : undefined}
+                title={onJumpToStatus && stats.outdated ? "Jump to currently outdated titles" : undefined}
+              >
                 <span className="hero-signal-icon" style={{ color: "var(--out)" }}>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M12 9v4M12 17h.01M10.6 3.9 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.4 3.9a2 2 0 0 0-2.8 0z" />
@@ -131,7 +168,7 @@ export default function Hero({ games }: { games: Game[] }) {
                   {stats.total ? stats.outdated : "—"}
                 </span>
                 <span className="hero-signal-l">Currently outdated</span>
-              </div>
+              </StatTile>
               <div className="hero-signal-stat">
                 <span className="hero-signal-icon" style={{ color: "var(--ink-2)" }}>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
