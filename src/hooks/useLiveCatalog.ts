@@ -102,10 +102,31 @@ export function useLiveCatalog(): LiveCatalog {
     }
   }, [fetchPage]);
 
+  /* FIX (confirmed live via a getComputedStyle/console trace on a real
+     client-side game-to-game navigation): CommandPalette's "live" search
+     path (a game xREL has but this catalog page hasn't loaded/synced yet)
+     resolves a PartialGame via buildLiveGameFromRows (src/lib/catalog.ts)
+     -- built straight from a live xREL search + Steam enrichment, it has no
+     way to know D1-only precomputed fields like accentColorPrimary/
+     accentColorSecondary (worker/backfill/resolve.ts's own accent-color
+     extraction), so those keys are simply absent from it, not null. A
+     wholesale REPLACE here meant navigating to an already-loaded game via
+     that live-search path silently deleted its real accent colors (and any
+     other D1-only field) from the in-memory catalog -- GameDetail would
+     re-render with mergedGame.accentColorPrimary now undefined, so
+     useAmbientAccent's background-color sync would go dark for that game
+     for the rest of the session (until a hard reload re-fetched it from
+     D1), reading exactly like "sometimes doesn't react." A shallow merge
+     keeps every field the incoming partial game genuinely has fresher data
+     for (title, releases, appid, ...) while leaving whatever it doesn't
+     carry (D1-only enrichment) exactly as the fuller existing record had
+     it -- same in the `!exists` branch below there's nothing to preserve. */
   const mergeOne = useCallback(
     (game: Game) => {
       const exists = gamesRef.current.some((g) => g.id === game.id);
-      commit(exists ? gamesRef.current.map((g) => (g.id === game.id ? game : g)) : [...gamesRef.current, game]);
+      commit(
+        exists ? gamesRef.current.map((g) => (g.id === game.id ? { ...g, ...game } : g)) : [...gamesRef.current, game],
+      );
     },
     [commit],
   );

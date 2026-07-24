@@ -296,8 +296,27 @@ export default function LavaLampCanvas() {
       if (!paused) raf = requestAnimationFrame(loop);
     }
 
+    let accentInterval = 0;
+
     if (reduced) {
-      draw(); // one static frame, no motion, no loop
+      draw(); // one static frame, no position motion -- step() is never called
+      // FIX (confirmed live): this used to be the entire reduced-motion path --
+      // draw once at mount, then nothing, ever again. Two real consequences: (1)
+      // main.tsx mounts AmbientBackground BEFORE the routed page, so on a fresh
+      // load of a game page this one-time draw can race useAmbientAccent.ts's own
+      // effect and capture the fallback palette instead of the real per-game
+      // accent; (2) even when it drew the right color once, navigating to a
+      // different game afterward had no mechanism to ever redraw, reduced-motion
+      // or not -- the color would silently stay wherever it first landed for the
+      // rest of the session. A plain interval (not requestAnimationFrame -- no
+      // continuous-motion loop, respecting reduced-motion's actual intent) just
+      // re-reads the live accent and redraws the same still frame in the new
+      // colors whenever it's changed; blob positions never move since step()
+      // still never runs here.
+      accentInterval = window.setInterval(() => {
+        readAccent();
+        draw();
+      }, 800);
     } else {
       raf = requestAnimationFrame(loop);
     }
@@ -310,6 +329,7 @@ export default function LavaLampCanvas() {
 
     return () => {
       cancelAnimationFrame(raf);
+      window.clearInterval(accentInterval);
       window.clearTimeout(resizeTimer);
       window.removeEventListener("resize", onResize);
       document.removeEventListener("visibilitychange", onVisibility);
