@@ -130,21 +130,23 @@ export default function GameDetail() {
   // Images only -- no trailer slide (the YouTube-search trailer link was
   // flaky enough in practice not to be worth keeping).
   //
-  // FIX (confirmed live): guessed CDN paths (library_hero.jpg,
-  // capsule_616x353.jpg) turned out genuinely unreliable, not just for old
-  // titles -- both 404 for EA Sports College Football 27, a current, real
-  // game. And coverImg()'s D1-backed header field, while reliable, is
-  // ALWAYS a fixed 460x215 store-thumbnail size no matter which CDN domain
-  // it's hosted on (confirmed: naturalWidth 460 in the rendered carousel),
-  // so leading with it can never actually fix the blur, only mask it.
-  // useGameScreenshots fetches the game's real screenshots (path_full,
-  // genuinely ~1920x1080) live -- reliable for any title with a real Steam
-  // store page, no guessing. Up to 2 real screenshots lead, coverImg stays
-  // as a fallback slide (and the only one shown before the live fetch
-  // resolves). coverImg() itself is untouched -- card grids, list rows,
-  // and the social meta image (usePageMeta below) still want the small
-  // thumbnail, not this carousel-specific ordering.
-  const carouselSources = [...screenshots.slice(0, 2), coverImg(mergedGame)].filter(
+  // FIX (confirmed live, Watch Dogs 2): cover-first was NOT what this
+  // carousel did before this fix -- a prior decision (commit 81c7284,
+  // predates this session) deliberately led with real Steam screenshots
+  // instead, reasoning that coverImg()'s D1-backed header field is always
+  // a fixed 460x215 store-thumbnail size (confirmed: naturalWidth 460 in
+  // the rendered carousel) that reads blurry when stretched to fill this
+  // carousel, while a real screenshot (path_full, ~1920x1080) doesn't.
+  // That tradeoff is real, but confirmed live this reads wrong regardless
+  // -- a game's own cover/header art is what a visitor expects to see
+  // first, sharpness of the FIRST frame specifically is worth less than
+  // that expectation. coverImg() now always leads; screenshots (still up
+  // to 2) follow it, not the other way around. useGameScreenshots still
+  // fetches live, still up to 2 real screenshots -- only the order
+  // changed. coverImg() itself remains untouched -- card grids, list
+  // rows, and the social meta image (usePageMeta below) still want the
+  // small thumbnail, not this carousel-specific ordering.
+  const carouselSources = [coverImg(mergedGame), ...screenshots.slice(0, 2)].filter(
     (src, i, arr): src is string => !!src && arr.indexOf(src) === i,
   );
   const slides = mergedGame.appid
