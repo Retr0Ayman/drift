@@ -3,6 +3,15 @@
   width: fit-content;
 }
 
+/* FIX (confirmed live): sitting inside .navbar-main (itself a
+   liquid-sheen glass pill over the ambient background), this used the
+   same --aura-panel-bg fill + border:none every other frost surface
+   uses -- against a parent that's ALSO a dark translucent glass pill,
+   the two blended into each other with no visible seam, so the search
+   bar read as barely-there rather than a distinct clickable control.
+   Lightened fill (blended a little toward white, not a new hardcoded
+   color) and a real visible border now give it its own edge against its
+   own glass parent. */
 .searchbar {
   position: relative;
   display: flex;
@@ -10,15 +19,15 @@
   gap: 8px;
   height: 40px;
   padding: 0 14px 0 38px;
-  border: none;
+  border: 1px solid var(--glass-border-strong);
   cursor: pointer;
   color: var(--ink-3);
   border-radius: var(--pill);
-  background: var(--aura-panel-bg);
+  background: color-mix(in srgb, var(--aura-panel-bg) 80%, white 20%);
   backdrop-filter: blur(var(--aura-blur)) saturate(1.15);
   -webkit-backdrop-filter: blur(var(--aura-blur)) saturate(1.15);
   box-shadow: var(--glass-highlight), var(--glass-shadow-lg), var(--glass-ambient), var(--ethereal-glow);
-  transition: box-shadow var(--dur) var(--ease), color var(--dur) var(--ease);
+  transition: box-shadow var(--dur) var(--ease), color var(--dur) var(--ease), background var(--dur) var(--ease);
 }
 
 .searchbar:hover,

@@ -51,13 +51,19 @@ interface BlobDef {
 // never set border-radius at all, so every blob was a mathematically
 // perfect circle (the radial-gradient's own `circle` keyword) regardless
 // of size.
+// SEVENTH pass: swung much further from 50% than the sixth pass's first
+// attempt (which stayed in a 37-64% band) -- confirmed live via a
+// Playwright screenshot crop that swings that mild stayed imperceptible
+// even after extending the color falloff (below), because a rounder
+// silhouette reads as "circle" to the eye unless the irregularity is
+// genuinely pronounced. These range corners from 22% to 78%.
 const BLOB_RADII = [
-  "42% 58% 55% 45% / 48% 42% 58% 52%",
-  "61% 39% 44% 56% / 39% 61% 52% 48%",
-  "48% 52% 63% 37% / 56% 44% 40% 60%",
-  "55% 45% 38% 62% / 44% 56% 61% 39%",
-  "38% 62% 50% 50% / 60% 40% 46% 54%",
-  "64% 36% 46% 54% / 46% 54% 63% 37%",
+  "30% 70% 65% 35% / 55% 30% 70% 45%",
+  "70% 30% 40% 60% / 35% 65% 55% 45%",
+  "45% 55% 75% 25% / 60% 40% 30% 70%",
+  "60% 40% 30% 70% / 25% 75% 50% 50%",
+  "35% 65% 50% 50% / 70% 30% 40% 60%",
+  "65% 35% 55% 45% / 40% 60% 78% 22%",
 ];
 
 /* SIXTH pass, size/shape variety + color-reactivity prominence --

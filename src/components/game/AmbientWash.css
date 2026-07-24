@@ -1,20 +1,30 @@
-/* FIX (confirmed live): the original opacity/blur/color-stop values read
-   as barely-there against the approved mockup's confident color presence
-   -- settled opacity roughly doubled, saturate() added (wasn't present at
-   all before), the gradient's transparent cutoff pushed out from 72% to
-   88% so more of the panel area actually carries visible color instead of
-   diluting to nothing well before the edges, and blur brought down
-   slightly so the color reads as present rather than maximally diffuse. */
+/* FIX (confirmed live, real Playwright screenshots of Watch Dogs 2 and
+   Grim Dawn): the previous 88%-cutoff/0.42-opacity/1.7-saturate tuning
+   went too far the other way from the "barely-there" problem it fixed --
+   confirmed live it was reading as a near-total page-wide color takeover
+   (Grim Dawn's deep red visibly washed all the way to the sidebar cards
+   and navbar area, not just "near the carousel"), completely burying the
+   individually-colored ambient-background blobs underneath it and
+   becoming THE visible "reactive color" signal instead of a supporting
+   accent. Pulled back on all three axes at once: cutoff back in from 88%
+   to 62% (contained near the hero/carousel area again, the "paint spill
+   near the carousel" this was originally described as), opacity roughly
+   halved (0.42 -> 0.2), saturate eased off (1.7 -> 1.3) since a lower-
+   opacity wash doesn't need as much saturation boost to register. This
+   is now a supporting accent behind the glass panels, not a competing
+   color layer with the blob background -- the individual blobs (see
+   AmbientBackground.css) are what should read as "this page shifted
+   toward this game's colors" now. */
 .ambient-wash {
   position: absolute;
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background: radial-gradient(circle at 20% 14%, var(--wash-a) 0%, var(--wash-b) 50%, transparent 88%);
-  filter: blur(56px) saturate(1.7);
+  background: radial-gradient(circle at 20% 14%, var(--wash-a) 0%, var(--wash-b) 40%, transparent 62%);
+  filter: blur(56px) saturate(1.3);
   transform-origin: 20% 14%;
 }
 
 .ambient-wash--settled {
-  opacity: 0.42;
+  opacity: 0.2;
 }

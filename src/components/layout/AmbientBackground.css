@@ -87,41 +87,59 @@
    size/role-distribution half of this fix), but a shifted blob now reads
    as clearly that game's color instead of a faint tint of the default
    palette. */
+/* SEVENTH pass, fix for the border-radius shape variety being invisible:
+   confirmed live via a real Playwright screenshot (crop of one blob, see
+   the commit) that every blob still rendered as a perfectly smooth
+   circle despite the per-instance irregular border-radius added last
+   pass -- root cause: the color falloff reached fully transparent by 56%
+   of the gradient's own radius (tuned during the earlier geometry-fix
+   pass, where the goal was tight/small blobs with real gaps between
+   them), meaning the actual VISIBLE gradient content ended well inside
+   the box's own edges -- the irregular border-radius boundary was
+   clipping empty, already-transparent space, so it had literally nothing
+   to shape. Extended the falloff (colors now reach out to 78% instead of
+   56%) so real, still-colored content actually reaches the box's edge
+   region where the irregular border-radius lives -- this does NOT change
+   each blob's own box size/position (the real control on inter-blob
+   gaps from the geometry-fix pass), it only fills more of each blob's
+   OWN already-allocated space, so the near-black gaps between blobs are
+   unaffected. Re-verified via the same screenshot-crop method after this
+   fix. */
 .ambient-blob--primary {
   background:
     radial-gradient(circle at 30% 26%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.3) 10%, transparent 24%),
     radial-gradient(circle, color-mix(in srgb, var(--ambient-primary, #3fc4f0) 72%, var(--cosmic-b, #3fc4f0) 28%) 0%,
-      color-mix(in srgb, var(--ambient-primary, #3fc4f0) 72%, var(--cosmic-b, #3fc4f0) 28%) 32%,
-      color-mix(in srgb, var(--ambient-primary, #3fc4f0) 55%, black 25%) 46%, transparent 56%);
+      color-mix(in srgb, var(--ambient-primary, #3fc4f0) 72%, var(--cosmic-b, #3fc4f0) 28%) 42%,
+      color-mix(in srgb, var(--ambient-primary, #3fc4f0) 55%, black 25%) 72%, transparent 92%);
 }
 
 .ambient-blob--secondary {
   background:
     radial-gradient(circle at 30% 26%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.3) 10%, transparent 24%),
     radial-gradient(circle, color-mix(in srgb, var(--ambient-secondary, #ef3d86) 72%, var(--cosmic-a, #ef3d86) 28%) 0%,
-      color-mix(in srgb, var(--ambient-secondary, #ef3d86) 72%, var(--cosmic-a, #ef3d86) 28%) 32%,
-      color-mix(in srgb, var(--ambient-secondary, #ef3d86) 55%, black 25%) 46%, transparent 56%);
+      color-mix(in srgb, var(--ambient-secondary, #ef3d86) 72%, var(--cosmic-a, #ef3d86) 28%) 42%,
+      color-mix(in srgb, var(--ambient-secondary, #ef3d86) 55%, black 25%) 72%, transparent 92%);
 }
 
 .ambient-blob--a {
   background:
     radial-gradient(circle at 30% 26%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.3) 10%, transparent 24%),
-    radial-gradient(circle, var(--cosmic-a, #ef3d86) 0%, var(--cosmic-a, #ef3d86) 32%,
-      color-mix(in srgb, var(--cosmic-a, #ef3d86) 45%, black 25%) 46%, transparent 56%);
+    radial-gradient(circle, var(--cosmic-a, #ef3d86) 0%, var(--cosmic-a, #ef3d86) 42%,
+      color-mix(in srgb, var(--cosmic-a, #ef3d86) 45%, black 25%) 72%, transparent 92%);
 }
 
 .ambient-blob--b {
   background:
     radial-gradient(circle at 30% 26%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.3) 10%, transparent 24%),
-    radial-gradient(circle, var(--cosmic-b, #3fc4f0) 0%, var(--cosmic-b, #3fc4f0) 32%,
-      color-mix(in srgb, var(--cosmic-b, #3fc4f0) 45%, black 25%) 46%, transparent 56%);
+    radial-gradient(circle, var(--cosmic-b, #3fc4f0) 0%, var(--cosmic-b, #3fc4f0) 42%,
+      color-mix(in srgb, var(--cosmic-b, #3fc4f0) 45%, black 25%) 72%, transparent 92%);
 }
 
 .ambient-blob--c {
   background:
     radial-gradient(circle at 30% 26%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.3) 10%, transparent 24%),
-    radial-gradient(circle, var(--cosmic-c, #7b3ff2) 0%, var(--cosmic-c, #7b3ff2) 32%,
-      color-mix(in srgb, var(--cosmic-c, #7b3ff2) 45%, black 25%) 46%, transparent 56%);
+    radial-gradient(circle, var(--cosmic-c, #7b3ff2) 0%, var(--cosmic-c, #7b3ff2) 42%,
+      color-mix(in srgb, var(--cosmic-c, #7b3ff2) 45%, black 25%) 72%, transparent 92%);
 }
 
 /* Vignette -- a soft depth cue, deepening toward the edges like looking
