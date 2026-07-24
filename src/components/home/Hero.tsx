@@ -1,6 +1,6 @@
 import { useMemo, useRef } from "react";
 import { motion, useScroll, useTransform } from "motion/react";
-import DriftMark from "../ui/illustrations/DriftMark";
+import OrlazWordmark from "../ui/illustrations/OrlazWordmark";
 import DriftGlyph from "../ui/illustrations/DriftGlyph";
 import GlassPanel from "../ui/GlassPanel";
 import { usePrefersReducedMotion } from "../../hooks/usePrefersReducedMotion";
@@ -49,11 +49,8 @@ export default function Hero({ games }: { games: Game[] }) {
     >
       <div className="hero-grid">
         <div className="hero-primary">
-          <motion.div className="hero-mark" {...fadeUp(0)}>
-            <DriftMark />
-          </motion.div>
-          <motion.h1 className="hero-word" {...fadeUp(0.15)}>
-            orlaz
+          <motion.h1 className="hero-word" {...fadeUp(0)}>
+            <OrlazWordmark />
           </motion.h1>
           <motion.div className="hero-scrollcue" {...fadeUp(0.6)}>
             <span>The catalogue</span>
