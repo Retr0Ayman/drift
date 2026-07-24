@@ -270,10 +270,14 @@ export default function GameDetail() {
                   </span>
                 </div>
               </div>
+              {/* FIX (confirmed live, Watch Dogs 2): this used to also
+                  re-render mergedGame.tags here via DrmTag, right below the
+                  dedicated "Protection" meta-row above that already shows
+                  the exact same DRM data -- a real duplicate, not a design
+                  choice, visible live as a faded/ghosted second layer of
+                  DRM tag text bleeding through behind the genre pills.
+                  Genres only here now; DRM has exactly one home. */}
               <div className="detail-genres">
-                {(mergedGame.tags || []).map((t) => (
-                  <DrmTag key={t}>{t}</DrmTag>
-                ))}
                 {(mergedGame.genres || []).map((t) => (
                   <Pill key={t}>{t}</Pill>
                 ))}
@@ -346,7 +350,24 @@ export default function GameDetail() {
               </div>
               <div className="build-row">
                 <span className="k">Survival</span>
-                <span className="v">{survival == null ? "—" : (survival < 0 ? "−" : "+") + Math.abs(survival) + "h"}</span>
+                {survival != null ? (
+                  <span className="v">{(survival < 0 ? "−" : "+") + Math.abs(survival) + "h"}</span>
+                ) : bd == null && releases.length ? (
+                  // FIX (confirmed live, Watch Dogs 2): survivalHrs correctly
+                  // refuses to guess when there's no confirmed crack build to
+                  // measure survival against (traditional-scene dirnames
+                  // often carry no Steam build id at all, see
+                  // parseBuildFromDirname's own comment) -- that's honest,
+                  // not broken, but a bare "—" here read exactly like a
+                  // rendering failure. Same "Unverified" language/styling
+                  // the Best crack build row right above already uses for
+                  // this identical underlying cause.
+                  <span className="v" style={{ color: "var(--unv)" }}>
+                    Unverified
+                  </span>
+                ) : (
+                  <span className="v">—</span>
+                )}
               </div>
             </div>
           </GlassPanel>

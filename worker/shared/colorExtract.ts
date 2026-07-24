@@ -61,6 +61,49 @@ function hexToHsl(hex: string): { h: number; s: number; l: number } {
   return { h: h * 60, s, l };
 }
 
+function hslToHex(h: number, s: number, l: number): string {
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = l - c / 2;
+  let r = 0;
+  let g = 0;
+  let b = 0;
+  if (h < 60) [r, g, b] = [c, x, 0];
+  else if (h < 120) [r, g, b] = [x, c, 0];
+  else if (h < 180) [r, g, b] = [0, c, x];
+  else if (h < 240) [r, g, b] = [0, x, c];
+  else if (h < 300) [r, g, b] = [x, 0, c];
+  else [r, g, b] = [c, 0, x];
+  const toHex = (v: number) =>
+    Math.round((v + m) * 255)
+      .toString(16)
+      .padStart(2, "0");
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
+// Confirmed live (Watch Dogs 2): its real extracted swatch (#c79340, a
+// saturated warm tan/orange, HSL lightness ~0.52) passed MIN_SATURATION
+// easily but rendered as a genuinely low-legibility ambient wash --
+// mid-lightness saturated colors are the worst case for text/pill overlay
+// contrast (too light to read as a "dark backdrop," too saturated/mid-tone
+// to read clean against either light or dark foreground text), and this
+// app's UI text (--drm amber tags especially) leans into the same warm
+// part of the wheel, compounding it. Rather than reject these candidates
+// outright (losing real per-game color identity for a lot of genuinely
+// fine covers that just happen to extract a mid-lightness swatch), dampen
+// -- clamp lightness down to a safe ceiling while preserving hue/
+// saturation, so the wash stays recognizably that game's color but
+// reliably reads as a dark backdrop, the one thing this site's light-text-
+// on-ambient-wash convention (--canvas-ink, tokens.css) actually needs.
+// A swatch already darker than the ceiling is untouched.
+const MAX_WASH_LIGHTNESS = 0.4;
+
+function dampenForLegibility(hex: string): string {
+  const { h, s, l } = hexToHsl(hex);
+  if (l <= MAX_WASH_LIGHTNESS) return hex;
+  return hslToHex(h, s, MAX_WASH_LIGHTNESS);
+}
+
 // Priority order for "which swatch to try first" -- Vibrant and its
 // Light/Dark variants keep the most real saturation; the Muted variants
 // are only reached as fallbacks within a genuinely extracted palette,
@@ -85,7 +128,7 @@ export async function extractAccentColors(imageUrl: string): Promise<AccentColor
       const swatch = palette[name];
       if (!swatch || !swatch.population) continue;
       const { s } = hexToHsl(swatch.hex);
-      if (s >= MIN_SATURATION) candidates.push(swatch.hex);
+      if (s >= MIN_SATURATION) candidates.push(dampenForLegibility(swatch.hex));
     }
 
     if (!candidates.length) return { primary: FALLBACK_PRIMARY, secondary: FALLBACK_SECONDARY, extracted: false };

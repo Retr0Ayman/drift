@@ -33,6 +33,7 @@ import { runStaleRefreshTick } from "./backfill/refreshStale";
 import { runEnrichmentRepairTick } from "./backfill/repairEnrichment";
 import { runGroupReliabilityTick } from "./backfill/groupReliability";
 import { handleGroupReliability, handleGroupReliabilityRecompute } from "./routes/groupReliability";
+import { handleAdminRefreshGame } from "./routes/adminRefreshGame";
 
 /* This is a Worker with static assets (wrangler.jsonc `main` + `assets`), not
    classic Cloudflare Pages -- confirmed live: the workers.dev domain and
@@ -76,6 +77,7 @@ const ROUTES: Record<string, Handler> = {
   "/api/catalog": handleCatalog,
   "/api/group-reliability": handleGroupReliability,
   "/api/group-reliability/recompute": handleGroupReliabilityRecompute,
+  "/api/admin/refresh-game": handleAdminRefreshGame,
 };
 
 export default {
