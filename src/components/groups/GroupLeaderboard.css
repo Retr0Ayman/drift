@@ -1,0 +1,166 @@
+.leaderboard-panel {
+  padding: 22px 24px 12px;
+  margin-bottom: 32px;
+}
+
+.leaderboard-head {
+  margin-bottom: 16px;
+}
+
+.leaderboard-title {
+  display: block;
+  font-size: 0.98rem;
+  font-weight: 800;
+  color: var(--ink);
+  letter-spacing: -0.2px;
+}
+
+.leaderboard-sub {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.76rem;
+  color: var(--ink-3);
+  font-weight: 500;
+  max-width: 72ch;
+}
+
+.leaderboard-rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.leaderboard-row {
+  display: grid;
+  grid-template-columns: 28px 30px minmax(90px, 1fr) auto minmax(80px, 1.4fr) 42px auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 6px;
+  border-top: 1px solid var(--glass-border);
+  color: inherit;
+  transition: background var(--dur) var(--ease);
+}
+
+.leaderboard-row:first-child {
+  border-top: none;
+}
+
+.leaderboard-row:hover {
+  background: var(--glass-bg-strong);
+}
+
+.leaderboard-rank {
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.leaderboard-badge {
+  width: 26px;
+  height: 26px;
+  border-radius: var(--r-badge);
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 0.62rem;
+  color: #0a0a0c;
+  flex: none;
+}
+
+.leaderboard-name {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.leaderboard-stars {
+  flex: none;
+}
+
+.leaderboard-bar-track {
+  height: 6px;
+  border-radius: var(--pill);
+  background: color-mix(in srgb, var(--ink-4) 40%, transparent);
+  overflow: hidden;
+  min-width: 60px;
+}
+
+.leaderboard-bar-fill {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  border-radius: var(--pill);
+}
+
+.leaderboard-pct {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--ink-2);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.leaderboard-sample {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+.leaderboard-toggle {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  margin-top: 4px;
+  border: none;
+  border-top: 1px solid var(--glass-border);
+  background: none;
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.leaderboard-toggle:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 720px) {
+  .leaderboard-row {
+    grid-template-columns: 22px 26px 1fr auto;
+    grid-template-areas:
+      "rank badge name name"
+      ". . stars stars"
+      ". . bar pct"
+      ". . sample sample";
+    row-gap: 6px;
+  }
+
+  .leaderboard-rank {
+    grid-area: rank;
+  }
+  .leaderboard-badge {
+    grid-area: badge;
+  }
+  .leaderboard-name {
+    grid-area: name;
+  }
+  .leaderboard-stars {
+    grid-area: stars;
+  }
+  .leaderboard-bar-track {
+    grid-area: bar;
+  }
+  .leaderboard-pct {
+    grid-area: pct;
+  }
+  .leaderboard-sample {
+    grid-area: sample;
+  }
+}

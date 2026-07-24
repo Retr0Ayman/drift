@@ -125,6 +125,43 @@
   font-weight: 500;
 }
 
+.groups-tier {
+  margin-bottom: 30px;
+}
+
+.groups-tier-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.groups-tier-label {
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  color: var(--ink-2);
+  text-transform: uppercase;
+}
+
+.groups-tier-count {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--ink-3);
+  background: var(--glass-bg-strong);
+  padding: 2px 9px;
+  border-radius: var(--pill);
+}
+
+.groups-tier-note {
+  display: block;
+  font-size: 0.74rem;
+  color: var(--ink-3);
+  font-weight: 500;
+  margin: -2px 0 14px;
+  max-width: 68ch;
+}
+
 .groups-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));

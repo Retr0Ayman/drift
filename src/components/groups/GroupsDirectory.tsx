@@ -12,9 +12,25 @@ import StarRating from "../ui/StarRating";
 import Reveal from "../ui/Reveal";
 import SegmentedControl from "../ui/SegmentedControl";
 import { usePageMeta } from "../../hooks/usePageMeta";
+import GroupLeaderboard, { type RankedGroup } from "./GroupLeaderboard";
+import type { GroupEntry } from "../../lib/groups";
 import "./Groups.css";
 
 type CategoryFilter = "all" | "p2p" | "scene";
+
+// Exactly the discrete values worker/backfill/groupReliability.ts's
+// starsFromRate can actually produce -- not every real number 1-5, so tier
+// sectioning walks this exact list rather than assuming a continuous range.
+const TIER_ORDER = [5, 4.5, 4, 3.5, 3, 2, 1];
+
+/* The real clean-release rate stars is banded from (see
+   worker/backfill/groupReliability.ts's starsFromRate) -- kept unrounded
+   here so groups tied on stars still sort by the actual underlying number,
+   never a second guessed dimension. */
+function reliabilityRate(rel?: { genuine_count: number; correction_count: number } | null): number {
+  if (!rel || !rel.genuine_count) return 0;
+  return (rel.genuine_count - rel.correction_count) / rel.genuine_count;
+}
 
 export default function GroupsDirectory() {
   const navigate = useNavigate();
@@ -41,6 +57,83 @@ export default function GroupsDirectory() {
   const visible = idx.filter((e) => (category === "all" ? true : category === "p2p" ? e.isP2P : !e.isP2P));
   const p2pCount = idx.filter((e) => e.isP2P).length;
   const sceneCount = idx.length - p2pCount;
+
+  // Split into "has a real computed score" vs. "not yet rated / repack" --
+  // repack groups never get a score (they didn't crack anything, see
+  // StarRating's own comment) and a group below MIN_SAMPLE genuine
+  // releases gets stars: null, honestly "not enough data" rather than a
+  // guessed rank. Ranked entries sort by the real underlying rate (never
+  // just the rounded star count) so a leaderboard position/tier ordering
+  // reflects actual data, not a coin-flip among ties.
+  const ranked: RankedGroup[] = [];
+  const unranked: GroupEntry[] = [];
+  for (const e of visible) {
+    const rel = reliability[e.key];
+    if (!isRepackGroup(e.name) && rel?.stars != null) {
+      ranked.push({ key: e.key, name: e.name, starred: e.starred, reliability: rel, rate: reliabilityRate(rel) });
+    } else {
+      unranked.push(e);
+    }
+  }
+  ranked.sort((a, b) => b.rate - a.rate || b.reliability.genuine_count - a.reliability.genuine_count || a.name.localeCompare(b.name));
+  const tiers = TIER_ORDER.map((stars) => ({ stars, groups: ranked.filter((g) => g.reliability.stars === stars) })).filter(
+    (t) => t.groups.length,
+  );
+  const byKey = new Map(visible.map((e) => [e.key, e]));
+
+  let cardIndex = 0;
+  const renderGroupCard = (e: GroupEntry) => {
+    const i = cardIndex++;
+    const hvPct = e.count ? Math.round((e.hv / e.count) * 100) : 0;
+    return (
+      <Reveal key={e.key} delay={Math.min(i, 8) * 0.04}>
+        <Link to={`/group/${e.key}`}>
+          <GlassPanel className={`group-card${e.starred ? " group-card--starred" : ""}`} frostStrong>
+            <div className="group-card-top">
+              <div className="group-badge" style={{ background: colorForName(e.name) }}>
+                {e.name.slice(0, 2).toUpperCase()}
+              </div>
+              <div>
+                <div className="group-name">
+                  {e.name}
+                  {e.starred ? <span className="group-star" title="Starred group">★</span> : null}
+                  {e.isP2P ? (
+                    <Pill tone="neutral" className="group-p2p-tag" title="P2P/non-scene group">
+                      P2P
+                    </Pill>
+                  ) : null}
+                </div>
+                <div className="group-count">
+                  {e.count} crack{e.count === 1 ? "" : "s"}
+                  {e.out ? ` · ${e.out} outdated` : ""}
+                </div>
+              </div>
+            </div>
+            {e.count ? (
+              <div className="group-mix" title={`${hvPct}% hypervisor, ${100 - hvPct}% traditional`}>
+                <span className="group-mix-hv" style={{ width: `${hvPct}%` }} />
+              </div>
+            ) : null}
+            <div className="group-card-foot">
+              {isRepackGroup(e.name) ? (
+                <span className="star-rating star-rating--unrated" title="Repack groups rebundle someone else's crack -- there's no crack of their own to rate for reliability.">
+                  Repack group
+                </span>
+              ) : (
+                <StarRating
+                  stars={reliability[e.key]?.stars ?? null}
+                  genuineCount={reliability[e.key]?.genuine_count ?? 0}
+                  correctionCount={reliability[e.key]?.correction_count ?? 0}
+                  avgFixDays={reliability[e.key]?.avg_fix_days ?? null}
+                />
+              )}
+              <div className="group-last">Last active {fmtDateMs(e.lastTs)}</div>
+            </div>
+          </GlassPanel>
+        </Link>
+      </Reveal>
+    );
+  };
 
   return (
     <div className="wrap groups-page">
@@ -115,59 +208,31 @@ export default function GroupsDirectory() {
         </span>
       </div>
 
-      <div className="groups-grid">
-        {visible.map((e, i) => {
-          const hvPct = e.count ? Math.round((e.hv / e.count) * 100) : 0;
-          return (
-            <Reveal key={e.key} delay={Math.min(i, 8) * 0.04}>
-              <Link to={`/group/${e.key}`}>
-                <GlassPanel className={`group-card${e.starred ? " group-card--starred" : ""}`} frostStrong>
-                  <div className="group-card-top">
-                    <div className="group-badge" style={{ background: colorForName(e.name) }}>
-                      {e.name.slice(0, 2).toUpperCase()}
-                    </div>
-                    <div>
-                      <div className="group-name">
-                        {e.name}
-                        {e.starred ? <span className="group-star" title="Starred group">★</span> : null}
-                        {e.isP2P ? (
-                          <Pill tone="neutral" className="group-p2p-tag" title="P2P/non-scene group">
-                            P2P
-                          </Pill>
-                        ) : null}
-                      </div>
-                      <div className="group-count">
-                        {e.count} crack{e.count === 1 ? "" : "s"}
-                        {e.out ? ` · ${e.out} outdated` : ""}
-                      </div>
-                    </div>
-                  </div>
-                  {e.count ? (
-                    <div className="group-mix" title={`${hvPct}% hypervisor, ${100 - hvPct}% traditional`}>
-                      <span className="group-mix-hv" style={{ width: `${hvPct}%` }} />
-                    </div>
-                  ) : null}
-                  <div className="group-card-foot">
-                    {isRepackGroup(e.name) ? (
-                      <span className="star-rating star-rating--unrated" title="Repack groups rebundle someone else's crack -- there's no crack of their own to rate for reliability.">
-                        Repack group
-                      </span>
-                    ) : (
-                      <StarRating
-                        stars={reliability[e.key]?.stars ?? null}
-                        genuineCount={reliability[e.key]?.genuine_count ?? 0}
-                        correctionCount={reliability[e.key]?.correction_count ?? 0}
-                        avgFixDays={reliability[e.key]?.avg_fix_days ?? null}
-                      />
-                    )}
-                    <div className="group-last">Last active {fmtDateMs(e.lastTs)}</div>
-                  </div>
-                </GlassPanel>
-              </Link>
-            </Reveal>
-          );
-        })}
-      </div>
+      <GroupLeaderboard groups={ranked} />
+
+      {tiers.map((t) => (
+        <div className="groups-tier" key={t.stars}>
+          <div className="groups-tier-head">
+            <span className="groups-tier-label">{t.stars}★ groups</span>
+            <span className="groups-tier-count">{t.groups.length}</span>
+          </div>
+          <div className="groups-grid">{t.groups.map((g) => renderGroupCard(byKey.get(g.key)!))}</div>
+        </div>
+      ))}
+
+      {unranked.length ? (
+        <div className="groups-tier">
+          <div className="groups-tier-head">
+            <span className="groups-tier-label">Not yet rated</span>
+            <span className="groups-tier-count">{unranked.length}</span>
+          </div>
+          <span className="groups-tier-note">
+            Repack groups (no crack of their own to rate) and groups below the minimum tracked-release sample size for
+            a reliable score.
+          </span>
+          <div className="groups-grid">{unranked.map((e) => renderGroupCard(e))}</div>
+        </div>
+      ) : null}
     </div>
   );
 }
