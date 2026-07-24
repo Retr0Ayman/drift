@@ -44,6 +44,55 @@ export async function buildId(appid: string): Promise<number | null> {
   return (await fetchBuildInfo(appid)).buildId;
 }
 
+// Flat, guessable CDN paths -- checked in preference order, widescreen
+// first since it best matches the game-detail carousel's own aspect
+// ratio. Confirmed live these are real, unofficial Steam library-asset
+// conventions (used by SteamDB/third-party launchers), NOT part of the
+// appdetails API response -- there is no official field for them, so
+// availability has to be checked with a real request per game, not
+// assumed. Deliberately does NOT include a guessed header.jpg fallback --
+// this exact codebase already confirmed live (GameDetail.tsx's carousel
+// comment, and reconfirmed here for EA Sports College Football 27,
+// appid 4032350: every one of these paths 404s, including the legacy
+// header.jpg guess) that Steam moves many titles' images to a per-app
+// HASHED path under shared.akamai.steamstatic.com that no flat guess can
+// reconstruct -- coverImg()'s own client-side fallback comment documents
+// the exact same lesson. The real appdetails `header_image` field is the
+// only header/cover URL ever reliably present for every game; callers
+// must fall back to that (never a further guessed path) when both of
+// these miss.
+const HIGH_RES_VARIANTS = ["library_hero.jpg", "library_600x900_2x.jpg"];
+
+/* Resolves the highest-quality reliably-available cover/header image for
+   a game, preferring a high-res CDN library asset over Steam's own
+   fixed-460x215 legacy header_image (appdetails.ts's `header` field) --
+   confirmed live via HEAD request per candidate, not assumed from the
+   URL pattern alone (see HIGH_RES_VARIANTS' own comment for why a guess
+   alone isn't trustworthy). Falls back to the real header_image
+   (fallbackHeader, always Steam's own genuine URL for this exact game,
+   never itself a guess) the instant every high-res candidate 404s or a
+   request fails -- this must never return null/undefined when a real
+   header_image was available, only ever upgrade it when a real
+   higher-quality asset is confirmed to exist. */
+export async function resolveHighResHeader(appid: number, fallbackHeader: string | null): Promise<string | null> {
+  for (const variant of HIGH_RES_VARIANTS) {
+    const url = `https://cdn.cloudflare.steamstatic.com/steam/apps/${appid}/${variant}`;
+    try {
+      // HEAD, not GET -- this only needs the status code, and running
+      // this per candidate per game during enrichment (not per pageview)
+      // shouldn't also pay for downloading image bytes it might throw
+      // away on a miss.
+      const r = await fetch(url, { method: "HEAD", cf: { cacheTtlByStatus: { "200-299": 86400, "300-599": 60 } } } as RequestInit);
+      if (r.ok) return url;
+    } catch {
+      // network blip on this one candidate -- try the next, same
+      // "one failure doesn't take down the whole enrichment" discipline
+      // every other backfill tick in this codebase already follows
+    }
+  }
+  return fallbackHeader;
+}
+
 export function parseYear(s?: string | null): number | null {
   const m = s && s.match(/\b(19|20)\d{2}\b/);
   return m ? Number(m[0]) : null;

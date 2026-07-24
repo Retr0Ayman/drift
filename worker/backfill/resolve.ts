@@ -2,6 +2,7 @@ import type { Env } from "../shared/env";
 import { handleResolve } from "../routes/resolve";
 import { handleAppdetails } from "../routes/appdetails";
 import { extractAccentColors, FALLBACK_PRIMARY, FALLBACK_SECONDARY } from "../shared/colorExtract";
+import { resolveHighResHeader } from "../shared/steam";
 import { lookupDrmForAppids } from "./pcgamingwiki";
 
 // Same cap src/hooks/useLiveCatalog.ts already uses client-side -- confirmed
@@ -40,10 +41,17 @@ export interface Enrichment {
   currentBuildUpdatedAt: number | null;
   desc: string;
   metacritic: number | null;
-  /* Steam's own authoritative header image URL (appdetails.ts's `header`
-     field, straight from Steam's header_image) -- not reconstructed from
-     appid client-side. See migrations/0002_add_header_image.sql for why
-     that reconstruction stopped being reliable. */
+  /* The highest-quality reliably-confirmed cover/header image URL for
+     this game -- steam.ts's resolveHighResHeader() HEAD-checks real
+     high-res library CDN assets (library_hero.jpg preferred, matches the
+     game-detail carousel's own aspect ratio best) and only falls back to
+     Steam's own fixed-460x215 legacy header_image (appdetails.ts's
+     `header` field) when neither high-res candidate is confirmed to
+     exist for this specific appid. Never a client-side-reconstructed
+     guess -- see migrations/0002_add_header_image.sql for why that
+     stopped being reliable, and resolveHighResHeader's own comment for
+     why even THIS resolution still needs a real, confirmed
+     Steam-provided fallback rather than a second guessed path. */
   header: string | null;
   /* Cover-art ambient wash colors (worker/shared/colorExtract.ts) --
      extracted here, same point header itself is captured, so both the
@@ -155,8 +163,15 @@ export async function enrichFromSteam(env: Env, appid: number): Promise<Enrichme
     header?: string;
   };
   if (!d.appid) return null;
+  // Accent extraction deliberately still reads d.header (the original
+  // legacy-size image), not the high-res one resolved below -- Vibrant
+  // only needs a representative color sample, not full resolution, and
+  // fetching+decoding a much larger image here would slow down every
+  // enrichment tick for no real accuracy gain this app has confirmed it
+  // needs. Only the STORED/displayed header changes.
   const accent = d.header ? await extractAccentColors(d.header) : null;
   const drm = await lookupDrmForAppids([d.appid]);
+  const header = await resolveHighResHeader(d.appid, d.header || null);
   return {
     appid: d.appid,
     title: d.title ? cleanDisplayTitle(d.title) : "",
@@ -169,7 +184,7 @@ export async function enrichFromSteam(env: Env, appid: number): Promise<Enrichme
     currentBuildUpdatedAt: d.currentBuildUpdatedAt ?? null,
     desc: d.about || d.desc || "",
     metacritic: d.metacritic ?? null,
-    header: d.header || null,
+    header,
     accentColorPrimary: accent?.primary ?? FALLBACK_PRIMARY,
     accentColorSecondary: accent?.secondary ?? FALLBACK_SECONDARY,
     tags: drm.get(d.appid) ?? [],
