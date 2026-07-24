@@ -52,27 +52,30 @@
   inset: -32px;
 }
 
-/* Five large glossy blobs, one at each corner plus one at dead center --
-   genuine full-viewport spread (the explicit complaint on pass 2: blobs
-   read as clustered/washed rather than reaching the whole page), sized
-   large enough (46-58vmax) that adjacent blobs' soft-edged falloffs
-   overlap generously in the gaps between them. Where two overlap, their
-   alpha stacks and the shared region reads brighter/denser than either
-   blob alone -- the closest a live-filter-free technique gets to real
-   metaball fusion: not a hard melting seam, but a genuine "these are
-   flowing into each other," not just floating in isolation.
+/* Five glossy blobs, one at each corner plus one small connecting accent
+   at dead center -- spread across the full viewport by POSITION (all four
+   corners + center), but each individually small (18-30vmax radius-worth,
+   roughly half pass-3's size) with a tight color-to-transparent falloff
+   (fully transparent by 54-56% of the shape's own radius, not 70-72%) --
+   see this file's own "FOURTH pass, geometry fix" comment further down
+   for the real, screenshot-and-pixel-sample-confirmed reason pass 3's
+   larger/softer blobs still read as a blur: at that size, five of them
+   physically covered the entire viewport at once with no gap of near-
+   black anywhere for a distinct edge to read against. Smaller + tighter
+   means real near-black is visible between and around blobs now, and
+   where two still drift close enough to touch, their edges overlap only
+   partially -- a genuine "flowing into each other" moment, not a
+   permanent full-screen wash.
 
    Each blob's `background` stacks TWO radial-gradients (first-listed
    paints on top): a bright, off-center specular highlight (same offset,
-   28% 24%, for every blob -- one consistent upper-left light source reads
+   30% 26%, for every blob -- one consistent upper-left light source reads
    as real lighting; a different offset per blob would read as
    independently glowing objects instead of one lit scene) over the base
-   color falloff, which itself now has three explicit stops (bright core,
-   same color at 40%, then darkened toward the rim before the transparent
-   edge) so each blob reads as a lit sphere with real form, not a flat
-   disc. Opacity raised substantially from pass 2 (0.42 max -> 0.68 max)
-   -- with .ambient-mesh gone, these blobs are the ONLY source of color
-   now and have to carry all of it themselves.
+   color falloff, which itself has three explicit stops (bright core, same
+   color out to about a third of the radius, then darkened toward the rim
+   before the transparent edge) so each blob reads as a lit sphere with
+   real form, not a flat disc.
 
    Exactly three hues per the approved mockup -- blue (--cosmic-b,
    #3fc4f0), magenta/pink (--cosmic-a, #ef3d86), purple (--cosmic-c,
@@ -89,20 +92,39 @@
    are fixed cosmic-only (no per-game reactivity) -- full-coverage anchors
    that keep the scene's own identity present even on a game page whose
    two accent colors might otherwise dominate every blob. */
+/* FOURTH pass, geometry fix -- confirmed via a real headless-Chromium
+   screenshot (msedge --headless --screenshot) and pixel-sampled with
+   sharp against the live page: center pixel came back #5b1f60, nowhere
+   near the #050308 base, and grep across every CSS file confirmed there
+   is NO filter/backdrop-filter/mix-blend-mode anywhere in this layer's
+   chain (Navbar/Carousel/CommandPalette/SearchBar have backdrop-filter,
+   .ambient-bg/.ambient-parallax/.ambient-blob-* do not). The "blur" look
+   was never a filter -- it was geometry: blobs sized 46-58vmax with a
+   gradual 0%->72% color-to-transparent falloff, five of them, on a
+   typical viewport, meant every one of them physically overlapped every
+   other one across virtually the entire screen -- there was no gap of
+   near-black base left ANYWHERE for a distinct edge to read against, so
+   the composite looked identical to a blur despite being five perfectly
+   sharp (if very gradually-fading) circles. Fix is smaller blobs (~27-
+   30vmax, roughly half the previous radius) with a MUCH tighter falloff
+   (transparent by 54-58% of radius instead of 70-72%) so each one reads
+   as a bounded shape with real near-black visible between and around
+   them -- verified this time with the same screenshot+pixel-sample
+   method before calling it done, see the completion report. */
 .ambient-blob-1 {
   position: absolute;
-  top: 18%;
-  left: 14%;
-  width: 56vmax;
-  height: 56vmax;
-  margin-top: -28vmax;
-  margin-left: -28vmax;
-  opacity: 0.64;
+  top: 16%;
+  left: 12%;
+  width: 30vmax;
+  height: 30vmax;
+  margin-top: -15vmax;
+  margin-left: -15vmax;
+  opacity: 0.6;
   background:
-    radial-gradient(circle at 28% 24%, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.22) 14%, transparent 32%),
+    radial-gradient(circle at 30% 26%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.3) 10%, transparent 24%),
     radial-gradient(circle, color-mix(in srgb, var(--ambient-primary, #3fc4f0) 55%, var(--cosmic-b, #3fc4f0) 45%) 0%,
-      color-mix(in srgb, var(--ambient-primary, #3fc4f0) 55%, var(--cosmic-b, #3fc4f0) 45%) 40%,
-      color-mix(in srgb, var(--ambient-primary, #3fc4f0) 45%, black 25%) 64%, transparent 72%);
+      color-mix(in srgb, var(--ambient-primary, #3fc4f0) 55%, var(--cosmic-b, #3fc4f0) 45%) 32%,
+      color-mix(in srgb, var(--ambient-primary, #3fc4f0) 45%, black 25%) 46%, transparent 56%);
   animation: ambient-blob-drift-1 72s ease-in-out infinite;
   will-change: transform;
 }
@@ -113,27 +135,27 @@
     transform: translate(0, 0) scale(1);
   }
   35% {
-    transform: translate(7vmax, -5vmax) scale(1.16);
+    transform: translate(4vmax, -3vmax) scale(1.16);
   }
   70% {
-    transform: translate(-5vmax, 4vmax) scale(0.9);
+    transform: translate(-3vmax, 2vmax) scale(0.9);
   }
 }
 
 .ambient-blob-2 {
   position: absolute;
-  top: 22%;
-  left: 86%;
-  width: 52vmax;
-  height: 52vmax;
-  margin-top: -26vmax;
-  margin-left: -26vmax;
-  opacity: 0.6;
+  top: 18%;
+  left: 88%;
+  width: 28vmax;
+  height: 28vmax;
+  margin-top: -14vmax;
+  margin-left: -14vmax;
+  opacity: 0.58;
   background:
-    radial-gradient(circle at 28% 24%, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.22) 14%, transparent 32%),
+    radial-gradient(circle at 30% 26%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.3) 10%, transparent 24%),
     radial-gradient(circle, color-mix(in srgb, var(--ambient-secondary, #ef3d86) 55%, var(--cosmic-a, #ef3d86) 45%) 0%,
-      color-mix(in srgb, var(--ambient-secondary, #ef3d86) 55%, var(--cosmic-a, #ef3d86) 45%) 40%,
-      color-mix(in srgb, var(--ambient-secondary, #ef3d86) 45%, black 25%) 64%, transparent 72%);
+      color-mix(in srgb, var(--ambient-secondary, #ef3d86) 55%, var(--cosmic-a, #ef3d86) 45%) 32%,
+      color-mix(in srgb, var(--ambient-secondary, #ef3d86) 45%, black 25%) 46%, transparent 56%);
   animation: ambient-blob-drift-2 90s ease-in-out infinite;
   will-change: transform;
 }
@@ -144,27 +166,27 @@
     transform: translate(0, 0) scale(1);
   }
   40% {
-    transform: translate(-6vmax, 5vmax) scale(0.87);
+    transform: translate(-3vmax, 3vmax) scale(0.87);
   }
   75% {
-    transform: translate(5vmax, -4vmax) scale(1.14);
+    transform: translate(3vmax, -2vmax) scale(1.14);
   }
 }
 
 .ambient-blob-3 {
   position: absolute;
-  top: 82%;
-  left: 18%;
-  width: 54vmax;
-  height: 54vmax;
-  margin-top: -27vmax;
-  margin-left: -27vmax;
-  opacity: 0.6;
+  top: 84%;
+  left: 15%;
+  width: 29vmax;
+  height: 29vmax;
+  margin-top: -14.5vmax;
+  margin-left: -14.5vmax;
+  opacity: 0.58;
   background:
-    radial-gradient(circle at 28% 24%, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.22) 14%, transparent 32%),
+    radial-gradient(circle at 30% 26%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.3) 10%, transparent 24%),
     radial-gradient(circle, color-mix(in srgb, var(--ambient-primary, #7b3ff2) 55%, var(--cosmic-c, #7b3ff2) 45%) 0%,
-      color-mix(in srgb, var(--ambient-primary, #7b3ff2) 55%, var(--cosmic-c, #7b3ff2) 45%) 40%,
-      color-mix(in srgb, var(--ambient-primary, #7b3ff2) 45%, black 25%) 64%, transparent 72%);
+      color-mix(in srgb, var(--ambient-primary, #7b3ff2) 55%, var(--cosmic-c, #7b3ff2) 45%) 32%,
+      color-mix(in srgb, var(--ambient-primary, #7b3ff2) 45%, black 25%) 46%, transparent 56%);
   animation: ambient-blob-drift-3 60s ease-in-out infinite;
   will-change: transform;
 }
@@ -175,27 +197,27 @@
     transform: translate(0, 0) scale(1);
   }
   45% {
-    transform: translate(-7vmax, -4vmax) scale(1.13);
+    transform: translate(-4vmax, -3vmax) scale(1.13);
   }
   80% {
-    transform: translate(4vmax, 5vmax) scale(0.89);
+    transform: translate(3vmax, 3vmax) scale(0.89);
   }
 }
 
 .ambient-blob-4 {
   position: absolute;
-  top: 80%;
-  left: 84%;
-  width: 50vmax;
-  height: 50vmax;
-  margin-top: -25vmax;
-  margin-left: -25vmax;
-  opacity: 0.56;
+  top: 82%;
+  left: 86%;
+  width: 27vmax;
+  height: 27vmax;
+  margin-top: -13.5vmax;
+  margin-left: -13.5vmax;
+  opacity: 0.55;
   background:
-    radial-gradient(circle at 28% 24%, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.22) 14%, transparent 32%),
+    radial-gradient(circle at 30% 26%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.3) 10%, transparent 24%),
     radial-gradient(circle, color-mix(in srgb, var(--cosmic-c, #7b3ff2) 55%, var(--cosmic-b, #3fc4f0) 45%) 0%,
-      color-mix(in srgb, var(--cosmic-c, #7b3ff2) 55%, var(--cosmic-b, #3fc4f0) 45%) 40%,
-      color-mix(in srgb, var(--cosmic-c, #7b3ff2) 45%, black 25%) 64%, transparent 72%);
+      color-mix(in srgb, var(--cosmic-c, #7b3ff2) 55%, var(--cosmic-b, #3fc4f0) 45%) 32%,
+      color-mix(in srgb, var(--cosmic-c, #7b3ff2) 45%, black 25%) 46%, transparent 56%);
   animation: ambient-blob-drift-4 48s ease-in-out infinite;
   will-change: transform;
 }
@@ -206,30 +228,31 @@
     transform: translate(0, 0) scale(1);
   }
   38% {
-    transform: translate(5vmax, 6vmax) scale(0.88);
+    transform: translate(3vmax, 4vmax) scale(0.88);
   }
   72% {
-    transform: translate(-6vmax, -4vmax) scale(1.15);
+    transform: translate(-3vmax, -2vmax) scale(1.15);
   }
 }
 
-/* Fifth blob -- dead center, no per-game reactivity (pure cosmic blend) --
-   the piece that makes the four corner blobs read as one connected scene
-   instead of four separate corners with empty space in the middle. */
+/* Fifth blob -- dead center, no per-game reactivity (pure cosmic blend),
+   deliberately the smallest -- a small connecting accent, not another
+   full-size pileup in the one spot every corner blob's drift already
+   passes near. */
 .ambient-blob-5 {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 46vmax;
-  height: 46vmax;
-  margin-top: -23vmax;
-  margin-left: -23vmax;
-  opacity: 0.5;
+  width: 18vmax;
+  height: 18vmax;
+  margin-top: -9vmax;
+  margin-left: -9vmax;
+  opacity: 0.4;
   background:
-    radial-gradient(circle at 28% 24%, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.2) 14%, transparent 32%),
+    radial-gradient(circle at 30% 26%, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.28) 10%, transparent 24%),
     radial-gradient(circle, color-mix(in srgb, var(--cosmic-a, #ef3d86) 50%, var(--cosmic-c, #7b3ff2) 50%) 0%,
-      color-mix(in srgb, var(--cosmic-a, #ef3d86) 50%, var(--cosmic-c, #7b3ff2) 50%) 38%,
-      color-mix(in srgb, var(--cosmic-a, #ef3d86) 45%, black 25%) 62%, transparent 70%);
+      color-mix(in srgb, var(--cosmic-a, #ef3d86) 50%, var(--cosmic-c, #7b3ff2) 50%) 30%,
+      color-mix(in srgb, var(--cosmic-a, #ef3d86) 45%, black 25%) 44%, transparent 54%);
   animation: ambient-blob-drift-5 84s ease-in-out infinite;
   will-change: transform;
 }
@@ -240,10 +263,10 @@
     transform: translate(0, 0) scale(1);
   }
   33% {
-    transform: translate(-5vmax, 5vmax) scale(1.12);
+    transform: translate(-2.5vmax, 2.5vmax) scale(1.12);
   }
   68% {
-    transform: translate(6vmax, -4vmax) scale(0.91);
+    transform: translate(3vmax, -2vmax) scale(0.91);
   }
 }
 
