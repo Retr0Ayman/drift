@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { motion, useScroll, useTransform } from "motion/react";
 import SearchBar from "../search/SearchBar";
-import DriftMark from "../ui/illustrations/DriftMark";
+import OrlazWordmark from "../ui/illustrations/OrlazWordmark";
 import Pill, { type PillTone } from "../ui/Pill";
 import type { CatalogStatus } from "../../hooks/useLiveCatalog";
 import "./Navbar.css";
@@ -69,17 +69,8 @@ export default function Navbar({ status, onOpenSearch, revealBrandMark }: Navbar
         <motion.div className="navbar-brand liquid-sheen" style={{ scale, boxShadow }}>
           <span className="navbar-topglow" />
           <Link to="/" className="navbar-logo" onClick={() => setMenuOpen(false)}>
-            {revealBrandMark ? (
-              <motion.span layoutId="brand-mark" className="navbar-mark">
-                <DriftMark />
-              </motion.span>
-            ) : (
-              <span className="navbar-mark">
-                <DriftMark />
-              </span>
-            )}
             <span className="navbar-word">
-              <span className="navbar-title">orlaz</span>
+              <OrlazWordmark layoutId={revealBrandMark ? "brand-mark" : undefined} className="navbar-title" />
               <span className="navbar-sub">BY DAREALAYMAN</span>
             </span>
           </Link>

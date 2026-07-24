@@ -21,23 +21,6 @@
 .footer-logo {
   display: flex;
   align-items: center;
-  gap: 9px;
-}
-
-.footer-mark {
-  width: 26px;
-  height: 26px;
-  border-radius: var(--r-badge);
-  display: grid;
-  place-items: center;
-  background: var(--ink);
-  color: var(--bg-0);
-  flex: none;
-}
-
-.footer-mark svg {
-  width: 14px;
-  height: 14px;
 }
 
 .footer-wordmark {

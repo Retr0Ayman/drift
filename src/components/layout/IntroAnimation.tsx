@@ -3,24 +3,33 @@ import { motion, AnimatePresence } from "motion/react";
 import DriftMark from "../ui/illustrations/DriftMark";
 import "./IntroAnimation.css";
 
-const REVEAL_DELAY_MS = 500;
-const HOLD_MS = 2200;
+// FIX: cut roughly in half from the original 500/2200 pair (confirmed live
+// the old timing read as slow/busy for a one-time splash) -- still long
+// enough for "rlaz" to visibly reveal beside the O before the overlay
+// exits, just without the extra lingering hold.
+const REVEAL_DELAY_MS = 320;
+const HOLD_MS = 1300;
 
 function prefersReducedMotion(): boolean {
   return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-/* Splash: the real DriftMark icon (not a stand-in text glyph) holds large
-   and centered, "rlaz" reveals beside it, then the overlay exits while the
-   icon -- sharing a layoutId with the navbar's own icon -- animates into
-   the wordmark's real position via Framer Motion's layout projection, no
-   manual measurement needed. IntroAnimation is mounted once at Layout's
-   root (App.tsx), outside the routed <Outlet/>, so this effect's empty
-   dependency array only ever re-runs on an actual fresh mount of Layout --
-   a real page load/refresh -- never on in-app route navigation between
-   child routes, which leaves Layout mounted. No session/persistence gate
-   needed to get "plays once per page load": that's just what mounting
-   once per load already means. */
+/* Splash: the real DriftMark rings -- now standing in for the O in "orlaz"
+   itself, not a separate icon beside the wordmark -- hold large and
+   centered, "rlaz" reveals beside it, then the overlay exits while the O
+   -- sharing a layoutId with the navbar's own O-slot (OrlazWordmark.tsx)
+   -- animates into the wordmark's real position via Framer Motion's layout
+   projection, no manual measurement needed. Both ends of the shared
+   transition are now the literal same element (a DriftMark ring sized in
+   em within a wordmark), not two differently-shaped things standing in for
+   each other, so the morph itself reads as one continuous shape shrinking
+   into place. IntroAnimation is mounted once at Layout's root (App.tsx),
+   outside the routed <Outlet/>, so this effect's empty dependency array
+   only ever re-runs on an actual fresh mount of Layout -- a real page
+   load/refresh -- never on in-app route navigation between child routes,
+   which leaves Layout mounted. No session/persistence gate needed to get
+   "plays once per page load": that's just what mounting once per load
+   already means. */
 interface IntroAnimationProps {
   onDone?: () => void;
 }
@@ -76,18 +85,22 @@ export default function IntroAnimation({ onDone }: IntroAnimationProps) {
           onClick={finish}
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.35 }}
+          transition={{ duration: 0.25 }}
         >
           <div className="intro-word-row">
-            <motion.div layoutId="brand-mark" className="intro-mark">
+            <motion.span
+              layoutId="brand-mark"
+              className="intro-o"
+              transition={{ layout: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } }}
+            >
               <DriftMark />
-            </motion.div>
+            </motion.span>
             {revealRest ? (
               <motion.span
                 className="intro-rest"
-                initial={{ opacity: 0, x: -12 }}
+                initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+                transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
               >
                 rlaz
               </motion.span>
@@ -98,7 +111,7 @@ export default function IntroAnimation({ onDone }: IntroAnimationProps) {
             className="intro-sub"
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: revealRest ? 1 : 0, y: revealRest ? 0 : 8 }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: 0.32 }}
           >
             BY DAREALAYMAN
           </motion.div>

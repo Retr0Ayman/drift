@@ -101,32 +101,19 @@
 .navbar-logo {
   display: flex;
   align-items: center;
-  gap: 12px;
   cursor: pointer;
-  padding: 10px 20px 10px 14px;
+  padding: 10px 20px;
 }
 
-/* Soft cosmic glow behind the mark -- a small static "power core" glint,
-   same restraint as --ai-glow-shadow elsewhere (static, no animation,
-   just a box-shadow) so the one piece of chrome that's always on screen
-   carries a touch of the same magenta/blue the wallpaper and every other
-   glass surface now do, instead of reading as flat black regardless of
-   what's behind it. */
-.navbar-mark {
-  width: 42px;
-  height: 42px;
-  border-radius: var(--r-badge);
-  display: grid;
-  place-items: center;
-  background: var(--ink);
-  color: var(--bg-0);
-  flex: none;
-  box-shadow: 0 0 16px -4px color-mix(in srgb, var(--cosmic-a) 55%, transparent);
-}
-
-.navbar-mark svg {
-  width: 23px;
-  height: 23px;
+/* Soft cosmic glow on the O ring itself -- same restraint as --ai-glow-
+   shadow elsewhere (static, no animation) so the one piece of chrome
+   that's always on screen still carries a touch of the same magenta/blue
+   the wallpaper and every other glass surface has, now that the mark is
+   the O character itself rather than a separate badge with its own
+   background to hang a box-shadow off. drop-shadow (not box-shadow, no box
+   to shadow anymore) follows the ring's own stroked shape. */
+.navbar-title .orlaz-o {
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--cosmic-a) 55%, transparent));
 }
 
 .navbar-word {

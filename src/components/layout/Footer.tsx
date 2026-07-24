@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import DriftMark from "../ui/illustrations/DriftMark";
+import OrlazWordmark from "../ui/illustrations/OrlazWordmark";
 import "./Footer.css";
 
 const EXPLORE_LINKS = [
@@ -25,10 +25,7 @@ export default function Footer() {
       <div className="wrap footer-grid">
         <div className="footer-col footer-brand">
           <div className="footer-logo">
-            <span className="footer-mark">
-              <DriftMark />
-            </span>
-            <span className="footer-wordmark">orlaz</span>
+            <OrlazWordmark className="footer-wordmark" />
           </div>
           <p className="footer-tagline">Crack-status and Steam build tracking for PC releases.</p>
         </div>

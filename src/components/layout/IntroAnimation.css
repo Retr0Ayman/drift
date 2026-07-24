@@ -10,34 +10,37 @@
   cursor: pointer;
 }
 
+/* Font-size lives here, not on .intro-rest -- .intro-o is sized in em off
+   this same value (matching OrlazWordmark.css's own .orlaz-o proportions),
+   so the O and "rlaz" share one real letterform scale instead of an icon
+   badge and a heading font-size that happen to look similar. */
 .intro-word-row {
   display: flex;
   align-items: center;
-  gap: clamp(0.6rem, 0.4rem + 1.5vw, 1.6rem);
+  font-size: clamp(4rem, 3rem + 8vw, 9rem);
 }
 
-/* Large version of Navbar.css's .navbar-mark badge -- same ink-filled
-   rounded box, just scaled way up, so the shared layoutId animation reads
-   as one badge shrinking into place rather than two differently-styled
-   elements swapping. */
-.intro-mark {
-  width: clamp(4.4rem, 3.2rem + 8vw, 8.8rem);
-  height: clamp(4.4rem, 3.2rem + 8vw, 8.8rem);
-  border-radius: clamp(1.2rem, 0.9rem + 2vw, 2.2rem);
-  display: grid;
-  place-items: center;
-  background: var(--ink);
-  color: var(--bg-0);
+/* The O in "orlaz" -- same DriftMark rings the navbar's own O-slot uses
+   (OrlazWordmark.tsx), just at splash scale, sharing that component's
+   layoutId="brand-mark" so this exact shape is what visibly shrinks into
+   the navbar wordmark's O position once the overlay exits. */
+.intro-o {
+  display: inline-flex;
+  width: 0.78em;
+  height: 0.78em;
+  margin-right: 0.05em;
+  color: var(--ink);
   flex: none;
 }
 
-.intro-mark svg {
-  width: 58%;
-  height: 58%;
+.intro-o svg {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 .intro-rest {
-  font-size: clamp(4rem, 3rem + 8vw, 9rem);
+  font-size: 1em;
   font-weight: 800;
   font-family: var(--font);
   letter-spacing: -3px;
@@ -76,7 +79,7 @@
 }
 
 @media (max-width: 520px) {
-  .intro-rest {
+  .intro-word-row {
     font-size: clamp(2.8rem, 2rem + 10vw, 5rem);
   }
 }
