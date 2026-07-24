@@ -31,6 +31,7 @@ import { runDrmBackfillTick } from "./backfill/drmBackfillRun";
 import { runFirstSeenReconcileTick } from "./backfill/reconcileFirstSeen";
 import { runStaleRefreshTick } from "./backfill/refreshStale";
 import { runEnrichmentRepairTick } from "./backfill/repairEnrichment";
+import { runHeaderUpgradeTick } from "./backfill/headerUpgrade";
 import { runGroupReliabilityTick } from "./backfill/groupReliability";
 import { handleGroupReliability, handleGroupReliabilityRecompute } from "./routes/groupReliability";
 import { handleAdminRefreshGame } from "./routes/adminRefreshGame";
@@ -135,11 +136,15 @@ export default {
   // real xREL group history (worker/backfill/reconcileFirstSeen.ts) AND,
   // also sharing this slot, repairing the false-blank-metadata backlog left
   // by the appid-echoed-on-failure bug (worker/backfill/repairEnrichment.ts's
-  // own comment) -- Cloudflare caps a Worker at 5 cron triggers (confirmed
-  // live), so this one slot now carries three unrelated one-time/ongoing
-  // reconciliation tasks, same as the 15-minute trigger already combining
-  // two unrelated tasks. Like the first-seen reconciliation and the DRM
-  // recheck, the enrichment repair deliberately never reaches a
+  // own comment) AND upgrading any game's header image to a real high-res
+  // library CDN variant if it isn't one already (worker/backfill/
+  // headerUpgrade.ts) -- a plain WHERE-clause eligibility check, no cursor
+  // needed, since an upgraded row just stops matching on its own -- Cloudflare
+  // caps a Worker at 5 cron triggers (confirmed live), so this one slot now
+  // carries four unrelated one-time/ongoing reconciliation tasks, same as
+  // the 15-minute trigger already combining multiple unrelated tasks. Like
+  // the first-seen reconciliation and the DRM recheck, the enrichment
+  // repair and header upgrade both deliberately never reach a
   // terminal "done" state -- a row a tick attempts and still fails (Steam
   // having a bad moment right now) must stay eligible for a later tick, not
   // get marked "visited" and skipped forever. waitUntil so none of these
@@ -159,7 +164,9 @@ export default {
       return;
     }
     if (event.cron === DRM_BACKFILL_CRON) {
-      ctx.waitUntil(Promise.all([runDrmBackfillTick(env), runFirstSeenReconcileTick(env), runEnrichmentRepairTick(env)]));
+      ctx.waitUntil(
+        Promise.all([runDrmBackfillTick(env), runFirstSeenReconcileTick(env), runEnrichmentRepairTick(env), runHeaderUpgradeTick(env)]),
+      );
       return;
     }
     ctx.waitUntil(
