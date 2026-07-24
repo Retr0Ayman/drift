@@ -30,7 +30,7 @@
 }
 
 html {
-  color-scheme: light;
+  color-scheme: dark;
   -webkit-text-size-adjust: 100%;
 }
 
@@ -177,6 +177,12 @@ select {
    own comment), every glass surface subtly reads as lit BY that scene
    specifically, not by generic white light -- still additive, still a
    single static gradient, no new cost. */
+/* Theme consolidation: one value now, the (formerly dark-mode-only) dimmer
+   variant -- a bright 0.32-alpha white streak was tuned for a light glass
+   fill catching light against a page background; the fill underneath is
+   always the darker translucent one now (GlassPanel.css), so the dimmer
+   catch-light reads correctly as "real glass" instead of a blown-out
+   streak. */
 .liquid-sheen::before {
   content: "";
   position: absolute;
@@ -188,49 +194,11 @@ select {
   will-change: transform;
   background: linear-gradient(
     115deg,
-    rgba(255, 255, 255, 0.32) 0%,
-    color-mix(in srgb, var(--cosmic-a) 10%, transparent) 20%,
-    transparent 40%,
-    color-mix(in srgb, var(--cosmic-b) 12%, transparent) 64%,
-    rgba(255, 255, 255, 0.1) 84%,
-    transparent 100%
-  );
-}
-
-@media (prefers-color-scheme: dark) {
-  .liquid-sheen::before {
-    background: linear-gradient(
-      115deg,
-      rgba(255, 255, 255, 0.08) 0%,
-      color-mix(in srgb, var(--cosmic-a) 12%, transparent) 20%,
-      transparent 40%,
-      color-mix(in srgb, var(--cosmic-b) 14%, transparent) 64%,
-      rgba(255, 255, 255, 0.03) 84%,
-      transparent 100%
-    );
-  }
-}
-
-:root[data-theme="dark"] .liquid-sheen::before {
-  background: linear-gradient(
-    115deg,
     rgba(255, 255, 255, 0.08) 0%,
     color-mix(in srgb, var(--cosmic-a) 12%, transparent) 20%,
     transparent 40%,
     color-mix(in srgb, var(--cosmic-b) 14%, transparent) 64%,
     rgba(255, 255, 255, 0.03) 84%,
-    transparent 100%
-  );
-}
-
-:root[data-theme="light"] .liquid-sheen::before {
-  background: linear-gradient(
-    115deg,
-    rgba(255, 255, 255, 0.32) 0%,
-    color-mix(in srgb, var(--cosmic-a) 10%, transparent) 20%,
-    transparent 40%,
-    color-mix(in srgb, var(--cosmic-b) 12%, transparent) 64%,
-    rgba(255, 255, 255, 0.1) 84%,
     transparent 100%
   );
 }

@@ -1,6 +1,25 @@
+/* One-universal-theme pass: this used to be a flat, fully opaque
+   var(--bg-1) fill -- the plain (no frost/frostStrong prop) variant, which
+   turned out to be what most of the site's actual panels used (Digest's
+   hero + 4 stat tiles, GameDetail's carousel wrapper/DLC list, the
+   FAQ panel, Groups/Publishers signal panels, the wishlist import panel --
+   confirmed via a full grep of every <GlassPanel> call site). Every one of
+   those opaquely covered the lava-lamp background wherever it sat,
+   regardless of AmbientBackground being mounted globally (main.tsx) --
+   the background was never actually hidden site-wide, it was just being
+   painted over locally by this component's own default fill on most of
+   the pages that use it. Now the default IS real liquid glass (the same
+   translucent --aura-panel-bg fill + blur+saturate backdrop-filter
+   .glass-panel--frost already used) instead of a separate opaque variant
+   callers had to opt out of -- "every card/tile/panel" reads as glass by
+   default now, frost/frostStrong stay as intentional stronger-blur/more-
+   see-through variants for surfaces that need to visibly float more, not
+   as the only way to get glass at all. */
 .glass-panel {
   border-radius: var(--r-lg);
-  background: var(--bg-1);
+  background: var(--aura-panel-bg);
+  -webkit-backdrop-filter: blur(var(--aura-blur)) saturate(1.15);
+  backdrop-filter: blur(var(--aura-blur)) saturate(1.15);
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-highlight), var(--glass-shadow), var(--glass-ambient);
 }

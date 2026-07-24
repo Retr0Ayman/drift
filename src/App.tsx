@@ -8,7 +8,6 @@ import RouteFallback from "./components/layout/RouteFallback";
 import PageTransition from "./components/layout/PageTransition";
 import Home from "./components/home/Home";
 import { useLiveCatalog } from "./hooks/useLiveCatalog";
-import { useTheme } from "./hooks/useTheme";
 import type { CatalogContextValue } from "./hooks/useCatalog";
 
 // Home stays eager -- it's the landing page, almost always the first thing
@@ -28,7 +27,6 @@ const Digest = lazy(() => import("./components/digest/Digest"));
 
 function Layout() {
   const catalog = useLiveCatalog();
-  const theme = useTheme();
   const [introDone, setIntroDone] = useState(false);
   // Lifted here, not local to CommandPalette, so both triggers -- Cmd/Ctrl+K
   // and clicking the navbar's SearchBar pill -- drive the same overlay
@@ -49,13 +47,7 @@ function Layout() {
   return (
     <>
       <IntroAnimation onDone={() => setIntroDone(true)} />
-      <Navbar
-        status={catalog.status}
-        onOpenSearch={() => setSearchOpen(true)}
-        revealBrandMark={introDone}
-        theme={theme.resolved}
-        onToggleTheme={theme.toggle}
-      />
+      <Navbar status={catalog.status} onOpenSearch={() => setSearchOpen(true)} revealBrandMark={introDone} />
       <CommandPalette
         games={catalog.games}
         catalogStatus={catalog.status}

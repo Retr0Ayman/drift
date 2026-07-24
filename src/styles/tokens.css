@@ -1,28 +1,48 @@
-/* orlaz design tokens — light paper base, aura glass reserved for a few spots */
+/* orlaz design tokens — one universal "liquid glass + lava lamp" theme.
+   Dark/light mode toggle removed entirely (see git log for the previous
+   dual-theme system this replaces) -- the ambient background
+   (AmbientBackground.css) has always been a fixed, non-theme-adaptive dark
+   scene, and GlassPanel.css's default variant is now real translucent
+   glass everywhere (not a separate opaque fallback), so a light UI mode
+   never had anywhere coherent left to apply: every surface either sits
+   directly on the colorful moving wallpaper or on a dark-tinted glass
+   panel floating over it. These are NOT simply the old dark-mode values
+   copy-pasted -- text/UI sitting on a colorful moving backdrop through a
+   translucent glass fill is a harder legibility case than a flat dark
+   background ever was (the old dark mode was tuned against solid --bg-1
+   cards), so contrast was re-checked deliberately for that harder case:
+   near-white ink at full/68%/45% alpha over a ~55-60%-opaque near-black
+   glass fill still reads reliably regardless of what color is moving
+   underneath (dark scrim + light text is a robust combination against
+   almost any backdrop hue), which is why --ink stays a true near-white
+   rather than anything warmer/dimmer. */
 :root {
-  color-scheme: light;
+  color-scheme: dark;
 
-  --bg-0: #f7f5f0;
-  --bg-1: #ffffff;
-  --bg-2: #efece4;
+  --bg-0: #0d0a10;
+  --bg-1: #1c1a17;
+  --bg-2: #221f1b;
 
-  --ink: #17150f;
-  --ink-2: rgba(23, 21, 15, 0.68);
-  --ink-3: rgba(23, 21, 15, 0.45);
-  --ink-4: rgba(23, 21, 15, 0.14);
+  --ink: #f5f3ee;
+  --ink-2: rgba(245, 243, 238, 0.68);
+  --ink-3: rgba(245, 243, 238, 0.45);
+  --ink-4: rgba(245, 243, 238, 0.14);
 
-  --accent: #17150f;
-  --accent-ink: #f7f5f0;
-  --accent-dim: rgba(23, 21, 15, 0.06);
-  --accent-dim-2: rgba(23, 21, 15, 0.1);
+  --accent: #f5f3ee;
+  --accent-ink: #131210;
+  --accent-dim: rgba(245, 243, 238, 0.08);
+  --accent-dim-2: rgba(245, 243, 238, 0.14);
 
-  /* functional status colors -- reserved, do not repurpose as chrome */
-  --hv: #6b4fa0;
-  --trad: #1f7a6c;
-  --dead: #2f7a4f;
-  --out: #b5602a;
-  --unc: #a13f34;
-  --unv: #7a7263;
+  /* functional status colors -- reserved, do not repurpose as chrome.
+     Brightened versions (not the old light-mode set) -- these need to
+     read clearly against a dark glass fill on every surface now, not just
+     the subset of dark-mode pages that used to opt in. */
+  --hv: #a68bdb;
+  --trad: #4fb8a0;
+  --dead: #5ec783;
+  --out: #e08e51;
+  --unc: #e06a5d;
+  --unv: #a89f8d;
 
   /* Chrome color for protection/DRM pills specifically (DrmTag.tsx) -- NOT
      a status color, not reserved by the rule above, deliberately a
@@ -30,132 +50,74 @@
      already means the "Outdated" release status) so a DRM pill and an
      Outdated status pill never read as the same color meaning two
      different things when they sit next to each other. */
-  --drm: #9c6b12;
+  --drm: #d9a53f;
 
-  /* flat card surfaces -- hairline border, minimal shadow, no blur */
-  --glass-bg: rgba(23, 21, 15, 0.04);
-  --glass-bg-strong: rgba(23, 21, 15, 0.07);
-  --glass-border: rgba(23, 21, 15, 0.12);
-  --glass-border-strong: rgba(23, 21, 15, 0.2);
-  --glass-shadow: 0 1px 2px rgba(23, 21, 15, 0.06);
-  --glass-shadow-lg: 0 2px 8px rgba(23, 21, 15, 0.08);
+  /* Glass surfaces -- every GlassPanel variant reads these now (see that
+     component's own comment on the base variant no longer being a
+     separate opaque fallback). Light-tinted translucent fill/border reads
+     as "frosted" against the near-black ambient background this sits over
+     everywhere now, the same way it already did on dark-mode-only
+     surfaces before. */
+  --glass-bg: rgba(245, 243, 238, 0.05);
+  --glass-bg-strong: rgba(245, 243, 238, 0.09);
+  --glass-border: rgba(245, 243, 238, 0.14);
+  --glass-border-strong: rgba(245, 243, 238, 0.22);
+  --glass-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --glass-shadow-lg: 0 2px 10px rgba(0, 0, 0, 0.45);
 
-  /* Real depth for glass/aura surfaces (GlassPanel.css, Navbar.css,
-     SearchBar.css) -- a thin bright inset line along the top edge
-     (simulates light catching the top of real frosted glass) plus a soft,
-     larger, downward-offset ambient shadow underneath (simulates the panel
-     actually floating above the page rather than being flush with it).
-     Both are full box-shadow VALUES, not bare colors, so call sites can
-     just list them alongside the existing --glass-shadow/--glass-shadow-lg
-     tokens in one box-shadow property -- additive, not a replacement for
-     the blur+saturate+translucency already doing the "frosted" half of the
-     job. */
-  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.75);
-  --glass-ambient: 0 18px 36px -14px rgba(23, 21, 15, 0.22);
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  --glass-ambient: 0 20px 40px -14px rgba(0, 0, 0, 0.55);
 
-  /* Extreme-ethereal pass: a soft luminous halo, additive alongside the
-     --glass-highlight/--glass-shadow/--glass-ambient stack (see that
-     block's own comment for why this is additive rather than a
-     replacement) on the frost/frost-strong/aura surfaces specifically --
-     the "glowing from within" cue that separates a glass panel that's
-     merely translucent from one that reads as lit. Static box-shadow, no
-     animation -- same discipline --ai-glow-shadow already documents for
-     why an animated glow this size would revisit the ambient background's
-     own filter/blend-mode cost trap. */
-  --ethereal-glow: 0 0 60px -18px rgba(255, 255, 255, 0.8);
+  --ethereal-glow: 0 0 70px -14px rgba(166, 139, 219, 0.4);
 
-  /* Vignette -- a soft depth cue for the ambient background's plasma layer
-     (AmbientBackground.css's .ambient-vault), deepening toward the edges
-     like looking into a liquid-filled vessel rather than at a flat
-     backdrop. Deliberately NOT theme-conditional -- the wallpaper itself
-     is always this dark scene regardless of the light/dark toggle (see
-     .ambient-bg's own comment), so this only ever needs the one
-     true-near-black value. */
+  /* Vignette -- deepening toward the edges of the ambient background,
+     like looking into a liquid-filled vessel. Always this one value, same
+     reasoning as before the theme consolidation: the wallpaper itself was
+     never theme-adaptive to begin with. */
   --ambient-vignette: rgba(2, 2, 8, 0.65);
 
-  /* Fixed plasma accents -- the drifting blobs (.ambient-mesh/
-     .ambient-blob-*) blend these with each game's own extracted accent
-     pair (--ambient-primary/secondary) rather than either alone: pure
-     per-game tinting reads as generic colored blobs with no consistent
-     identity, pure fixed color loses per-game variety entirely. Hot
-     magenta + electric blue is the base plasma pairing; still named
-     "cosmic" (pre-dates the plasma-liquid pass) rather than renamed, since
-     every glass surface's .liquid-sheen streak (globals.css) and the aura
-     ring (Navbar/CommandPalette/SearchBar) also read these same three
-     variables and a rename would touch all of them for no behavior change.
-     Not theme-conditional, same reasoning as --ambient-vignette above. */
+  /* Fixed plasma accents -- the drifting lava-lamp blobs
+     (AmbientBackground.css) blend these with each game's own extracted
+     accent pair (--ambient-primary/secondary, useAmbientAccent.ts) rather
+     than either alone. Hot magenta + electric blue is the base plasma
+     pairing; still named "cosmic" (pre-dates the plasma-liquid pass)
+     rather than renamed, since every glass surface's .liquid-sheen streak
+     and the aura ring also read these same three variables. */
   --cosmic-a: #ff2ea6;
   --cosmic-b: #2f5bff;
-  /* Third plasma accent -- molten orange, the hottest-reading hue in the
-     set. Used for .ambient-blob-3 and wherever a third, warmer accent is
-     wanted alongside the magenta/blue pair above. */
   --cosmic-c: #ff7a3d;
 
   /* Text that sits directly on the ambient wallpaper with no card behind
-     it (hero h1/h2 page titles, their eyebrow/meta labels -- Hero.css,
-     GameGrid.css, GameDetail.css, and the *Directory/*Profile/Digest/
-     Watchlist hero sections) needs to stay legible against a backdrop
-     that's now always dark, regardless of the light/dark toggle --
-     unlike --ink itself, which still has to flip per theme for text
-     inside solid --bg-1 cards (that keep following the toggle normally).
-     Reuses the dark theme's own --ink/--ink-2/--ink-3 numbers since
-     light-on-dark already works there; not theme-conditional, on
-     purpose. */
+     it (hero h1/h2 titles, eyebrow/meta labels). Numerically identical to
+     --ink/-2/-3 now that there's only one theme -- kept as its own named
+     token rather than merged away, since dozens of call sites already
+     reference --canvas-ink specifically for "no card behind this text"
+     intent, and collapsing the name wouldn't change any rendered pixel,
+     only churn every one of those call sites for nothing. */
   --canvas-ink: #f5f3ee;
   --canvas-ink-2: rgba(245, 243, 238, 0.68);
   --canvas-ink-3: rgba(245, 243, 238, 0.45);
 
-  /* aura ring -- reserved for one hero stat panel per page. Everywhere
-     else that used to share this same purple/teal ring (the search bar,
-     AI-generated-content tags) now uses the dedicated --ai-* palette
-     below instead -- see that token block's own comment for why they
-     split off. */
-  --aura-a: #6b4fa055;
-  --aura-b: #1f7a6c55;
+  /* aura ring -- reserved for one hero stat panel per page. */
+  --aura-a: #a68bdb55;
+  --aura-b: #4fb8a055;
   /* Perf pass: pulled back from 20px -- backdrop-filter blur is one of the
      single most expensive things a browser can do per-frame, and every
-     surface using it (navbar, search bar, GlassPanel's frost/frost-
-     strong/aura variants) sits directly over the ambient background's own
-     continuously-animating layers, so the backdrop actually being blurred
-     changes every frame regardless of whether the glass panel itself is
-     static. 15px keeps the same clearly-frosted look at meaningfully
-     lower GPU cost than 20px, especially on integrated graphics/mobile
-     where backdrop-filter tends to cost far more than on a desktop
-     discrete GPU (GlassPanel.css's own comment documents a real
-     headless-vs-headed measurement gap for this exact property). */
+     glass surface (now the default GlassPanel variant too, not just
+     frost/frost-strong/aura) sits directly over the ambient background's
+     own continuously-animating layers. 15px keeps a clearly-frosted look
+     at meaningfully lower GPU cost than 20px. */
   --aura-blur: 15px;
 
-  /* "Apple Intelligence" glow palette -- a warm pink/magenta/blue/gold
-     sweep, deliberately distinct from --aura-a/--aura-b's cooler purple/
-     teal, reserved for exactly two things: AI-generated-content markers
-     (AiTag.tsx, and the panels that host them -- GameFact/CrackOutlook/
-     FaqSection, gated on the same "is this actually AI content" boolean
-     AiTag itself already uses) and the search bar (a deliberate, scoped
-     extension of the same reasoning -- search-as-assistant is the one
-     other surface where an Apple-Intelligence-style glow reads as
-     intentional rather than decorative noise, not a case of "just make
-     everything glow"). Same vivid hex values in both themes -- unlike
-     the subtle --hv/--trad-derived aura tones, these are saturated
-     enough to hold up against both a near-white and a near-black
-     background without needing separate tuning. */
+  /* "Apple Intelligence" glow palette -- reserved for AI-generated-content
+     markers and the search bar only, see AiTag.tsx/GlassPanel.css. Same
+     values regardless of theme even before this consolidation -- these
+     were always saturated enough to hold up against both a near-white and
+     a near-black background, so nothing changes here. */
   --ai-1: #ff6482;
   --ai-2: #c65fff;
   --ai-3: #5b8dff;
   --ai-4: #ffa53e;
-  /* Composed from --ai-1/--ai-2/--ai-3 above (color-mix resolves those at
-     use time, so this automatically follows whichever theme's values are
-     active -- doesn't need its own separate light/dark declaration the
-     way a token built from raw hex would). A colored "border" via a 0-
-     spread box-shadow layer, plus two soft offset-free glows, is what
-     GlassPanel's .ai-glow modifier (GlassPanel.css) appends alongside
-     the existing --glass-highlight/--glass-shadow/--glass-ambient stack
-     -- additive, not a replacement, same discipline as that whole stack
-     already follows. Deliberately static, no animation -- AiTag.tsx's own
-     ring right next to it already carries the "alive" motion at a cheap
-     small scale; animating a glow this size would revisit the exact
-     filter/blend-mode cost trap the ambient background already hit, for
-     a subtler payoff, so this stays a plain (cheap, compositor-only)
-     static box-shadow. */
   --ai-glow-shadow: 0 0 0 1px color-mix(in srgb, var(--ai-2) 35%, transparent), 0 0 28px -8px var(--ai-1),
     0 0 40px -10px var(--ai-3);
 
@@ -177,21 +139,9 @@
   --r-sm: 4px;
   --pill: 999px;
 
-  /* Two more stops for the large surfaces the --r-sm/md/lg trio was never
-     sized for -- clickable grid-card containers (game-card, group-card,
-     publisher-card) and page-floating frosted panels (command palette).
-     Same discipline as the rest of the scale: every component in a given
-     tier points at the shared token instead of hand-tuning its own px
-     value, which is how these ended up at 20/24/26/32px in four different
-     places before this token existed. */
   --r-xl: 16px;
   --r-2xl: 22px;
 
-  /* Square icon/logo badges (navbar mark, footer mark, detail-stat
-     badges, scene-group badges, publisher logos) -- one shared radius
-     regardless of the badge's own box size, so they read as the same
-     "squircle" shape family site-wide instead of each being tuned
-     separately (they'd previously drifted to 9/11/11/14px). */
   --r-badge: 10px;
 
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
@@ -202,200 +152,7 @@
   --wrap: 1180px;
 
   /* Frosted fill inside .glass-panel--aura (the aura-ringed search bar /
-     hero stat panel) -- kept as its own token, not a hardcoded rgba() in
-     GlassPanel.css, specifically so dark mode below can give it a real
-     dark-appropriate value instead of silently staying a near-white fill
-     inside a dark aura ring. */
-  --aura-panel-bg: rgba(255, 255, 255, 0.62);
-}
-
-/* Dark mode, two ways it can turn on:
-   1. @media (prefers-color-scheme: dark) -- the OS-level default, applies
-      automatically before any explicit choice exists. This is what governs
-      on first visit and keeps following the OS live for as long as no
-      override has been made.
-   2. :root[data-theme="dark"] / :root[data-theme="light"] -- an explicit
-      user choice from the toggle (see useTheme.ts), persisted to
-      localStorage. useTheme sets/clears the data-theme attribute on
-      <html>; an attribute selector is more specific than the plain :root
-      the media query targets, so an explicit choice always wins over
-      whatever the OS currently says, in either direction. When no
-      explicit choice has been made, useTheme leaves data-theme unset and
-      the media query alone governs.
-
-   Both dark blocks below carry the exact same values -- duplicated, not
-   shared, since plain CSS custom properties have no block-level reuse
-   without a preprocessor. Every token defined in the base :root above
-   gets a real dark-mode value here, not just a handful -- a token left
-   out silently keeps whatever uses it stuck in light mode. Status colors
-   (--hv/--trad/--dead/--out/--unc/--unv) are lightened/brightened, not
-   just carried over as-is -- the light-mode values were tuned for
-   contrast against a near-white background and would read as muddy,
-   low-contrast smudges against near-black. Glass surfaces flip from a
-   dark-tinted translucent overlay (reads as "frosted" on white) to a
-   light-tinted one (same effect on black) -- a dark-on-dark glass border
-   would be invisible. */
-@media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: dark;
-
-    --bg-0: #131210;
-    --bg-1: #1c1a17;
-    --bg-2: #221f1b;
-
-    --ink: #f5f3ee;
-    --ink-2: rgba(245, 243, 238, 0.68);
-    --ink-3: rgba(245, 243, 238, 0.45);
-    --ink-4: rgba(245, 243, 238, 0.14);
-
-    --accent: #f5f3ee;
-    --accent-ink: #131210;
-    --accent-dim: rgba(245, 243, 238, 0.08);
-    --accent-dim-2: rgba(245, 243, 238, 0.14);
-
-    /* functional status colors -- reserved, do not repurpose as chrome */
-    --hv: #a68bdb;
-    --trad: #4fb8a0;
-    --dead: #5ec783;
-    --out: #e08e51;
-    --unc: #e06a5d;
-    --unv: #a89f8d;
-
-    --drm: #d9a53f;
-
-    --glass-bg: rgba(245, 243, 238, 0.05);
-    --glass-bg-strong: rgba(245, 243, 238, 0.09);
-    --glass-border: rgba(245, 243, 238, 0.14);
-    --glass-border-strong: rgba(245, 243, 238, 0.22);
-    --glass-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
-    --glass-shadow-lg: 0 2px 10px rgba(0, 0, 0, 0.45);
-
-    /* Dimmer highlight than light mode's -- a full-strength white inset
-       line reads as a bright, glowing edge against a near-black panel,
-       not a subtle glass reflection. Ambient shadow deepens instead of
-       lightening (real black-on-black shadows have little contrast to
-       work with, so this leans on a wider spread instead of more darkness
-       to still register as "floating"). */
-    --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.14);
-    --glass-ambient: 0 20px 40px -14px rgba(0, 0, 0, 0.55);
-
-    /* Pale lavender rather than white -- a plain white glow on a near-
-       black panel read as a spotlight, not ambient light. */
-    --ethereal-glow: 0 0 70px -14px rgba(166, 139, 219, 0.4);
-
-    /* Same hv/trad-derived hardcoded hex+alpha-suffix pattern the light
-       aura already uses (not color-mix()), just built from the
-       brightened dark-mode hv/trad above instead of the light ones. */
-    --aura-a: #a68bdb55;
-    --aura-b: #4fb8a055;
-
-    --ai-1: #ff6482;
-    --ai-2: #c65fff;
-    --ai-3: #5b8dff;
-    --ai-4: #ffa53e;
-
-    --aura-panel-bg: rgba(19, 18, 16, 0.6);
-  }
-}
-
-:root[data-theme="dark"] {
-  color-scheme: dark;
-
-  --bg-0: #131210;
-  --bg-1: #1c1a17;
-  --bg-2: #221f1b;
-
-  --ink: #f5f3ee;
-  --ink-2: rgba(245, 243, 238, 0.68);
-  --ink-3: rgba(245, 243, 238, 0.45);
-  --ink-4: rgba(245, 243, 238, 0.14);
-
-  --accent: #f5f3ee;
-  --accent-ink: #131210;
-  --accent-dim: rgba(245, 243, 238, 0.08);
-  --accent-dim-2: rgba(245, 243, 238, 0.14);
-
-  --hv: #a68bdb;
-  --trad: #4fb8a0;
-  --dead: #5ec783;
-  --out: #e08e51;
-  --unc: #e06a5d;
-  --unv: #a89f8d;
-
-  --drm: #d9a53f;
-
-  --glass-bg: rgba(245, 243, 238, 0.05);
-  --glass-bg-strong: rgba(245, 243, 238, 0.09);
-  --glass-border: rgba(245, 243, 238, 0.14);
-  --glass-border-strong: rgba(245, 243, 238, 0.22);
-  --glass-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
-  --glass-shadow-lg: 0 2px 10px rgba(0, 0, 0, 0.45);
-
-  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.14);
-  --glass-ambient: 0 20px 40px -14px rgba(0, 0, 0, 0.55);
-
-  --ethereal-glow: 0 0 70px -14px rgba(166, 139, 219, 0.4);
-
-  --aura-a: #a68bdb55;
-  --aura-b: #4fb8a055;
-
-  --ai-1: #ff6482;
-  --ai-2: #c65fff;
-  --ai-3: #5b8dff;
-  --ai-4: #ffa53e;
-
+     hero stat panel) and, since the theme consolidation, every other
+     GlassPanel variant's default fill too (see GlassPanel.css). */
   --aura-panel-bg: rgba(19, 18, 16, 0.6);
-}
-
-/* Explicit "light" re-affirms the base :root values -- needed so someone
-   on a dark-OS system who picks light via the toggle actually gets light,
-   not just "no dark override" (which the media query above would still
-   fill in on its own). */
-:root[data-theme="light"] {
-  color-scheme: light;
-
-  --bg-0: #f7f5f0;
-  --bg-1: #ffffff;
-  --bg-2: #efece4;
-
-  --ink: #17150f;
-  --ink-2: rgba(23, 21, 15, 0.68);
-  --ink-3: rgba(23, 21, 15, 0.45);
-  --ink-4: rgba(23, 21, 15, 0.14);
-
-  --accent: #17150f;
-  --accent-ink: #f7f5f0;
-  --accent-dim: rgba(23, 21, 15, 0.06);
-  --accent-dim-2: rgba(23, 21, 15, 0.1);
-
-  --hv: #6b4fa0;
-  --trad: #1f7a6c;
-  --dead: #2f7a4f;
-  --out: #b5602a;
-  --unc: #a13f34;
-  --unv: #7a7263;
-
-  --drm: #9c6b12;
-
-  --glass-bg: rgba(23, 21, 15, 0.04);
-  --glass-bg-strong: rgba(23, 21, 15, 0.07);
-  --glass-border: rgba(23, 21, 15, 0.12);
-  --glass-border-strong: rgba(23, 21, 15, 0.2);
-  --glass-shadow: 0 1px 2px rgba(23, 21, 15, 0.06);
-  --glass-shadow-lg: 0 2px 8px rgba(23, 21, 15, 0.08);
-
-  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.75);
-  --glass-ambient: 0 18px 36px -14px rgba(23, 21, 15, 0.22);
-
-  --ethereal-glow: 0 0 60px -18px rgba(255, 255, 255, 0.8);
-
-  --aura-a: #6b4fa055;
-  --aura-b: #1f7a6c55;
-
-  --ai-1: #ff6482;
-  --ai-2: #c65fff;
-  --ai-3: #5b8dff;
-  --ai-4: #ffa53e;
-
-  --aura-panel-bg: rgba(255, 255, 255, 0.62);
 }
