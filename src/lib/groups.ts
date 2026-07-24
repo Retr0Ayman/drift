@@ -2,6 +2,12 @@ import type { Game, Release } from "../types/game";
 import { relOutdated, releaseTs, slugify } from "./format";
 import { STARRED_GROUPS, isP2PGroup } from "./constants";
 
+// Exactly the discrete values worker/backfill/groupReliability.ts's
+// starsFromRate can actually produce -- not every real number 1-5, so tier
+// sectioning (GroupsDirectory's card grid, GroupLeaderboard's own tiers)
+// walks this exact list rather than assuming a continuous range.
+export const RATING_TIERS = [5, 4.5, 4, 3.5, 3, 2, 1];
+
 export interface GameRelease {
   g: Game;
   r: Release;

@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useCatalog } from "../../hooks/useCatalog";
 import { useStarredGroupSummaries } from "../../hooks/useStarredGroupSummaries";
 import { useGroupReliability } from "../../hooks/useGroupReliability";
-import { groupsIndex } from "../../lib/groups";
+import { groupsIndex, RATING_TIERS } from "../../lib/groups";
 import { colorForName, fmtDateMs } from "../../lib/format";
 import { isRepackGroup } from "../../lib/constants";
 import GlassPanel from "../ui/GlassPanel";
@@ -17,11 +17,6 @@ import type { GroupEntry } from "../../lib/groups";
 import "./Groups.css";
 
 type CategoryFilter = "all" | "p2p" | "scene";
-
-// Exactly the discrete values worker/backfill/groupReliability.ts's
-// starsFromRate can actually produce -- not every real number 1-5, so tier
-// sectioning walks this exact list rather than assuming a continuous range.
-const TIER_ORDER = [5, 4.5, 4, 3.5, 3, 2, 1];
 
 /* The real clean-release rate stars is banded from (see
    worker/backfill/groupReliability.ts's starsFromRate) -- kept unrounded
@@ -76,7 +71,7 @@ export default function GroupsDirectory() {
     }
   }
   ranked.sort((a, b) => b.rate - a.rate || b.reliability.genuine_count - a.reliability.genuine_count || a.name.localeCompare(b.name));
-  const tiers = TIER_ORDER.map((stars) => ({ stars, groups: ranked.filter((g) => g.reliability.stars === stars) })).filter(
+  const tiers = RATING_TIERS.map((stars) => ({ stars, groups: ranked.filter((g) => g.reliability.stars === stars) })).filter(
     (t) => t.groups.length,
   );
   const byKey = new Map(visible.map((e) => [e.key, e]));
@@ -208,31 +203,37 @@ export default function GroupsDirectory() {
         </span>
       </div>
 
-      <GroupLeaderboard groups={ranked} />
+      <div className="groups-layout">
+        <aside className="groups-sidebar">
+          <GroupLeaderboard groups={ranked} />
+        </aside>
 
-      {tiers.map((t) => (
-        <div className="groups-tier" key={t.stars}>
-          <div className="groups-tier-head">
-            <span className="groups-tier-label">{t.stars}★ groups</span>
-            <span className="groups-tier-count">{t.groups.length}</span>
-          </div>
-          <div className="groups-grid">{t.groups.map((g) => renderGroupCard(byKey.get(g.key)!))}</div>
-        </div>
-      ))}
+        <div className="groups-main">
+          {tiers.map((t) => (
+            <div className="groups-tier" key={t.stars}>
+              <div className="groups-tier-head">
+                <span className="groups-tier-label">{t.stars}★ groups</span>
+                <span className="groups-tier-count">{t.groups.length}</span>
+              </div>
+              <div className="groups-grid">{t.groups.map((g) => renderGroupCard(byKey.get(g.key)!))}</div>
+            </div>
+          ))}
 
-      {unranked.length ? (
-        <div className="groups-tier">
-          <div className="groups-tier-head">
-            <span className="groups-tier-label">Not yet rated</span>
-            <span className="groups-tier-count">{unranked.length}</span>
-          </div>
-          <span className="groups-tier-note">
-            Repack groups (no crack of their own to rate) and groups below the minimum tracked-release sample size for
-            a reliable score.
-          </span>
-          <div className="groups-grid">{unranked.map((e) => renderGroupCard(e))}</div>
+          {unranked.length ? (
+            <div className="groups-tier">
+              <div className="groups-tier-head">
+                <span className="groups-tier-label">Not yet rated</span>
+                <span className="groups-tier-count">{unranked.length}</span>
+              </div>
+              <span className="groups-tier-note">
+                Repack groups (no crack of their own to rate) and groups below the minimum tracked-release sample size
+                for a reliable score.
+              </span>
+              <div className="groups-grid">{unranked.map((e) => renderGroupCard(e))}</div>
+            </div>
+          ) : null}
         </div>
-      ) : null}
+      </div>
     </div>
   );
 }

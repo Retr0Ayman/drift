@@ -1,8 +1,7 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import { colorForName } from "../../lib/format";
+import { RATING_TIERS } from "../../lib/groups";
 import GlassPanel from "../ui/GlassPanel";
-import StarRating from "../ui/StarRating";
 import type { GroupReliability } from "../../hooks/useGroupReliability";
 import "./GroupLeaderboard.css";
 
@@ -11,71 +10,62 @@ export interface RankedGroup {
   name: string;
   starred: boolean;
   reliability: GroupReliability;
-  rate: number; // 0..1, the exact correction-free rate stars is banded from -- see rankGroups below
+  rate: number; // 0..1, the exact correction-free rate stars is banded from -- see the sort below
 }
-
-const COLLAPSED_SIZE = 8;
 
 /* A star count alone bands dozens of real correction rates into 7 buckets
    (starsFromRate in worker/backfill/groupReliability.ts) -- two groups
    sitting at 0.97 and 1.0 clean-release rate both read as "5 stars" with no
-   way to tell them apart. The leaderboard exists specifically to surface
-   that finer real signal: ranked by the exact stored rate (genuine_count -
-   correction_count) / genuine_count, tiebroken by genuine_count (more
-   tracked releases behind the same rate is a more proven track record, not
-   a better one -- same "real but weak" caveat the star formula's own
-   comment already gives this signal, just used here for ORDER, never
-   folded back into the score itself). Never invents a number -- every
-   input is already sitting in the group_reliability row this group's
-   StarRating tooltip reads from. */
+   way to tell them apart. Never invents a number -- every input is already
+   sitting in the group_reliability row this group's card StarRating
+   tooltip reads from.
+
+   Sectioned by tier (same RATING_TIERS the main card grid uses) rather
+   than one flat rank list -- within a tier, starred groups (the small,
+   real, curated set this app already directly polls -- DenuvOwO, voices38)
+   sort first for quick recognition, then by the real rate/sample-size same
+   as before. A compact sidebar widget, not a full leaderboard page -- lives
+   next to the tier grid, not above it. */
 export default function GroupLeaderboard({ groups }: { groups: RankedGroup[] }) {
-  const [expanded, setExpanded] = useState(false);
   if (!groups.length) return null;
-  const shown = expanded ? groups : groups.slice(0, COLLAPSED_SIZE);
+  const tiers = RATING_TIERS.map((stars) => ({
+    stars,
+    groups: groups
+      .filter((g) => g.reliability.stars === stars)
+      .sort((a, b) => Number(b.starred) - Number(a.starred) || b.rate - a.rate || b.reliability.genuine_count - a.reliability.genuine_count),
+  })).filter((t) => t.groups.length);
 
   return (
     <GlassPanel strong className="leaderboard-panel">
       <div className="leaderboard-head">
-        <span className="leaderboard-title">Reliability leaderboard</span>
-        <span className="leaderboard-sub">
-          Ranked by real clean-release rate -- not just the rounded star count, so equally-starred groups still sort by
-          the actual data behind them.
-        </span>
+        <span className="leaderboard-title">Leaderboard</span>
+        <span className="leaderboard-sub">By star tier, real clean-release rate</span>
       </div>
-      <div className="leaderboard-rows">
-        {shown.map((g, i) => {
-          const pct = Math.round(g.rate * 100);
-          return (
-            <Link key={g.key} to={`/group/${g.key}`} className="leaderboard-row">
-              <span className="leaderboard-rank">#{i + 1}</span>
-              <span className="leaderboard-badge" style={{ background: colorForName(g.name) }}>
-                {g.name.slice(0, 2).toUpperCase()}
-              </span>
-              <span className="leaderboard-name">
-                {g.name}
-                {g.starred ? <span className="group-star" title="Starred group">★</span> : null}
-              </span>
-              <StarRating
-                className="leaderboard-stars"
-                stars={g.reliability.stars}
-                genuineCount={g.reliability.genuine_count}
-                correctionCount={g.reliability.correction_count}
-                avgFixDays={g.reliability.avg_fix_days}
-              />
-              <span className="leaderboard-bar-track" title={`${pct}% of tracked releases needed no correction`}>
-                <span className="leaderboard-bar-fill" style={{ width: `${pct}%` }} />
-              </span>
-              <span className="leaderboard-pct">{pct}%</span>
-              <span className="leaderboard-sample">{g.reliability.genuine_count} tracked</span>
-            </Link>
-          );
-        })}
-      </div>
-      {groups.length > COLLAPSED_SIZE ? (
-        <button type="button" className="leaderboard-toggle" onClick={() => setExpanded((v) => !v)}>
-          {expanded ? "Show fewer" : `Show all ${groups.length} ranked groups`}
-        </button>
-      ) : null}
+      {tiers.map((t) => (
+        <div className="leaderboard-tier" key={t.stars}>
+          <div className="leaderboard-tier-label">{t.stars}★</div>
+          <div className="leaderboard-rows">
+            {t.groups.map((g) => {
+              const pct = Math.round(g.rate * 100);
+              return (
+                <Link key={g.key} to={`/group/${g.key}`} className="leaderboard-row" title={`${pct}% clean · ${g.reliability.genuine_count} tracked`}>
+                  <span className="leaderboard-badge" style={{ background: colorForName(g.name) }}>
+                    {g.name.slice(0, 2).toUpperCase()}
+                  </span>
+                  <span className="leaderboard-name">
+                    {g.name}
+                    {g.starred ? <span className="group-star" title="Starred group">★</span> : null}
+                  </span>
+                  <span className="leaderboard-bar-track">
+                    <span className="leaderboard-bar-fill" style={{ width: `${pct}%` }} />
+                  </span>
+                  <span className="leaderboard-pct">{pct}%</span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      ))}
     </GlassPanel>
   );
 }

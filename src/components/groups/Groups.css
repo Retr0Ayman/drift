@@ -125,6 +125,41 @@
   font-weight: 500;
 }
 
+/* Sidebar leaderboard + main tier grid, side by side -- the leaderboard
+   used to run full-width above the grid, which pushed the actual card
+   browsing below the fold for no reason once it had real content. Sidebar
+   is a fixed, narrow column; sticky so it stays reachable while scrolling
+   through a long tier list, capped to the viewport height with its own
+   scroll rather than growing taller than the screen. */
+.groups-layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.groups-sidebar {
+  position: sticky;
+  top: 96px;
+  max-height: calc(100vh - 116px);
+  overflow-y: auto;
+}
+
+.groups-main {
+  min-width: 0;
+}
+
+@media (max-width: 980px) {
+  .groups-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .groups-sidebar {
+    position: static;
+    max-height: none;
+  }
+}
+
 .groups-tier {
   margin-bottom: 30px;
 }
