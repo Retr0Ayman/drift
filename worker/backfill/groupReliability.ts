@@ -142,10 +142,10 @@ export function computeGroupReliability(rows: ReleaseRow[]): Map<string, GroupAg
   return out;
 }
 
-export async function runGroupReliabilityTick(env: Env): Promise<{ ran: boolean; groups?: number }> {
+export async function runGroupReliabilityTick(env: Env, force = false): Promise<{ ran: boolean; groups?: number }> {
   const db = env.orlaz_catalog;
   const lastRun = Number((await getBackfillState(db, "group_reliability_computed_at")) || "0");
-  if (Date.now() - lastRun < RECOMPUTE_INTERVAL_MS) return { ran: false };
+  if (!force && Date.now() - lastRun < RECOMPUTE_INTERVAL_MS) return { ran: false };
 
   const { results } = await db
     .prepare("SELECT game_id, group_name, note, first_seen_ts, update_count FROM releases WHERE is_repack = 0 AND is_anonymous = 0")

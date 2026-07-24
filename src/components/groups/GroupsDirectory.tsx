@@ -5,6 +5,7 @@ import { useStarredGroupSummaries } from "../../hooks/useStarredGroupSummaries";
 import { useGroupReliability } from "../../hooks/useGroupReliability";
 import { groupsIndex } from "../../lib/groups";
 import { colorForName, fmtDateMs } from "../../lib/format";
+import { isRepackGroup } from "../../lib/constants";
 import GlassPanel from "../ui/GlassPanel";
 import Pill from "../ui/Pill";
 import StarRating from "../ui/StarRating";
@@ -147,12 +148,18 @@ export default function GroupsDirectory() {
                     </div>
                   ) : null}
                   <div className="group-card-foot">
-                    <StarRating
-                      stars={reliability[e.key]?.stars ?? null}
-                      genuineCount={reliability[e.key]?.genuine_count ?? 0}
-                      correctionCount={reliability[e.key]?.correction_count ?? 0}
-                      avgFixDays={reliability[e.key]?.avg_fix_days ?? null}
-                    />
+                    {isRepackGroup(e.name) ? (
+                      <span className="star-rating star-rating--unrated" title="Repack groups rebundle someone else's crack -- there's no crack of their own to rate for reliability.">
+                        Repack group
+                      </span>
+                    ) : (
+                      <StarRating
+                        stars={reliability[e.key]?.stars ?? null}
+                        genuineCount={reliability[e.key]?.genuine_count ?? 0}
+                        correctionCount={reliability[e.key]?.correction_count ?? 0}
+                        avgFixDays={reliability[e.key]?.avg_fix_days ?? null}
+                      />
+                    )}
                     <div className="group-last">Last active {fmtDateMs(e.lastTs)}</div>
                   </div>
                 </GlassPanel>

@@ -32,7 +32,7 @@ import { runFirstSeenReconcileTick } from "./backfill/reconcileFirstSeen";
 import { runStaleRefreshTick } from "./backfill/refreshStale";
 import { runEnrichmentRepairTick } from "./backfill/repairEnrichment";
 import { runGroupReliabilityTick } from "./backfill/groupReliability";
-import { handleGroupReliability } from "./routes/groupReliability";
+import { handleGroupReliability, handleGroupReliabilityRecompute } from "./routes/groupReliability";
 
 /* This is a Worker with static assets (wrangler.jsonc `main` + `assets`), not
    classic Cloudflare Pages -- confirmed live: the workers.dev domain and
@@ -75,6 +75,7 @@ const ROUTES: Record<string, Handler> = {
   "/api/search-assist": handleSearchAssist,
   "/api/catalog": handleCatalog,
   "/api/group-reliability": handleGroupReliability,
+  "/api/group-reliability/recompute": handleGroupReliabilityRecompute,
 };
 
 export default {
