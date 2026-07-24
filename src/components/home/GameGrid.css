@@ -40,3 +40,46 @@
   border: 1px solid var(--glass-border);
   border-radius: var(--r-lg);
 }
+
+/* First-load placeholder -- same footprint as a real GameCard (cover +
+   body block heights) so the grid doesn't visibly reflow once real data
+   swaps in. A single diagonal shimmer sweep (transform: translateX, GPU-
+   cheap, same idiom as .liquid-sheen's static streak but animated here
+   since "loading" is exactly the one state that's supposed to read as
+   temporary/in-motion) rather than a pulsing-opacity block, which reads
+   more like "still connecting" than "broken/disabled". */
+.game-card-skeleton {
+  position: relative;
+  height: 366px;
+  border-radius: var(--r-2xl);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  overflow: hidden;
+}
+
+.game-card-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    100deg,
+    transparent 30%,
+    color-mix(in srgb, var(--ink) 8%, transparent) 50%,
+    transparent 70%
+  );
+  animation: game-card-skeleton-sweep 1.6s ease-in-out infinite;
+}
+
+@keyframes game-card-skeleton-sweep {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .game-card-skeleton::after {
+    animation: none;
+    display: none;
+  }
+}

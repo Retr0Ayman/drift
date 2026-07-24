@@ -1,0 +1,154 @@
+/* Full-bleed "breaking news" strip -- deliberately edge-to-edge (no .wrap
+   max-width), the one banner-style element on the page, sitting right
+   above the hero so a first-time visitor sees genuine live activity
+   scroll past before anything else loads in. Same glass fill/blur/
+   liquid-sheen streak every other floating surface uses, just as a thin
+   full-width bar instead of a card. */
+.live-ticker {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  overflow: hidden;
+  background: var(--glass-bg);
+  border-bottom: 1px solid var(--glass-border);
+  backdrop-filter: blur(var(--aura-blur)) saturate(1.15);
+  -webkit-backdrop-filter: blur(var(--aura-blur)) saturate(1.15);
+}
+
+.live-ticker-label {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  background: color-mix(in srgb, var(--aura-panel-bg) 70%, transparent);
+  border-right: 1px solid var(--glass-border);
+  white-space: nowrap;
+}
+
+.live-ticker-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--dead);
+  box-shadow: 0 0 8px 1px color-mix(in srgb, var(--dead) 70%, transparent);
+  animation: live-ticker-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes live-ticker-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* Own clipping box, separate from .live-ticker's outer overflow:hidden --
+   FIX (confirmed live via DOM inspection): without this, .live-ticker-
+   track's translateX slid its content to a negative x that overlapped
+   the label sibling rather than being clipped at the label's edge (both
+   were unclipped children of the same flex row, and later-DOM-order
+   paints over earlier, so the scrolling track visually buried the LIVE
+   chip once the animation progressed a few seconds in). This wrapper's
+   own overflow:hidden establishes the real clip boundary the track's
+   negative-x translation is confined to. */
+.live-ticker-viewport {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+.live-ticker-track {
+  display: flex;
+  width: max-content;
+  animation: live-ticker-scroll 38s linear infinite;
+}
+
+.live-ticker-track:hover,
+.live-ticker-track:focus-within {
+  animation-play-state: paused;
+}
+
+@keyframes live-ticker-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    /* Each TickerRow is an exact duplicate of the other, so -50% lands
+       precisely back on the first pixel of content -- the loop point is
+       invisible, not a hard reset. */
+    transform: translateX(-50%);
+  }
+}
+
+.live-ticker-row {
+  display: flex;
+  align-items: center;
+  flex: none;
+}
+
+.live-ticker-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 22px;
+  white-space: nowrap;
+  border-right: 1px solid var(--glass-border);
+  transition: background var(--dur) var(--ease);
+}
+
+.live-ticker-item:hover {
+  background: var(--glass-bg-strong);
+}
+
+.live-ticker-title {
+  font-size: 0.82rem;
+  font-weight: 650;
+  color: var(--ink);
+}
+
+.live-ticker-group {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--ink-3);
+  font-family: var(--mono);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-ticker-track {
+    animation: none;
+    overflow-x: auto;
+  }
+
+  .live-ticker-track .live-ticker-row:nth-child(2) {
+    display: none;
+  }
+
+  .live-ticker-dot {
+    animation: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .live-ticker-label {
+    padding: 9px 12px;
+  }
+
+  .live-ticker-item {
+    padding: 8px 14px;
+  }
+
+  .live-ticker-group {
+    display: none;
+  }
+}

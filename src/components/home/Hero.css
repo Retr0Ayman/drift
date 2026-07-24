@@ -86,21 +86,43 @@
   overflow: hidden;
 }
 
-.hero-signal-glyph {
+/* Replaces the old isometric circuit-board glyph (DriftGlyph) -- that
+   read as generic tech clip-art, a different visual language from the
+   round soft-edged lava-lamp blobs the rest of the site is built from.
+   Two oversized, heavily-blurred radial-gradient discs in the same
+   --cosmic-a/-b hues the ambient background and every aura ring already
+   use, so this card's backdrop looks like it's catching the same light
+   as everything floating over it instead of hosting its own separate
+   illustration. Plain radial-gradient (no filter: blur -- the softness
+   comes from the gradient's own falloff), static, no animation -- same
+   "cheap, once-painted accent" discipline as .liquid-sheen's streak. */
+.hero-signal-glow {
   position: absolute;
-  top: -20%;
-  right: -30%;
-  width: 90%;
-  height: auto;
-  color: var(--ink-4);
-  opacity: 0.5;
+  width: 60%;
+  aspect-ratio: 1;
+  border-radius: 50%;
   pointer-events: none;
   z-index: 0;
+}
+
+.hero-signal-glow--a {
+  top: -30%;
+  right: -20%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--cosmic-a) 55%, transparent) 0%, transparent 70%);
+}
+
+.hero-signal-glow--b {
+  bottom: -35%;
+  left: -18%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--cosmic-b) 45%, transparent) 0%, transparent 70%);
 }
 
 .hero-signal-head {
   position: relative;
   z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 7px;
   font-size: 0.66rem;
   font-weight: 800;
   letter-spacing: 1px;
@@ -109,22 +131,67 @@
   margin-bottom: 18px;
 }
 
+/* Same telemetry-pulse cue as the navbar's own "live" status dot
+   (Navbar.css's navbar-live-dot) -- one shared idiom for "this number is
+   live", not a second bespoke animation. */
+.hero-signal-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--dead);
+  box-shadow: 0 0 8px 1px color-mix(in srgb, var(--dead) 70%, transparent);
+  animation: hero-signal-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes hero-signal-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-signal-dot {
+    animation: none;
+  }
+}
+
 .hero-signal-grid {
   position: relative;
   z-index: 1;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 22px 18px;
+  gap: 12px;
 }
 
+/* Each stat is now its own small glass chip (tinted toward the stat's own
+   status color at low alpha) rather than bare text sitting in a grid --
+   reads as a set of distinct readouts instead of a spreadsheet row. */
 .hero-signal-stat {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
+  padding: 14px 14px 12px;
+  border-radius: var(--r-xl);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+}
+
+.hero-signal-icon {
+  display: flex;
+  opacity: 0.85;
+}
+
+.hero-signal-icon svg {
+  width: 15px;
+  height: 15px;
 }
 
 .hero-signal-n {
-  font-size: 2rem;
+  font-size: 1.7rem;
   font-weight: 800;
   letter-spacing: -1px;
   color: var(--ink);
@@ -132,13 +199,53 @@
 }
 
 .hero-signal-n--sm {
-  font-size: 1.3rem;
+  font-size: 1.15rem;
 }
 
 .hero-signal-l {
   font-size: 0.7rem;
   font-weight: 600;
   color: var(--ink-3);
+}
+
+/* Real 14-day activity sparkline -- each bar's height is a genuine count
+   of that calendar day's tracked releases (Hero.tsx's activityBuckets),
+   not decorative. Sits below the stat grid inside the same glass panel,
+   a thin divider separating "current snapshot" from "recent trend". */
+.hero-signal-activity {
+  position: relative;
+  z-index: 1;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--glass-border);
+}
+
+.hero-signal-activity-label {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--ink-3);
+  margin-bottom: 10px;
+}
+
+.hero-signal-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 30px;
+}
+
+.hero-signal-bar {
+  flex: 1;
+  min-width: 0;
+  border-radius: 2px 2px 1px 1px;
+  background: linear-gradient(180deg, var(--cosmic-b), var(--cosmic-a));
+  opacity: 0.8;
+  transition: opacity var(--dur) var(--ease);
+}
+
+.hero-signal-bar:hover {
+  opacity: 1;
 }
 
 @media (max-width: 940px) {

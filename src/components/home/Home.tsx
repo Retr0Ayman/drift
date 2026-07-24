@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import Hero from "./Hero";
+import LiveTicker from "./LiveTicker";
 import GameGrid from "./GameGrid";
 import FilterBar from "./FilterBar";
 import Pagination from "../ui/Pagination";
@@ -90,9 +91,11 @@ export default function Home() {
 
   return (
     <>
+      <LiveTicker games={games} />
       <Hero games={games} />
       <GameGrid
         games={pageItems}
+        initialLoading={loading && games.length === 0}
         filters={
           <FilterBar
             status={status}
