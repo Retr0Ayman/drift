@@ -29,16 +29,29 @@ const MIN_ITEMS = 6;
    metacritic/reviewPct are the same fields GameDetail's own stat badges
    read). Weights, not hard gates: a repack still CAN surface if nothing
    more notable is happening, it just needs the rest of the pool to be
-   thin first (see the threshold-relaxation loop below). */
+   thin first (see the threshold-relaxation loop below).
+
+   Deliberately NOT a flat bonus for isFirst alone -- confirmed live
+   against the real catalog: most single-release niche/indie titles are
+   trivially their own "first crack" by definition (there's only ever one
+   release to compare against), so a flat isFirst bonus barely filtered
+   anything and low-profile titles with slow, unremarkable turnarounds
+   (Parcel Simulator "cracked in 185 days") still dominated the pool.
+   "First crack" only earns real weight here when it's ALSO a fast one --
+   the combination is the actual notable story ("this well-known-enough-
+   to-race-for title got cracked same-day"), not the isFirst flag by
+   itself. */
 function scoreCandidate(
   c: Pick<TickerCandidate, "isFirst" | "method" | "isRepack" | "isAnonymous" | "metacritic" | "reviewPct" | "timingDays">,
 ): number {
   let score = 0;
-  if (c.isFirst) score += 3;
-  if (c.method === "hv") score += 2;
+  if (c.method === "hv") score += 3;
   if (c.metacritic != null && c.metacritic >= 75) score += 2;
   if (c.reviewPct != null && c.reviewPct >= 85) score += 2;
-  if (c.isFirst && c.timingDays != null && c.timingDays <= 1) score += 1;
+  if (c.isFirst && c.timingDays != null) {
+    if (c.timingDays <= 2) score += 2;
+    else if (c.timingDays <= 7) score += 1;
+  }
   if (c.isRepack) score -= 3;
   if (c.isAnonymous) score -= 1;
   return score;
@@ -114,6 +127,16 @@ function buildTicker(games: Game[]): TickerCandidate[] {
   return pool.slice(0, TICKER_LIMIT);
 }
 
+/* Real, but not always a meaningful STORY -- an old backlog title whose
+   first tracked crack row simply postdates its (much older) Steam release
+   date by years reads as "Cracked in 4081 days," which isn't a race
+   result, it's a backfill artifact (the actual crack timing race is
+   normally measured in single/double-digit days). timingDays already only
+   earns a scoring bonus within a 7-day window; this caps what the UI will
+   actually PRINT the same way, so a real-but-nonsensical-looking number
+   never gets surfaced as if it were a notable turnaround. */
+const TIMING_DISPLAY_CAP_DAYS = 90;
+
 /* Distinct phrasing per real distinguishing feature instead of one
    template stamped out for every item -- a first crack, a hypervisor
    bypass, a repack, and a well-reviewed title's routine update all read
@@ -122,12 +145,13 @@ function buildTicker(games: Game[]): TickerCandidate[] {
    candidate's own real fields support. */
 function phraseFor(c: TickerCandidate): { headline: string; meta: string; accent?: string } {
   const groupLabel = c.isAnonymous ? "Anonymous" : c.group;
+  const showTiming = c.timingLabel != null && c.timingDays != null && Math.abs(c.timingDays) <= TIMING_DISPLAY_CAP_DAYS;
 
   if (c.isFirst && c.method === "hv") {
     return { headline: `First hypervisor bypass: ${c.title}`, meta: `by ${groupLabel}`, accent: "var(--hv)" };
   }
   if (c.isFirst) {
-    const suffix = c.timingLabel ? ` · ${c.timingLabel}` : "";
+    const suffix = showTiming ? ` · ${c.timingLabel}` : "";
     return { headline: `First crack: ${c.title}`, meta: `by ${groupLabel}${suffix}` };
   }
   if (c.method === "hv") {
