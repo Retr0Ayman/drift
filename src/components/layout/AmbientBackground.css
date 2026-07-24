@@ -77,20 +77,30 @@
    (bright core, same color to ~1/3 radius, darkened rim, transparent by
    ~56% of radius -- the tight falloff from the geometry-fix pass, kept
    exactly). */
+/* SIXTH pass: blend weight raised from 55/45 to 72/28 toward the real
+   per-game accent (var(--ambient-primary)/(--ambient-secondary), set by
+   useAmbientAccent.ts on a game detail page) -- confirmed live the wiring
+   itself was never broken, but at 55/45 blended with a fixed cosmic hue,
+   plus only a minority of (mostly small) blobs even carrying this role,
+   a real per-game color shift read as barely perceptible. This alone
+   doesn't fix prominence (see AmbientBackground.tsx's BLOBS array for the
+   size/role-distribution half of this fix), but a shifted blob now reads
+   as clearly that game's color instead of a faint tint of the default
+   palette. */
 .ambient-blob--primary {
   background:
     radial-gradient(circle at 30% 26%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.3) 10%, transparent 24%),
-    radial-gradient(circle, color-mix(in srgb, var(--ambient-primary, #3fc4f0) 55%, var(--cosmic-b, #3fc4f0) 45%) 0%,
-      color-mix(in srgb, var(--ambient-primary, #3fc4f0) 55%, var(--cosmic-b, #3fc4f0) 45%) 32%,
-      color-mix(in srgb, var(--ambient-primary, #3fc4f0) 45%, black 25%) 46%, transparent 56%);
+    radial-gradient(circle, color-mix(in srgb, var(--ambient-primary, #3fc4f0) 72%, var(--cosmic-b, #3fc4f0) 28%) 0%,
+      color-mix(in srgb, var(--ambient-primary, #3fc4f0) 72%, var(--cosmic-b, #3fc4f0) 28%) 32%,
+      color-mix(in srgb, var(--ambient-primary, #3fc4f0) 55%, black 25%) 46%, transparent 56%);
 }
 
 .ambient-blob--secondary {
   background:
     radial-gradient(circle at 30% 26%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.3) 10%, transparent 24%),
-    radial-gradient(circle, color-mix(in srgb, var(--ambient-secondary, #ef3d86) 55%, var(--cosmic-a, #ef3d86) 45%) 0%,
-      color-mix(in srgb, var(--ambient-secondary, #ef3d86) 55%, var(--cosmic-a, #ef3d86) 45%) 32%,
-      color-mix(in srgb, var(--ambient-secondary, #ef3d86) 45%, black 25%) 46%, transparent 56%);
+    radial-gradient(circle, color-mix(in srgb, var(--ambient-secondary, #ef3d86) 72%, var(--cosmic-a, #ef3d86) 28%) 0%,
+      color-mix(in srgb, var(--ambient-secondary, #ef3d86) 72%, var(--cosmic-a, #ef3d86) 28%) 32%,
+      color-mix(in srgb, var(--ambient-secondary, #ef3d86) 55%, black 25%) 46%, transparent 56%);
 }
 
 .ambient-blob--a {
