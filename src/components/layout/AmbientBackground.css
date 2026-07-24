@@ -37,22 +37,37 @@
 /* The real metaball canvas (LavaLampCanvas.tsx) -- sized to fully cover
    its parallax parent, own internal resolution handled in JS (kept far
    below real viewport/DPI on purpose, see that file's own comment).
-   blur+contrast is what actually produces the goo merge/split look:
-   blur softens each opaque circle's edge into a soft alpha falloff
-   (CSS blur affects alpha, not just RGB), contrast() then snaps
-   everything above/below a threshold back to fully opaque/transparent --
-   where two blurred edges overlap, the combined alpha crosses that
-   threshold and they read as one connected shape with a real seam;
-   drifting apart drops back below it and they visibly pinch apart.
-   opacity brings the whole result down to the same intensity range the
-   previous DOM-blob version used against this same near-black base. */
+   blur+contrast is what actually produces the goo merge/split shape:
+   blur softens each opaque circle's edge into a soft alpha falloff,
+   contrast() snaps everything above/below a threshold back toward fully
+   opaque/transparent so overlapping blurred edges fuse into one
+   connected shape with a real seam.
+
+   FIX (confirmed live, twice): contrast() is a blanket per-channel
+   filter -- it also crushes solid interior colors, not just edges
+   (confirmed live: a real per-game accent blended to ~rgb(166,110,55)
+   rendered as pure rgb(255,0,0) through contrast(9) alone). Tried moving
+   the filter into a separate canvas-composited mask layer to keep it
+   away from real colors entirely -- confirmed live that rendered as
+   nearly invisible, the canvas filter+composite interaction wasn't
+   predictable enough to trust. Real fix: blur+contrast stays here
+   (still the thing making merge/split actually work), but
+   LavaLampCanvas.tsx now pre-compensates every fill color through the
+   exact algebraic inverse of this filter (compensatedRgb(), using the
+   literal contrast/brightness values below) before drawing it, so the
+   color that lands on screen after the browser applies this filter is
+   the real one, not a crushed approximation. FILTER_CONTRAST/
+   FILTER_BRIGHTNESS in that file must stay numerically identical to the
+   contrast()/brightness() values here -- they're the two halves of one
+   inverse-function pair, hand-synced across the JS/CSS boundary same as
+   this project's other worker/frontend mirrors. */
 .ambient-canvas {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   display: block;
-  filter: blur(13px) contrast(28) brightness(1.05);
+  filter: blur(13px) contrast(9) brightness(1.05);
   opacity: 0.62;
 }
 

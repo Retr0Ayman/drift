@@ -63,18 +63,26 @@ const FALLBACK_PRIMARY: [number, number, number] = [63, 196, 240]; // matches --
 const FALLBACK_SECONDARY: [number, number, number] = [239, 61, 134]; // matches --cosmic-a
 
 // How much every blob leans toward the live per-game accent color when one
-// is actually set (0 = ignores it entirely, 1 = pure accent, no base-hue
-// character left) -- see the `hasAccent` gate in the draw loop below:
+// is actually set -- see the `hasAccent` gate in the draw loop below:
 // this only ever applies on a real game page. On every other page (no
 // --ambient-primary/secondary set at all), blend is forced to 0 so the
-// full three-hue BASE_HUES palette stays genuinely visible -- confirmed
-// live (real screenshot) that blending toward the FALLBACK colors
-// unconditionally, even on non-game pages, washed out the purple hue
-// almost entirely (the fallback pair is itself only 2 of the 3 base
-// hues, so blending every blob 68% toward one of those two collapses
-// the palette from three colors down to two everywhere, not just on
-// game pages).
-const ACCENT_BLEND = 0.55;
+// full three-hue BASE_HUES palette stays genuinely visible.
+//
+// FIX (confirmed live): 0.55 looked like it "wasn't syncing" on real game
+// pages -- Watch Dogs 2 (accent #9e732e warm tan / #356f97 blue) showed
+// a background with a clearly visible RED blob, which is neither of
+// those colors. Root cause: linear RGB interpolation doesn't travel
+// through intermediate hues the way a human expects -- blending magenta
+// (239,61,134) 55% toward warm tan (158,115,46) lands at roughly
+// (194,91,86), a brick-red that reads as an unrelated third color, not
+// "magenta shifted toward tan." At 55/45 the base hue's own character
+// survives just enough to produce these muddy in-between colors instead
+// of clearly reading as either hue. Raised to 0.9 -- blobs on a game page
+// now render as close to the real accent colors as makes sense (a
+// consistent, recognizable "this page is now this game's palette," not a
+// confusing blend), with only a sliver of base-hue character left for
+// per-blob texture instead of enough to fight the accent for dominance.
+const ACCENT_BLEND = 0.9;
 
 interface Blob {
   x: number; // 0..1 fraction of canvas width
@@ -105,8 +113,8 @@ function makeBlobs(): Blob[] {
     blobs.push({
       x: 0.08 + Math.random() * 0.84,
       y: 0.08 + Math.random() * 0.84,
-      vx: (Math.random() - 0.5) * 0.0026,
-      vy: (Math.random() - 0.5) * 0.0026,
+      vx: (Math.random() - 0.5) * 0.0007,
+      vy: (Math.random() - 0.5) * 0.0007,
       r: big ? 0.1 + Math.random() * 0.06 : 0.04 + Math.random() * 0.055,
       hue: i % BASE_HUES.length,
       accentSlot: i % 2 === 0 ? 0 : 1,
@@ -115,11 +123,46 @@ function makeBlobs(): Blob[] {
   return blobs;
 }
 
-function mixColor(base: [number, number, number], accent: [number, number, number], t: number): string {
-  const r = Math.round(base[0] + (accent[0] - base[0]) * t);
-  const g = Math.round(base[1] + (accent[1] - base[1]) * t);
-  const b = Math.round(base[2] + (accent[2] - base[2]) * t);
-  return `rgb(${r},${g},${b})`;
+function mixColor(base: [number, number, number], accent: [number, number, number], t: number): [number, number, number] {
+  return [
+    base[0] + (accent[0] - base[0]) * t,
+    base[1] + (accent[1] - base[1]) * t,
+    base[2] + (accent[2] - base[2]) * t,
+  ];
+}
+
+// Must match AmbientBackground.css's .ambient-canvas filter exactly --
+// contrast() is what actually produces the goo merge/split shape (it
+// snaps blurred edge alpha above/below a threshold to fully opaque/
+// transparent), but as a blanket per-channel filter it also distorts
+// every SOLID interior pixel's color, not just edges. Confirmed live:
+// Watch Dogs 2's real accent blended to roughly rgb(166,110,55), which
+// contrast(9) alone rendered as pure rgb(255,0,0) -- nowhere near either
+// real input color.
+//
+// Real fix: pre-compensate each fill color through the exact INVERSE of
+// what the element's own contrast()+brightness() filter will do to it,
+// so after the browser actually applies that filter, the color that
+// lands on screen is the one this file actually computed -- not an
+// approximation, the literal algebraic inverse of CSS's own contrast()
+// formula (linear, so it has a clean inverse) and brightness()
+// (multiplicative, same). This is what lets the SAME filter keep doing
+// real edge-thresholding work while the interior color comes out
+// correct instead of crushed toward a primary color.
+const FILTER_CONTRAST = 9;
+const FILTER_BRIGHTNESS = 1.05;
+
+function inverseChannel(v: number): number {
+  // Reverse brightness (divide out the multiply), then reverse contrast
+  // (its own inverse around the 50% midpoint) -- same order the browser
+  // applies them in (contrast, then brightness), undone in reverse.
+  const afterBrightnessUndo = v / FILTER_BRIGHTNESS / 255;
+  const preContrast = (afterBrightnessUndo - 0.5) / FILTER_CONTRAST + 0.5;
+  return Math.max(0, Math.min(255, Math.round(preContrast * 255)));
+}
+
+function compensatedRgb(color: [number, number, number]): string {
+  return `rgb(${inverseChannel(color[0])},${inverseChannel(color[1])},${inverseChannel(color[2])})`;
 }
 
 function hexToRgb(hex: string): [number, number, number] | null {
@@ -199,9 +242,16 @@ export default function LavaLampCanvas() {
         // Gentle continuous random drift on velocity itself (not just
         // position) -- keeps the motion organic over long timescales
         // instead of settling into a perfectly periodic bounce loop.
-        b.vx += (Math.random() - 0.5) * 0.00018;
-        b.vy += (Math.random() - 0.5) * 0.00018;
-        const maxSpeed = 0.0032;
+        b.vx += (Math.random() - 0.5) * 0.00005;
+        b.vy += (Math.random() - 0.5) * 0.00005;
+        // FIX (confirmed live): the whole simulation read as too fast/
+        // busy for a lava lamp, which drifts on the order of tens of
+        // seconds per crossing, not a few seconds. Initial velocity and
+        // jitter both cut to roughly a quarter of their previous
+        // magnitude, and the speed cap follows proportionally -- motion
+        // is still continuous and real (still genuinely merges/splits
+        // over time), just unfolding much more slowly.
+        const maxSpeed = 0.0008;
         const speed = Math.hypot(b.vx, b.vy);
         if (speed > maxSpeed) {
           b.vx = (b.vx / speed) * maxSpeed;
@@ -210,6 +260,20 @@ export default function LavaLampCanvas() {
       }
     }
 
+    // FIX (confirmed live, twice): first tried splitting shape from color
+    // into two canvas-composited layers (a white mask filtered with
+    // ctx.filter, `destination-in`-composited over unfiltered real
+    // colors) to keep contrast() away from real pixels entirely --
+    // confirmed live this rendered as nearly nothing visible at all, the
+    // canvas filter+composite interaction wasn't behaving predictably
+    // enough to trust. Reverted to the simple single-pass approach
+    // (real merge/split physics already confirmed working here) and
+    // fixed color fidelity the other direction instead: every fill color
+    // goes through compensatedRgb() (this file's own algebraic inverse
+    // of AmbientBackground.css's blur+contrast+brightness filter) before
+    // being drawn, so after the browser actually applies that filter,
+    // what lands on screen is the real intended color again, not a
+    // contrast-crushed approximation of it.
     function draw() {
       const w = canvas!.width;
       const h = canvas!.height;
@@ -217,7 +281,7 @@ export default function LavaLampCanvas() {
       ctx!.clearRect(0, 0, w, h);
       for (const b of blobsRef.current) {
         const accent = b.accentSlot === 0 ? accentPrimary : accentSecondary;
-        ctx!.fillStyle = mixColor(BASE_HUES[b.hue], accent, hasAccent ? ACCENT_BLEND : 0);
+        ctx!.fillStyle = compensatedRgb(mixColor(BASE_HUES[b.hue], accent, hasAccent ? ACCENT_BLEND : 0));
         ctx!.beginPath();
         ctx!.arc(b.x * w, b.y * h, b.r * minDim, 0, Math.PI * 2);
         ctx!.fill();
