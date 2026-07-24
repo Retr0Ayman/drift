@@ -21,27 +21,23 @@ const MOTES = [
   { left: "81%", top: "64%", size: 5, delay: 11, duration: 17 },
 ];
 
-/* Plasma-liquid pass: dropped every literal space cue (starfield, Milky
-   Way band, planet) that the previous "cosmic vault" wallpaper had --
-   what's left is the part of that background that already read as
-   lava-lamp-like (soft radial color fields) pushed further in that
-   direction. Still a purely CSS effect, same discipline as before: a
-   static radial-gradient mesh (five soft-edged fields reaching every
-   corner + the center, so there's no flat dead zone) as a base color
-   wash, plus four independently-drifting radial blobs on top (up from
-   two -- the two rotating conic-gradient sweeps that used to sit here
-   are gone, replaced one-for-one so the animated-layer budget doesn't
-   grow) whose different sizes/speeds/easings let them slide in and out
-   of each other like real lava-lamp wax, plus a static SVG grain
-   texture. All layers are `background`/`background-image` with motion
-   restricted to `transform`/`opacity` -- never `filter: url(...)` or a
-   live blend-mode -- which is what made the original goo-blob removal
-   measurably cheaper (see AmbientBackground.css's own comment for the
-   numbers) and still holds here: same accent-color sourcing as before,
-   --ambient-primary/--ambient-secondary set on :root by
-   useAmbientAccent.ts on a game page, falling back to the fixed neutral
-   pair worker/shared/colorExtract.ts's own FALLBACK_PRIMARY/SECONDARY
-   uses when nothing has set them (homepage, directories, etc.). */
+/* THIRD lava-lamp pass -- see AmbientBackground.css's own top comment for
+   the full diagnosis of why the first two passes never visibly shipped
+   (a leftover full-viewport wash layer, `.ambient-mesh`, dominated over
+   the darkened base and glossy blobs both times). That layer is deleted
+   here, not just dimmed -- five large glossy blobs (one per corner + one
+   centered, up from four, for genuine full-viewport spread) are now the
+   ONLY color source over a true near-black base. Still a purely CSS
+   effect, motion restricted to `transform`/`opacity` -- never
+   `filter: url(...)` or a live blend-mode, a deliberate choice (not an
+   oversight) after finding this exact codebase's own history already
+   measured a full-viewport SVG goo filter at ~30fps and removed it for
+   that reason (see AmbientBackground.css). Same accent-color sourcing as
+   before: --ambient-primary/--ambient-secondary set on :root by
+   useAmbientAccent.ts on a game page (shifting three of the five blobs
+   toward that game's real cover-art colors), falling back to the exact
+   blue/magenta/purple mockup hues -- not the old muted neutral pair --
+   everywhere else (homepage, directories, etc.). */
 export default function AmbientBackground() {
   const [paused, setPaused] = useState(() => typeof document !== "undefined" && document.hidden);
   const reduced = usePrefersReducedMotion();
@@ -105,11 +101,11 @@ export default function AmbientBackground() {
   return (
     <div className={`ambient-bg${paused ? " ambient-bg--paused" : ""}`} aria-hidden="true">
       <div className="ambient-parallax" ref={parallaxRef}>
-        <div className="ambient-mesh" />
         <div className="ambient-blob-1" />
         <div className="ambient-blob-2" />
         <div className="ambient-blob-3" />
         <div className="ambient-blob-4" />
+        <div className="ambient-blob-5" />
         {MOTES.map((m, i) => (
           <div
             key={i}

@@ -79,13 +79,15 @@
   /* Fixed plasma accents -- the drifting lava-lamp blobs
      (AmbientBackground.css) blend these with each game's own extracted
      accent pair (--ambient-primary/secondary, useAmbientAccent.ts) rather
-     than either alone. Hot magenta + electric blue is the base plasma
-     pairing; still named "cosmic" (pre-dates the plasma-liquid pass)
-     rather than renamed, since every glass surface's .liquid-sheen streak
-     and the aura ring also read these same three variables. */
-  --cosmic-a: #ff2ea6;
-  --cosmic-b: #2f5bff;
-  --cosmic-c: #ff7a3d;
+     than either alone. THIRD lava-lamp pass: exact hues from the approved
+     mockup (blue/magenta-pink/purple), replacing the previous magenta/
+     blue/orange "cosmic vault" trio -- still named "cosmic" (predates this
+     pass) rather than renamed, since every glass surface's .liquid-sheen
+     streak and the aura ring also read these same three variables and a
+     rename would touch all of them for no behavior change. */
+  --cosmic-a: #ef3d86;
+  --cosmic-b: #3fc4f0;
+  --cosmic-c: #7b3ff2;
 
   /* Text that sits directly on the ambient wallpaper with no card behind
      it (hero h1/h2 titles, eyebrow/meta labels). Numerically identical to

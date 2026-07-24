@@ -1,43 +1,43 @@
-/* Plasma-liquid pass: this used to be a "cosmic vault" wallpaper (starfield,
-   Milky Way band, a planet) -- all removed. What's left leans fully into
-   the lava-lamp side of the old effect: a dark liquid base plate with
-   several large, saturated color blobs drifting and merging across it. Zero
-   live filters anywhere, same discipline the original metaball/goo removal
-   established: the mesh layer is a fully static `background`
-   (radial-gradients painted once, nothing animates them), every blob only
-   ever animates `transform`/`opacity` (GPU-composited, no repaint), and the
-   grain layer is a static pre-rendered SVG data-URI `background-image`, not
-   a live `<feTurbulence>` resampling anything every frame. See
-   .ambient-blob-1's own comment for the measured cost trail that ruled out
-   `filter: blur()` and `mix-blend-mode` for softening these layers. */
-/* Opaque near-black base -- deliberately NOT theme-conditional (no
-   --bg-0/--ink involved). This wallpaper is meant to always read as dark
-   liquid with color suspended in it, in both light and dark UI mode, same
-   "always this scene, not theme-adaptive" decision the old cosmic-vault
-   version made -- see the git log. Fully opaque (no transparent stops) so
-   body's own theme-driven --bg-0 never shows through underneath; every
-   other layer here (.ambient-mesh, the .ambient-blob-* set, .ambient-vault)
-   paints on top of this, not instead of it. Solid --bg-1 cards elsewhere on the page
-   keep following the light/dark toggle normally -- only this fixed backdrop
-   layer, and the loose on-canvas heading text that sits directly on it (see
-   globals.css's --canvas-ink), had to stop doing that. Neutral obsidian
-   rather than the old version's navy-black -- the color now comes entirely
-   from the blobs floating in it, not from the vessel itself. */
-/* Lava-lamp glossy pass: pushed darker and less purple-tinted than the
-   previous plasma-liquid base -- a near-neutral-black vessel is what makes
-   the now-glossy, more saturated blobs (see .ambient-blob-1 etc below)
-   read as distinctly lit spheres floating in it, same reasoning a real
-   lava lamp's dark base does. Still a single static radial-gradient, still
-   fully opaque (no transparent stops -- body's own theme-driven --bg-0
-   must never show through), still NOT theme-conditional -- same "always
-   this scene" decision the git log already documents. */
+/* THIRD lava-lamp pass -- confirmed live (real screenshot, real production
+   CSS fetch) that the previous two passes never actually delivered the
+   requested look, and the root cause was found and fixed here: the
+   PREVIOUS version kept a leftover `.ambient-mesh` layer from the earlier
+   "plasma-liquid" design -- a full-viewport, 5-point, 46%-opacity soft
+   color wash with no shape, no edge, no highlight. That wash sat on top
+   of the darker base and 4 glossy blobs from pass 2, and at that size/
+   opacity it visually dominated everything else, which is exactly why the
+   site kept reading as "soft purple/blue blur" no matter how dark the
+   base got or how glossy the blobs got underneath it. `.ambient-mesh` is
+   deleted entirely in this pass, not just dimmed further -- the blobs
+   below are now the ONLY color layer, so what's on screen is genuinely
+   "near-black vessel + distinct glossy blobs," not "wash + blobs
+   underneath it."
+
+   Real SVG goo/metaball filter (feGaussianBlur + feColorMatrix) was
+   deliberately NOT reintroduced, on the user's own explicit choice after
+   being shown the real historical cost data: commit 963d166 first added
+   it bounded to ~620px; commit 72d8d74 widened it to full-viewport (12
+   clusters); commit 6945a70 ripped it back out because that combination
+   measured ~30fps against a 60fps baseline (real Playwright rAF
+   sampling). This pass reaches the same VISUAL goal -- distinct glossy
+   spheres that read as merging into each other -- via generously
+   overlapping large radial-gradient blobs with a strong offset specular
+   highlight each, still zero live filters, zero blend-modes, still
+   transform/opacity-only animation (compositor-only, no repaint). */
 .ambient-bg {
   position: fixed;
   inset: 0;
   z-index: 0;
   overflow: hidden;
   pointer-events: none;
-  background: radial-gradient(ellipse 140% 90% at 50% -10%, #120c16 0%, #08050b 45%, #020103 100%);
+  /* True near-black, not a purple-black -- the #120c16 stop from pass 2
+     was still visibly purple across most of the viewport (that ellipse's
+     140% width / -10% top anchor covers nearly the whole screen with its
+     lightest stop). Flatter, darker gradient this time: the lightest
+     point is barely lifted off pure black, specifically so it can never
+     read as "a dark purple wash" again on its own -- all the actual color
+     now has to come from the blobs. */
+  background: radial-gradient(ellipse 130% 85% at 50% -6%, #0c0810 0%, #050308 55%, #020103 100%);
 }
 
 /* Everything that drifts with the pointer (AmbientBackground.tsx) lives in
@@ -52,107 +52,58 @@
   inset: -32px;
 }
 
-/* Five soft-edged radial fields anchored at both top corners, both bottom
-   corners, and dead center -- same "reach every part of the viewport, no
-   flat corner or center left untouched" lesson the old 4x3 cluster grid
-   was widened to solve, just as one static composited background instead
-   of 12 independently-animated DOM nodes. Deliberately NOT declaring
-   --ambient-primary/secondary here, same reasoning the old .ambient-goo
-   rule documented: an element's own custom-property declaration would
-   permanently shadow whatever useAmbientAccent.ts sets on :root's inline
-   style, so the var(..., #hex) fallback on each stop below is the only
-   place the neutral default pair lives -- keep those two literals in sync
-   with colorExtract.ts's FALLBACK_PRIMARY/FALLBACK_SECONDARY. */
-/* Every stop below reads through an extra color-mix(...) blend with a
-   fixed cosmic hue (--cosmic-a/--cosmic-b, tokens.css) before it paints --
-   hybrid tinting, not either color alone: pure per-game accent read as a
-   generic colored blob with no "space" identity, pure fixed cosmic color
-   would lose per-game variety entirely across pages. Hue still leans on
-   the real accent (game pages keep their own personality), it just always
-   carries a nebula-glow cast from the fixed pair too. Opacity pushed
-   higher than the old pale-ethereal version (0.42 -> 0.58) since this now
-   paints over .ambient-bg's near-black base instead of a pale body
-   background -- the same alpha reads much fainter against black. */
-/* Glossy pass: pulled back from 0.62 -- against the now-darker .ambient-bg
-   base, a full-viewport wash at the old opacity competed with the point
-   of a lava-lamp look (distinct glossy blobs suspended in a dark vessel,
-   not an even colored fog). Lower opacity lets more of the near-black
-   base read through between/around the blobs so they read as separate
-   lit objects, same reasoning the reference image's black backdrop
-   documents. */
-.ambient-mesh {
-  position: absolute;
-  inset: 0;
-  opacity: 0.46;
-  background:
-    radial-gradient(ellipse 62% 55% at 6% 8%,
-      color-mix(in srgb, var(--ambient-primary, #6b4fa0) 70%, var(--cosmic-a, #ff2ea6) 30%) 0%, transparent 72%),
-    radial-gradient(ellipse 58% 58% at 94% 10%,
-      color-mix(in srgb, var(--ambient-secondary, #4a3570) 70%, var(--cosmic-b, #2f5bff) 30%) 0%, transparent 72%),
-    radial-gradient(ellipse 62% 58% at 50% 50%,
-      color-mix(in srgb, color-mix(in srgb, var(--ambient-primary, #6b4fa0), var(--ambient-secondary, #4a3570)) 60%, var(--cosmic-a, #ff2ea6) 40%) 0%, transparent 75%),
-    radial-gradient(ellipse 60% 55% at 10% 95%,
-      color-mix(in srgb, var(--ambient-secondary, #4a3570) 70%, var(--cosmic-b, #2f5bff) 30%) 0%, transparent 72%),
-    radial-gradient(ellipse 62% 58% at 92% 92%,
-      color-mix(in srgb, var(--ambient-primary, #6b4fa0) 70%, var(--cosmic-a, #ff2ea6) 30%) 0%, transparent 72%);
-}
+/* Five large glossy blobs, one at each corner plus one at dead center --
+   genuine full-viewport spread (the explicit complaint on pass 2: blobs
+   read as clustered/washed rather than reaching the whole page), sized
+   large enough (46-58vmax) that adjacent blobs' soft-edged falloffs
+   overlap generously in the gaps between them. Where two overlap, their
+   alpha stacks and the shared region reads brighter/denser than either
+   blob alone -- the closest a live-filter-free technique gets to real
+   metaball fusion: not a hard melting seam, but a genuine "these are
+   flowing into each other," not just floating in isolation.
 
-/* Four soft radial blobs that breathe and drift slowly via transform only
-   (translate + scale -- animating background-position/gradient stops
-   instead would force a repaint every frame, not just a recomposite).
-   This is the direct replacement for what used to be two rotating
-   conic-gradient sweeps here: a bare conic-gradient reads as a hard-edged
-   sunburst/pinwheel, which is wrong for a lava-lamp read regardless of
-   cost, and the obvious softeners (`filter: blur()`, a `mix-blend-mode`
-   wash) both measured expensive even at small sizes in earlier rounds of
-   this background (Playwright rAF-fps sampling, present-vs-removed:
-   filter:blur() alone ~7fps, mix-blend-mode alone ~22fps, against a 60fps
-   baseline with neither) -- the same "presence-triggered, size-independent"
-   cost signature GlassPanel.css documents for backdrop-filter in headless
-   Chromium specifically, so re-measure on a real headed browser before
-   ever reaching for either again. Four independently-timed radial blobs
-   instead: same plain-opacity, compositor-only-transform recipe that
-   already priced out near-zero for the two blobs this replaces one-for-
-   one, just aimed at looking like drifting colored wax instead of a
-   rotating tint. Anchored away from the five fixed .ambient-mesh points
-   (both corners + center) so they add genuinely new movement and overlap
-   into each other -- the actual "merge and separate" lava-lamp cue --
-   rather than re-animating ground the static mesh already covers. Long
-   (52-96s), non-round, non-symmetric durations/easings so the four never
-   fall into a visible sync pattern.
+   Each blob's `background` stacks TWO radial-gradients (first-listed
+   paints on top): a bright, off-center specular highlight (same offset,
+   28% 24%, for every blob -- one consistent upper-left light source reads
+   as real lighting; a different offset per blob would read as
+   independently glowing objects instead of one lit scene) over the base
+   color falloff, which itself now has three explicit stops (bright core,
+   same color at 40%, then darkened toward the rim before the transparent
+   edge) so each blob reads as a lit sphere with real form, not a flat
+   disc. Opacity raised substantially from pass 2 (0.42 max -> 0.68 max)
+   -- with .ambient-mesh gone, these blobs are the ONLY source of color
+   now and have to carry all of it themselves.
 
-   Glossy-shading pass: each blob's `background` is now TWO stacked radial-
-   gradients (CSS layers multiple background-image values on one property,
-   first-listed paints on top) instead of one -- a small, off-center bright
-   highlight layered over the original centered color-falloff layer, which
-   is what makes a flat blurred color patch read as a lit, glossy 3D sphere
-   instead. Deliberately NOT an SVG goo filter (feGaussianBlur +
-   feColorMatrix threshold): that's the technique the reference brief
-   assumed was still here, but it never survived this file's own earlier
-   perf pass (see the fps numbers just above) -- reintroducing a live
-   filter/blend-mode would undo exactly the cost work this file documents,
-   which the same brief also explicitly says not to regress. Two static
-   gradients is still one-time-paint + compositor-only-transform, same
-   cost class as the single-gradient version this replaces. Highlight
-   offset (28% 24%) is the same for all four blobs -- one consistent
-   upper-left light source reads as physically real lighting; a different
-   offset per blob would read as four independently glowing objects
-   instead of one scene lit from one direction. */
+   Exactly three hues per the approved mockup -- blue (--cosmic-b,
+   #3fc4f0), magenta/pink (--cosmic-a, #ef3d86), purple (--cosmic-c,
+   #7b3ff2) -- reused across the five blobs (repeating a hue at a
+   non-adjacent position, not inventing a fourth). Blobs 1/3 read
+   --ambient-primary and blob 2 reads --ambient-secondary (both unset on
+   every page except a game detail page, see useAmbientAccent.ts) blended
+   55/45 with a fixed cosmic hue -- on a game page these shift toward that
+   game's real cover-art color while keeping this site's own saturated
+   character; on every other page (Groups, Digest, Publishers, Watchlist,
+   home) the var()'s own fallback literal IS one of the three mockup hues,
+   so the default palette is exactly blue/magenta/purple, never the old
+   muted --ambient-primary fallback (#6b4fa0) leaking through. Blobs 4/5
+   are fixed cosmic-only (no per-game reactivity) -- full-coverage anchors
+   that keep the scene's own identity present even on a game page whose
+   two accent colors might otherwise dominate every blob. */
 .ambient-blob-1 {
   position: absolute;
-  top: 62%;
-  left: 18%;
-  width: 48vmax;
-  height: 48vmax;
-  margin-top: -24vmax;
-  margin-left: -24vmax;
-  opacity: 0.42;
+  top: 18%;
+  left: 14%;
+  width: 56vmax;
+  height: 56vmax;
+  margin-top: -28vmax;
+  margin-left: -28vmax;
+  opacity: 0.64;
   background:
-    radial-gradient(circle at 28% 24%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.15) 16%, transparent 34%),
-    radial-gradient(circle, color-mix(in srgb, var(--ambient-primary, #6b4fa0) 55%, var(--cosmic-a, #ff2ea6) 45%) 0%,
-      color-mix(in srgb, var(--ambient-primary, #6b4fa0) 55%, var(--cosmic-a, #ff2ea6) 45%) 38%,
-      color-mix(in srgb, var(--ambient-primary, #6b4fa0) 40%, black 20%) 62%, transparent 70%);
-  animation: ambient-blob-drift-1 78s ease-in-out infinite;
+    radial-gradient(circle at 28% 24%, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.22) 14%, transparent 32%),
+    radial-gradient(circle, color-mix(in srgb, var(--ambient-primary, #3fc4f0) 55%, var(--cosmic-b, #3fc4f0) 45%) 0%,
+      color-mix(in srgb, var(--ambient-primary, #3fc4f0) 55%, var(--cosmic-b, #3fc4f0) 45%) 40%,
+      color-mix(in srgb, var(--ambient-primary, #3fc4f0) 45%, black 25%) 64%, transparent 72%);
+  animation: ambient-blob-drift-1 72s ease-in-out infinite;
   will-change: transform;
 }
 
@@ -162,28 +113,28 @@
     transform: translate(0, 0) scale(1);
   }
   35% {
-    transform: translate(6vmax, -4vmax) scale(1.18);
+    transform: translate(7vmax, -5vmax) scale(1.16);
   }
   70% {
-    transform: translate(-4vmax, 3vmax) scale(0.88);
+    transform: translate(-5vmax, 4vmax) scale(0.9);
   }
 }
 
 .ambient-blob-2 {
   position: absolute;
-  top: 28%;
-  left: 80%;
-  width: 44vmax;
-  height: 44vmax;
-  margin-top: -22vmax;
-  margin-left: -22vmax;
-  opacity: 0.38;
+  top: 22%;
+  left: 86%;
+  width: 52vmax;
+  height: 52vmax;
+  margin-top: -26vmax;
+  margin-left: -26vmax;
+  opacity: 0.6;
   background:
-    radial-gradient(circle at 28% 24%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.15) 16%, transparent 34%),
-    radial-gradient(circle, color-mix(in srgb, var(--ambient-secondary, #4a3570) 55%, var(--cosmic-b, #2f5bff) 45%) 0%,
-      color-mix(in srgb, var(--ambient-secondary, #4a3570) 55%, var(--cosmic-b, #2f5bff) 45%) 38%,
-      color-mix(in srgb, var(--ambient-secondary, #4a3570) 40%, black 20%) 62%, transparent 70%);
-  animation: ambient-blob-drift-2 96s ease-in-out infinite;
+    radial-gradient(circle at 28% 24%, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.22) 14%, transparent 32%),
+    radial-gradient(circle, color-mix(in srgb, var(--ambient-secondary, #ef3d86) 55%, var(--cosmic-a, #ef3d86) 45%) 0%,
+      color-mix(in srgb, var(--ambient-secondary, #ef3d86) 55%, var(--cosmic-a, #ef3d86) 45%) 40%,
+      color-mix(in srgb, var(--ambient-secondary, #ef3d86) 45%, black 25%) 64%, transparent 72%);
+  animation: ambient-blob-drift-2 90s ease-in-out infinite;
   will-change: transform;
 }
 
@@ -193,33 +144,28 @@
     transform: translate(0, 0) scale(1);
   }
   40% {
-    transform: translate(-5vmax, 4vmax) scale(0.85);
+    transform: translate(-6vmax, 5vmax) scale(0.87);
   }
   75% {
-    transform: translate(4vmax, -3vmax) scale(1.15);
+    transform: translate(5vmax, -4vmax) scale(1.14);
   }
 }
 
-/* Third blob -- hot molten orange (--cosmic-c), the color this scene was
-   missing once the planet/starfield that used to carry it were removed.
-   Anchored bottom-center-ish, opposite-direction drift from blob-1/2 so it
-   reads as a distinct piece of wax sliding through the other two rather
-   than moving in lockstep. */
 .ambient-blob-3 {
   position: absolute;
   top: 82%;
-  left: 55%;
-  width: 40vmax;
-  height: 40vmax;
-  margin-top: -20vmax;
-  margin-left: -20vmax;
-  opacity: 0.34;
+  left: 18%;
+  width: 54vmax;
+  height: 54vmax;
+  margin-top: -27vmax;
+  margin-left: -27vmax;
+  opacity: 0.6;
   background:
-    radial-gradient(circle at 28% 24%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.15) 16%, transparent 34%),
-    radial-gradient(circle, color-mix(in srgb, var(--cosmic-c, #ff7a3d) 70%, var(--ambient-primary, #6b4fa0) 30%) 0%,
-      color-mix(in srgb, var(--cosmic-c, #ff7a3d) 70%, var(--ambient-primary, #6b4fa0) 30%) 38%,
-      color-mix(in srgb, var(--cosmic-c, #ff7a3d) 45%, black 20%) 62%, transparent 70%);
-  animation: ambient-blob-drift-3 64s ease-in-out infinite;
+    radial-gradient(circle at 28% 24%, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.22) 14%, transparent 32%),
+    radial-gradient(circle, color-mix(in srgb, var(--ambient-primary, #7b3ff2) 55%, var(--cosmic-c, #7b3ff2) 45%) 0%,
+      color-mix(in srgb, var(--ambient-primary, #7b3ff2) 55%, var(--cosmic-c, #7b3ff2) 45%) 40%,
+      color-mix(in srgb, var(--ambient-primary, #7b3ff2) 45%, black 25%) 64%, transparent 72%);
+  animation: ambient-blob-drift-3 60s ease-in-out infinite;
   will-change: transform;
 }
 
@@ -229,32 +175,28 @@
     transform: translate(0, 0) scale(1);
   }
   45% {
-    transform: translate(-6vmax, -3vmax) scale(1.14);
+    transform: translate(-7vmax, -4vmax) scale(1.13);
   }
   80% {
-    transform: translate(3vmax, 4vmax) scale(0.9);
+    transform: translate(4vmax, 5vmax) scale(0.89);
   }
 }
 
-/* Fourth blob -- a magenta/blue mix (both cosmic hues at once, no game
-   accent), small and fast relative to the other three so it reads as a
-   quicker bead of color weaving between the slower, larger blobs instead
-   of just a fifth copy of the same motion. Anchored top-center. */
 .ambient-blob-4 {
   position: absolute;
-  top: 12%;
-  left: 42%;
-  width: 34vmax;
-  height: 34vmax;
-  margin-top: -17vmax;
-  margin-left: -17vmax;
-  opacity: 0.3;
+  top: 80%;
+  left: 84%;
+  width: 50vmax;
+  height: 50vmax;
+  margin-top: -25vmax;
+  margin-left: -25vmax;
+  opacity: 0.56;
   background:
-    radial-gradient(circle at 28% 24%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.15) 16%, transparent 34%),
-    radial-gradient(circle, color-mix(in srgb, var(--cosmic-a, #ff2ea6), var(--cosmic-b, #2f5bff)) 0%,
-      color-mix(in srgb, var(--cosmic-a, #ff2ea6), var(--cosmic-b, #2f5bff)) 38%,
-      color-mix(in srgb, color-mix(in srgb, var(--cosmic-a, #ff2ea6), var(--cosmic-b, #2f5bff)) 60%, black 25%) 62%, transparent 72%);
-  animation: ambient-blob-drift-4 52s ease-in-out infinite;
+    radial-gradient(circle at 28% 24%, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.22) 14%, transparent 32%),
+    radial-gradient(circle, color-mix(in srgb, var(--cosmic-c, #7b3ff2) 55%, var(--cosmic-b, #3fc4f0) 45%) 0%,
+      color-mix(in srgb, var(--cosmic-c, #7b3ff2) 55%, var(--cosmic-b, #3fc4f0) 45%) 40%,
+      color-mix(in srgb, var(--cosmic-c, #7b3ff2) 45%, black 25%) 64%, transparent 72%);
+  animation: ambient-blob-drift-4 48s ease-in-out infinite;
   will-change: transform;
 }
 
@@ -264,38 +206,60 @@
     transform: translate(0, 0) scale(1);
   }
   38% {
-    transform: translate(4vmax, 5vmax) scale(0.9);
+    transform: translate(5vmax, 6vmax) scale(0.88);
   }
   72% {
-    transform: translate(-5vmax, -3vmax) scale(1.16);
+    transform: translate(-6vmax, -4vmax) scale(1.15);
+  }
+}
+
+/* Fifth blob -- dead center, no per-game reactivity (pure cosmic blend) --
+   the piece that makes the four corner blobs read as one connected scene
+   instead of four separate corners with empty space in the middle. */
+.ambient-blob-5 {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 46vmax;
+  height: 46vmax;
+  margin-top: -23vmax;
+  margin-left: -23vmax;
+  opacity: 0.5;
+  background:
+    radial-gradient(circle at 28% 24%, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.2) 14%, transparent 32%),
+    radial-gradient(circle, color-mix(in srgb, var(--cosmic-a, #ef3d86) 50%, var(--cosmic-c, #7b3ff2) 50%) 0%,
+      color-mix(in srgb, var(--cosmic-a, #ef3d86) 50%, var(--cosmic-c, #7b3ff2) 50%) 38%,
+      color-mix(in srgb, var(--cosmic-a, #ef3d86) 45%, black 25%) 62%, transparent 70%);
+  animation: ambient-blob-drift-5 84s ease-in-out infinite;
+  will-change: transform;
+}
+
+@keyframes ambient-blob-drift-5 {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(-5vmax, 5vmax) scale(1.12);
+  }
+  68% {
+    transform: translate(6vmax, -4vmax) scale(0.91);
   }
 }
 
 /* Vignette -- a soft depth cue, deepening toward the edges like looking
    into a liquid-filled vessel rather than at a flat backdrop. Static
-   radial-gradient, no animation, no filter -- cheapest possible layer.
-   Sits above the mesh/blob swirl (outside .ambient-parallax, same
-   reasoning as .ambient-grain below: a vignette that itself panned with
-   the pointer would read as swimming, not as fixed depth). */
+   radial-gradient, no animation, no filter -- cheapest possible layer. */
 .ambient-vault {
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse 80% 70% at 50% 40%, transparent 45%, var(--ambient-vignette, rgba(60, 50, 90, 0.16)) 100%);
+  background: radial-gradient(ellipse 80% 70% at 50% 40%, transparent 40%, var(--ambient-vignette, rgba(2, 2, 8, 0.7)) 100%);
 }
 
 /* Static pre-rendered noise (an SVG feTurbulence baked into a data-URI
    background-image, tiled), not a live filter -- the browser rasterizes
    this once, same as any other background-image, instead of resampling a
-   turbulence function every frame the way an applied `filter` would.
-   Perf pass: mix-blend-mode: overlay removed -- a blend mode has to be
-   recomputed every time ANYTHING it's compositing against changes, not
-   just when this layer's own content does, and with a mesh, four blobs,
-   and motes underneath it that's every single frame, continuously, for as
-   long as the tab is open -- exactly the "measured expensive even
-   standalone" cost this file's own .ambient-blob-1 comment documents for
-   blend-modes elsewhere. Plain opacity at this same low value (0.035) is
-   visually indistinguishable from the overlay-blended version and costs
-   nothing beyond the one-time paint of a static background-image. */
+   turbulence function every frame the way an applied `filter` would. */
 .ambient-grain {
   position: absolute;
   inset: 0;
@@ -345,6 +309,7 @@
 .ambient-bg--paused .ambient-blob-2,
 .ambient-bg--paused .ambient-blob-3,
 .ambient-bg--paused .ambient-blob-4,
+.ambient-bg--paused .ambient-blob-5,
 .ambient-bg--paused .ambient-mote {
   animation-play-state: paused;
 }
@@ -354,6 +319,7 @@
   .ambient-blob-2,
   .ambient-blob-3,
   .ambient-blob-4,
+  .ambient-blob-5,
   .ambient-mote {
     animation: none;
   }
