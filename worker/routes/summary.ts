@@ -55,8 +55,11 @@ const SYSTEM_PROMPT: Record<SummaryRequest["kind"], string> = {
     "Never name a game title that isn't listed in the facts, even one you recognize as real from this group's " +
     "actual history -- if no title list is given, describe the group without naming any specific game. More " +
     "generally: if a category of fact (method, title list, reliability, activity dates, etc.) is simply absent " +
-    "from what's given, leave it out rather than filling the gap with anything you might otherwise know about " +
-    "this real group. Do not speculate about legality or make value judgments.\n\n" +
+    "from what's given, leave it out ENTIRELY -- never mention that it's missing, and never guess at or state a " +
+    "reason why it might be missing (e.g. do not connect an absent reliability score to whether the group is " +
+    "starred/P2P/scene -- those are unrelated facts, and reliability being absent just means not enough " +
+    "genuine releases are tracked yet, nothing else). Silence on a topic, not a footnote about the gap, is the " +
+    "correct way to handle missing data. Do not speculate about legality or make value judgments.\n\n" +
     "Avoid opening every summary with \"[Name] is a ...\" -- vary the lead from group to group: sometimes start " +
     "with the release count, sometimes their method (hypervisor/traditional/repack), a specific title, their " +
     "activity span, or their reliability score when given. Use the actual numbers, dates, and title names given " +
