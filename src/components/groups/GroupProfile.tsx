@@ -13,6 +13,7 @@ import GlassPanel from "../ui/GlassPanel";
 import Reveal from "../ui/Reveal";
 import AiSummary from "../ui/AiSummary";
 import StarRating from "../ui/StarRating";
+import SegmentedControl from "../ui/SegmentedControl";
 import ReleaseCard from "../game/ReleaseCard";
 import { usePageMeta } from "../../hooks/usePageMeta";
 import "./Groups.css";
@@ -150,7 +151,23 @@ export default function GroupProfile() {
   );
 
   const rows = [...seedRows, ...liveExtraRows].sort((a, b) => b.ts - a.ts);
-  const months = useMemo(() => groupByMonth(rows), [rows]);
+  const repackCount = rows.filter((x) => x.isRepack).length;
+  const isRepackGroupProfile = rows.length > 0 && repackCount === rows.length;
+  const crackRows = rows.filter((x) => !x.isRepack);
+  const repackRows = rows.filter((x) => x.isRepack);
+
+  // Cracks are the default/primary view (orlaz-crack-priority-repack-
+  // toggle.md) -- repacks only ever show when explicitly toggled on,
+  // never mixed into the same list. Exception: a group whose entire
+  // tracked output is repacks (isRepackGroupProfile) has nothing to
+  // default TO in the crack list -- forcing that permanently-empty state
+  // as the default would be a worse experience than just showing what
+  // this group actually has, so the effective view falls back to repacks
+  // for that case regardless of the toggle's own state.
+  const [showRepacks, setShowRepacks] = useState(false);
+  const effectiveShowRepacks = showRepacks || (crackRows.length === 0 && repackRows.length > 0);
+  const visibleRows = effectiveShowRepacks ? repackRows : crackRows;
+  const months = useMemo(() => groupByMonth(visibleRows), [visibleRows]);
 
   usePageMeta({
     title: displayName || "Group",
@@ -195,9 +212,6 @@ export default function GroupProfile() {
   }
 
   const name = seedMatches[0]?.r.group || liveRows[0]?.group_name || displayName;
-  const repackCount = rows.filter((x) => x.isRepack).length;
-  const isRepackGroupProfile = rows.length > 0 && repackCount === rows.length;
-  const crackRows = rows.filter((x) => !x.isRepack);
   const hv = crackRows.filter((x) => x.method === "hv").length;
   const trad = crackRows.length - hv;
   const out = seedMatches.filter(({ g, r }) => relOutdated(g, r)).length;
@@ -285,7 +299,20 @@ export default function GroupProfile() {
 
       <Reveal delay={0.1}>
         <div className="group-releases">
-          <h4>Releases by {name}</h4>
+          <div className="group-releases-head">
+            <h4>Releases by {name}</h4>
+            {repackRows.length && crackRows.length ? (
+              <SegmentedControl
+                ariaLabel="Cracks or repacks"
+                value={effectiveShowRepacks ? "repacks" : "cracks"}
+                onChange={(v) => setShowRepacks(v === "repacks")}
+                options={[
+                  { value: "cracks", label: `Cracks (${crackRows.length})` },
+                  { value: "repacks", label: `Repacks (${repackRows.length})` },
+                ]}
+              />
+            ) : null}
+          </div>
           {months.map((month) => {
             const isOpen = openMonths.has(month.key);
             return (

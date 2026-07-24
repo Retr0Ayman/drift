@@ -16,6 +16,7 @@ import DrmTag from "../ui/DrmTag";
 import Reveal from "../ui/Reveal";
 import WatchToggle from "../ui/WatchToggle";
 import Tabs, { type TabDef } from "../ui/Tabs";
+import SegmentedControl from "../ui/SegmentedControl";
 import { usePageMeta } from "../../hooks/usePageMeta";
 import { usePlatformP2PIndex } from "../../hooks/usePlatformP2PIndex";
 import { useGameScreenshots } from "../../hooks/useGameScreenshots";
@@ -86,6 +87,18 @@ export default function GameDetail() {
 
   const screenshots = useGameScreenshots(game?.appid);
   useAmbientAccent(mergedGame?.accentColorPrimary, mergedGame?.accentColorSecondary);
+  // Cracks are the default/primary view everywhere a release list renders
+  // (orlaz-crack-priority-repack-toggle.md) -- a repack rebundled someone
+  // else's DRM bypass, it didn't perform one, so it must never sit on
+  // equal visual footing with a genuine crack just because it's tagged
+  // differently. "genuine" mirrors lib/format.ts's earliestGenuineRelease
+  // exactly (!isRepack && !isAnonymous), the same bar already used to
+  // decide what counts as a real "first crack" on the Crack Timeline.
+  // Declared here, before the !mergedGame early return below, not next to
+  // where it's used further down -- every hook in this component must run
+  // unconditionally on every render (Rules of Hooks), and this component
+  // has an early return for the "title not found" case.
+  const [showRepacks, setShowRepacks] = useState(false);
 
   // Scroll-to-top on navigation is PageTransition's job now (it fires
   // reliably on every real navigation via location.key, and goes through
@@ -145,6 +158,9 @@ export default function GameDetail() {
       ));
 
   const releases = sortReleasesByPriority(mergedGame.releases);
+  const genuineReleases = releases.filter((r) => !r.isRepack && !r.isAnonymous);
+  const repackReleases = releases.filter((r) => r.isRepack || r.isAnonymous);
+  const visibleReleases = showRepacks ? repackReleases : genuineReleases;
 
   const tabs: TabDef[] = [
     {
@@ -154,14 +170,29 @@ export default function GameDetail() {
         <div className="detail-releases">
           <CrackOutlook game={mergedGame} />
           <CrackTimeline game={mergedGame} />
+          {repackReleases.length ? (
+            <SegmentedControl
+              ariaLabel="Cracks or repacks"
+              value={showRepacks ? "repacks" : "cracks"}
+              onChange={(v) => setShowRepacks(v === "repacks")}
+              options={[
+                { value: "cracks", label: `Cracks (${genuineReleases.length})` },
+                { value: "repacks", label: `Repacks (${repackReleases.length})` },
+              ]}
+            />
+          ) : null}
           <div className="detail-release-list">
-            {releases.length ? (
-              releases.map((r, i) => (
+            {visibleReleases.length ? (
+              visibleReleases.map((r, i) => (
                 <ReleaseCard key={i} game={mergedGame} release={r} recencyStatus={recencyStatusFor(r, releases)} />
               ))
             ) : (
               <GlassPanel className="detail-release-empty">
-                {gStatus(mergedGame) === "unreleased" ? "Unreleased — no crack tracked yet." : "No crack tracked yet."}
+                {showRepacks
+                  ? "No repacks tracked."
+                  : gStatus(mergedGame) === "unreleased"
+                    ? "Unreleased — no crack tracked yet."
+                    : "No crack tracked yet."}
               </GlassPanel>
             )}
           </div>

@@ -10,7 +10,17 @@ export default function GameCard({ game }: { game: Game }) {
   const img = coverImg(game);
   const code = game.title.split(/[:\s]/)[0].slice(0, 10).toUpperCase();
   const status = gStatus(game);
-  const releases = sortReleasesByPriority(game.releases);
+  const allReleases = sortReleasesByPriority(game.releases);
+  // Cracks are the default/primary view everywhere a release list renders
+  // (orlaz-crack-priority-repack-toggle.md) -- this compact grid tile has
+  // no room for an explicit toggle the way the game detail page's "Crack
+  // options" tab now does, so the honest equivalent here is simply never
+  // showing a repack/anonymous pill by default at all; the full picture
+  // (including the repack toggle) is one click away. Falls back to every
+  // release only for the rare case a game has nothing BUT repacks
+  // tracked -- an empty card is worse than showing what's actually there.
+  const genuineReleases = allReleases.filter((r) => !r.isRepack && !r.isAnonymous);
+  const releases = genuineReleases.length ? genuineReleases : allReleases;
   const topRelease = releases[0];
 
   return (

@@ -318,6 +318,19 @@
   margin-top: 32px;
 }
 
+.group-releases-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.group-releases-head h4 {
+  margin-bottom: 0;
+}
+
 .group-releases h4 {
   font-size: 0.72rem;
   font-weight: 700;
