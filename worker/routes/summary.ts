@@ -19,21 +19,48 @@ interface SummaryRequest {
    publisher that has ..."). Now steered to lead with a concrete number or
    trait instead of restating the name first, and to vary which fact leads. */
 const SYSTEM_PROMPT: Record<SummaryRequest["kind"], string> = {
+  /* A genuinely higher-risk AI surface than anything else this site generates
+     (fact.ts/outlook.ts/faq.ts are about a game -- extensively, publicly
+     documented; this is about a real, possibly-identifiable cracking group).
+     Scene/P2P group "lore" -- who founded a group, why it disbanded, internal
+     drama, rivalries, real identities -- is exactly the kind of thing an
+     LLM's general training data might confidently produce specific,
+     plausible-sounding, and completely fabricated claims about. This prompt
+     is deliberately more restrictive than the others: it names the exact
+     categories of claim that must never appear, not just "don't invent
+     things" in the abstract, and GROUP_LORE_LEAK below backs it with a real
+     detect-and-reject pass -- unconditionally, not gated on whether some
+     field was given, since founding/identity/drama data is NEVER given here,
+     by design, so its presence in the output can only mean it was invented. */
   group:
-    "You write a single short, factual paragraph (2-3 sentences, no headers, no bullet points) summarizing a " +
-    "software cracking group's tracked activity for a crack/build-status tracking site. You are STRICTLY " +
-    "grounded in the facts given: the group's name, how many releases are tracked, whether they lean " +
-    "hypervisor or traditional cracking (or are a repack group), and which real titles they've released. " +
-    "Never invent history, reputation, founding dates, member names, or anything not explicitly given. Never " +
-    "name a game title that isn't listed in the facts, even one you recognize as real from this group's actual " +
-    "history -- if no title list is given, describe the group without naming any specific game. More generally: " +
-    "if a category of fact (method, title list, etc.) is simply absent from what's given, leave it out of the " +
-    "summary rather than filling the gap with anything you might otherwise know about this real group. Do not " +
-    "speculate about legality or make value judgments.\n\n" +
+    "You write a short, factual profile (3-4 sentences, no headers, no bullet points) of a software cracking " +
+    "group's tracked activity for a crack/build-status tracking site -- a \"mini wiki\" entry built ENTIRELY " +
+    "from this site's own real tracked release data, nothing else. You are STRICTLY grounded in the facts " +
+    "given: the group's name, how many releases are tracked, the real hypervisor/traditional split (or " +
+    "repack-group status), real title names they've released, when they were first and most recently tracked " +
+    "active, and -- when given -- their computed reliability signals (a 1-5 star score derived from how often " +
+    "a release needed a correcting fix, the sample size behind it, average days to fix). These reliability " +
+    "figures are a real, transparently computed metric this site already shows on the page, not a subjective " +
+    "reputation judgment -- state them plainly as data when given, never editorialize beyond the numbers.\n\n" +
+    "You MUST NOT, under any circumstance, state or imply any of the following, even if you believe you know " +
+    "the real, true answer from general knowledge -- this site has no way to verify it and none of it is in " +
+    "the facts given: when or by whom the group was founded/formed/established; why or whether it disbanded, " +
+    "split, merged, or rebranded; any member's real name, identity, alias, or role/leadership; any rivalry, " +
+    "drama, internal conflict, or relationship with another group; any arrest, indictment, lawsuit, raid, " +
+    "takedown, or law-enforcement action; any claim about the group's real-world legal status. If you don't " +
+    "have a real fact for one of these below, the honest move is to simply never bring the topic up at all -- " +
+    "do not hedge with phrases like \"details of its founding are unclear\" either, since even raising the " +
+    "topic implies there's a story to know. Stick entirely to what this site has actually tracked: release " +
+    "counts, methods, titles, dates, reliability data.\n\n" +
+    "Never name a game title that isn't listed in the facts, even one you recognize as real from this group's " +
+    "actual history -- if no title list is given, describe the group without naming any specific game. More " +
+    "generally: if a category of fact (method, title list, reliability, activity dates, etc.) is simply absent " +
+    "from what's given, leave it out rather than filling the gap with anything you might otherwise know about " +
+    "this real group. Do not speculate about legality or make value judgments.\n\n" +
     "Avoid opening every summary with \"[Name] is a ...\" -- vary the lead from group to group: sometimes start " +
-    "with the release count, sometimes with their method (hypervisor/traditional/repack), sometimes with a " +
-    "specific title they've released. Use the actual numbers and title names given rather than vague phrases " +
-    "like \"several titles\" or \"a variety of games\" when a specific count or name is available.",
+    "with the release count, sometimes their method (hypervisor/traditional/repack), a specific title, their " +
+    "activity span, or their reliability score when given. Use the actual numbers, dates, and title names given " +
+    "rather than vague phrases like \"several titles\" or \"a variety of games\" when a specific one is available.",
   publisher:
     "You write a single short, factual paragraph (2-3 sentences, no headers, no bullet points) summarizing a " +
     "video game publisher's tracked catalog for a crack/build-status tracking site. You are STRICTLY grounded " +
@@ -58,6 +85,29 @@ function buildFacts(body: SummaryRequest): string {
   return [`Name: ${body.name}`, ...lines].filter(Boolean).join("\n");
 }
 
+/* Group-only, and deliberately UNCONDITIONAL (unlike fact.ts's
+   FRANCHISE_LEAK, which only fires when no franchise field was given) --
+   founding/identity/drama/legal-status data is NEVER included in what this
+   route feeds the model for a group (buildFacts only ever has release
+   counts/methods/titles/dates/reliability numbers to draw from), so any of
+   this vocabulary appearing in the output can only mean it was invented,
+   regardless of what else was or wasn't given. Broad on purpose -- this is
+   pattern-matching against an open-ended category of possible fabrication
+   (real/possibly-identifiable people and groups), not a single well-defined
+   claim like FRANCHISE_LEAK's "was a series name invented." That means it
+   cannot promise the same completeness FRANCHISE_LEAK has for its narrower
+   question: a fabrication phrased in vocabulary this list doesn't happen to
+   catch would still get through. The prompt's own explicit, exhaustive
+   "MUST NOT" list carries real weight here precisely because this backstop
+   can't be assumed airtight the way the DRM/franchise ones are for their
+   narrower questions. */
+const GROUP_LORE_LEAK =
+  /\b(founded|founder|co-founder|formed in|formed by|established in|disband(ed)?|rival(ry|s)?|led by|leader(ship)?|members? (include|are|is|consist)|real (name|identity)|identity of|known as|a\.?k\.?a\.?|alias(es)?|arrest(ed)?|indict(ed|ment)?|prosecut(ed|ion)|lawsuit|law\s?enforcement|\bFBI\b|\bDOJ\b|\bICE\b|raided?|takedown|shut\s?down by|court(room)?|sentenced|convicted|splinter(ed)?|split from|merged with|rebrand(ed)?|renamed from|former member|ex-member|internal (drama|conflict)|feud(ed)?)\b/i;
+
+function violatesGrounding(body: SummaryRequest, text: string): boolean {
+  return body.kind === "group" && GROUP_LORE_LEAK.test(text);
+}
+
 export const handleSummary: Handler = async ({ request, env }) => {
   if (request.method !== "POST") return json({ error: "POST only" }, 60, 405);
 
@@ -71,14 +121,31 @@ export const handleSummary: Handler = async ({ request, env }) => {
     return json({ error: "name and kind ('group'|'publisher') required" }, 60, 400);
   }
 
-  const { text, error } = await callGroq(
-    env,
-    [
-      { role: "system", content: SYSTEM_PROMPT[body.kind] },
-      { role: "user", content: buildFacts(body) },
-    ],
-    { maxTokens: 180 },
-  );
+  const messages = [
+    { role: "system" as const, content: SYSTEM_PROMPT[body.kind] },
+    { role: "user" as const, content: buildFacts(body) },
+  ];
+
+  let { text, error } = await callGroq(env, messages, { maxTokens: 220 });
+  if (text && violatesGrounding(body, text)) {
+    // One retry with the violating draft shown back and a blunt correction
+    // -- cheaper and more honest than serving a fabricated lore claim about
+    // a real group.
+    ({ text, error } = await callGroq(
+      env,
+      [
+        ...messages,
+        {
+          role: "user" as const,
+          content: `You wrote: "${text}"\nThat states or implies something about founding, identity, disbanding, drama, or legal history that was never given -- this site has no real data for any of that. Rewrite it about the same group using ONLY the release/method/date/reliability facts already given, without touching that topic at all.`,
+        },
+      ],
+      { maxTokens: 220 },
+    ));
+    if (text && violatesGrounding(body, text)) {
+      return json({ error: "summary generation could not stay grounded for this group" }, 30, 502);
+    }
+  }
   if (!text) return json({ error: error || "summary generation unavailable" }, 30, 502);
   return json({ summary: text }, 3600);
 };

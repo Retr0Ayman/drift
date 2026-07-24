@@ -218,6 +218,11 @@ export default function GroupProfile() {
   const leaning = isRepackGroupProfile ? "Repack" : hv >= trad ? "Hypervisor" : "Traditional";
   const lastTs = rows.reduce((mx, r) => (r.ts > mx ? r.ts : mx), 0);
   const daysSince = lastTs ? Math.max(0, Math.floor((Date.now() - lastTs) / 86400000)) : null;
+  // Earliest tracked activity -- real, derivable straight from this same
+  // rows list (no separate fetch), and one of the "mini wiki" writeup's
+  // real grounding points (worker/routes/summary.ts's group prompt).
+  const firstTs = rows.reduce((mn, r) => (r.ts && (!mn || r.ts < mn) ? r.ts : mn), 0);
+  const rel = reliability[key || ""];
 
   return (
     <div className="wrap groups-page">
@@ -258,8 +263,16 @@ export default function GroupProfile() {
               facts={{
                 "Releases tracked": rows.length,
                 Leaning: isRepackGroupProfile ? "Repack group" : `${leaning}-leaning`,
+                "Hypervisor releases": !isRepackGroupProfile ? hv : undefined,
+                "Traditional releases": !isRepackGroupProfile ? trad : undefined,
                 "Group type": isP2PGroup(name) ? "P2P/non-scene" : "Scene",
                 Starred: STARRED_GROUPS.includes(key || "") ? "yes (directly polled)" : "no",
+                "First tracked activity": firstTs ? fmtDateMs(firstTs) : undefined,
+                "Most recent activity": lastTs ? fmtDateMs(lastTs) : undefined,
+                "Reliability score out of 5 stars": rel?.stars ?? undefined,
+                "Genuine releases counted for reliability": rel?.genuine_count ?? undefined,
+                "Of those, releases that needed a correction": rel?.correction_count ?? undefined,
+                "Average days to correct a flawed release": rel?.avg_fix_days ?? undefined,
                 "Recent titles": rows.slice(0, 8).map((r) => r.game.title),
               }}
             />

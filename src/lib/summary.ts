@@ -1,10 +1,13 @@
-// v3: bumped again -- v2's "ready" gate had its own bug (useGroupReleases
-// defaulted `loading` to false, so `ready={!loading}` was briefly true
-// before the fetch had even started; see useGroupReleases.ts), plus the
-// underlying group data itself just got deepened (real full history via
-// group_id pagination instead of the ~30-item capped search). Old v1/v2
-// entries are dead keys now, not actively cleaned up, but never read again.
-const CACHE_PREFIX = "drift.summary.v3.";
+// v4: bumped -- worker/routes/summary.ts's group prompt picked up a real
+// grounding backstop (GROUP_LORE_LEAK) plus richer real facts (reliability
+// signals, first/most-recent activity dates, real hv/trad counts) after v3
+// entries were already cached. A pre-fix cached group summary had no
+// backstop behind it at all -- if one ever slipped in an invented founding/
+// identity/drama claim, this bump is what actually gets it regenerated for
+// returning visitors instead of serving it forever. Publisher entries also
+// regenerate as a side effect of the shared prefix (harmless, that prompt
+// itself didn't change).
+const CACHE_PREFIX = "drift.summary.v4.";
 
 export interface SummaryResult {
   summary: string | null;
