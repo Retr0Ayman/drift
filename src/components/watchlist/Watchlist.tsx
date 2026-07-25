@@ -6,7 +6,7 @@ import Reveal from "../ui/Reveal";
 import WishlistImport from "./WishlistImport";
 import ShareWatchlistButton from "./ShareWatchlistButton";
 import { usePageMeta } from "../../hooks/usePageMeta";
-import { anyOutdated, driftDelta } from "../../lib/format";
+import { anyOutdated, driftDelta, outdatedDays } from "../../lib/format";
 import "./Watchlist.css";
 
 export default function Watchlist() {
@@ -98,12 +98,15 @@ export default function Watchlist() {
       {watchedGames.length ? (
         <div className="watchlist-grid">
           {watchedGames.map((g, i) => {
-            const delta = driftDelta(g);
+            const outdated = driftDelta(g) > 0;
+            const days = outdatedDays(g);
             return (
               <Reveal key={g.id} delay={Math.min(i, 8) * 0.045}>
                 <div className="watchlist-card-wrap">
-                  {delta > 0 ? (
-                    <span className="watchlist-drift-badge">{delta.toLocaleString("en-US")} builds behind</span>
+                  {outdated ? (
+                    <span className="watchlist-drift-badge">
+                      {days != null ? `Outdated ${days === 0 ? "today" : days + "d"}` : "Outdated"}
+                    </span>
                   ) : null}
                   <GameCard game={g} />
                 </div>

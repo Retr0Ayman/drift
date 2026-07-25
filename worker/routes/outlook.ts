@@ -5,7 +5,7 @@ import { callGroq } from "../shared/groq";
 interface OutlookRequest {
   title: string;
   status: "current" | "outdated" | "unverified" | "none";
-  buildGap?: number;
+  outdatedDays?: number;
   methods?: string[];
   isRepack?: boolean;
   crackTimingDays?: number | null;
@@ -15,34 +15,48 @@ interface OutlookRequest {
 
 /* Third AI surface, distinct purpose from fact.ts (bio trivia) and faq.ts
    (Q&A): a 1-2 sentence "practical bottom line" about THIS game's crack
-   situation right now -- current vs. outdated (with the real build gap),
-   repack vs. original crack, hypervisor vs. traditional tradeoffs, and how
-   fast it was cracked relative to its own release date, when the client's
-   derived facts (lib/format.ts's driftDelta/crackTimingDays) actually
-   support one of those. Same grounding discipline as the other two: never
-   invent a benchmark, a comparison to other titles, or a claim the given
-   facts don't cover -- if nothing is cracked yet, say that plainly instead
-   of reaching for something to fill the space. */
+   situation right now -- current vs. outdated (with how long it's been
+   outdated, in real days), repack vs. original crack, hypervisor vs.
+   traditional tradeoffs, and how fast it was cracked relative to its own
+   release date, when the client's derived facts (lib/format.ts's
+   outdatedDays/crackTimingDays) actually support one of those. Same
+   grounding discipline as the other two: never invent a benchmark, a
+   comparison to other titles, or a claim the given facts don't cover -- if
+   nothing is cracked yet, say that plainly instead of reaching for
+   something to fill the space.
+
+   BUG FIX (confirmed live, 007 First Light): this used to take a `buildGap`
+   fact -- the client's old driftDelta(), a raw `currentBuild - crackBuild`
+   subtraction of Steam BuildIDs -- and have the model report it verbatim as
+   "trailing the latest Steam build by N builds." Steam's BuildID is one
+   global, monotonically-increasing counter shared across Valve's ENTIRE
+   platform (every app, every depot, every publisher's update bumps the same
+   sequence), so that subtraction is NOT a per-game update count; it mostly
+   reflects elapsed time and unrelated platform-wide activity -- a game
+   untouched for a year can show a meaningless six-digit "builds behind"
+   number. outdatedDays (client's lib/format.ts, driven by the real
+   currentBuildUpdatedAt Steam timestamp) replaces it with an honest,
+   time-based number instead. */
 const SYSTEM_PROMPT =
   "You write a single short, practical blurb (1-2 sentences) for a crack/build-status tracking site's \"Crack " +
   "Outlook\" box -- the straight, practical bottom line on this specific game's crack situation right now. You " +
-  "are STRICTLY grounded in the facts given: whether the tracked crack is current, outdated (and by how many " +
-  "builds, if given), or unverified; whether it's a repack rather than an original crack; whether it's " +
+  "are STRICTLY grounded in the facts given: whether the tracked crack is current, outdated (and for how many " +
+  "days, if given), or unverified; whether it's a repack rather than an original crack; whether it's " +
   "hypervisor or traditional; and how many days after/before release it was first cracked, if that's given. " +
   "Never invent a comparison to other titles, an industry benchmark, a difficulty rating, or any number not " +
-  "explicitly in the facts. If the game has no tracked crack at all, say so plainly and briefly rather than " +
-  "inventing something to fill the space.\n\n" +
+  "explicitly in the facts -- in particular, never invent or imply a count of how many times Steam has updated " +
+  "this specific game; that count is not given to you and is not derivable from anything you do have. If the " +
+  "game has no tracked crack at all, say so plainly and briefly rather than inventing something to fill the space.\n\n" +
   "Lead with whatever fact matters most this time rather than always opening the same way: if the crack is " +
-  "meaningfully outdated, the build gap is usually the most useful thing to say first; if it's a repack, " +
-  "that distinction matters more than currency; if it was cracked unusually fast or leaked early, that's " +
-  "often the most interesting fact available. Use the real numbers given (build gap, day count) rather than " +
-  "vague words like \"recently\" or \"a while ago\" when a specific number is available.\n\n" +
+  "meaningfully outdated, how long it's been outdated is usually the most useful thing to say first; if it's a " +
+  "repack, that distinction matters more than currency; if it was cracked unusually fast or leaked early, that's " +
+  "often the most interesting fact available. Use the real numbers given (days outdated, crack timing) rather " +
+  "than vague words like \"recently\" or \"a while ago\" when a specific number is available.\n\n" +
   "If the tracked crack is outdated AND its method is hypervisor, remember that hypervisor bypasses are tied to " +
   "one specific game build by nature of the method -- an anti-tamper update on literally the next patch " +
   "routinely breaks them, so being outdated is normal, expected behavior for that method, not a sign of a " +
   "neglected or lower-quality release. Frame it that way (e.g. \"typical for hypervisor cracks\") rather than " +
-  "as a red flag, unless the facts given show a meaningfully large build gap that suggests it's fallen unusually " +
-  "far behind.\n\n" +
+  "as a red flag, unless the facts given show it's been outdated for an unusually long time.\n\n" +
   "When no Protection fact is given below, you were not told what DRM or anti-cheat (if any) this game uses -- " +
   "do not name or guess one (e.g. Denuvo, EAC/Easy Anti-Cheat, BattlEye, VMProtect, Arxan, SecuROM, StarForce, " +
   "or any other specific product), even if a game like this typically has one. You may still freely describe " +
@@ -72,7 +86,9 @@ function buildFacts(body: OutlookRequest): string {
         body.status
       ]
     }`,
-    body.status === "outdated" && body.buildGap ? `Build gap: crack trails the latest Steam build by ${body.buildGap} build(s)` : null,
+    body.status === "outdated" && body.outdatedDays != null
+      ? `Outdated: crack has trailed the latest Steam build for ${body.outdatedDays === 0 ? "less than a day" : `${body.outdatedDays} day(s)`}`
+      : null,
     body.methods?.length ? `Crack method(s) tracked: ${body.methods.join(", ")}` : null,
     body.isRepack ? "The leading tracked release is a repack, not an original crack" : null,
     body.crackTimingDays != null

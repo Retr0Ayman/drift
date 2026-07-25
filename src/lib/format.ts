@@ -195,6 +195,22 @@ export function survivalHrs(g: Game): number | null {
   return Math.round(outdated ? -hoursSince : hoursSince);
 }
 
+/* BUG FIX (confirmed live, 007 First Light: "trailing the latest Steam build
+   by 388825 builds"): Steam's BuildID is one global, monotonically-increasing
+   counter shared across Valve's ENTIRE platform -- every app, every depot,
+   every publisher's update bumps the same sequence. driftDelta's raw
+   `currentBuild - bestBuild(g)` subtraction is NOT a per-game update count;
+   it mostly reflects elapsed time plus unrelated platform-wide activity, so a
+   game untouched for a year can show a meaningless six-digit "builds behind"
+   number. survivalHrs (driven by the real currentBuildUpdatedAt timestamp
+   from steamcmd.net) is the honest, time-based number to surface instead --
+   this just re-expresses it in days for display. null whenever survivalHrs
+   itself can't honestly claim a value, same as that function. */
+export function outdatedDays(g: Game): number | null {
+  const hrs = survivalHrs(g);
+  return hrs != null && hrs < 0 ? Math.round(-hrs / 24) : null;
+}
+
 export const fmtBuild = (n: number | null | undefined): string => (n ? "#" + n.toLocaleString("en-US") : "—");
 
 const STEAM_CDN = "https://cdn.cloudflare.steamstatic.com/steam/apps/";
