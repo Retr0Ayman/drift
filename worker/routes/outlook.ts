@@ -10,6 +10,14 @@ interface OutlookRequest {
   isRepack?: boolean;
   crackTimingDays?: number | null;
   protection?: string[];
+  /* DRM this game genuinely used to have, per PCGamingWiki's own
+     Removed_DRM field (worker/backfill/pcgamingwiki.ts's classifyDrm),
+     that's since been removed -- e.g. Denuvo dropped post-launch. Real
+     historical fact, not current-state: lets the outlook honestly explain
+     a hypervisor crack (a technique that exists specifically to bypass
+     Denuvo Anti-Tamper) for a game whose current `protection` no longer
+     shows it, instead of the two facts silently contradicting each other. */
+  formerProtection?: string[];
   releaseCount?: number;
 }
 
@@ -50,19 +58,28 @@ const SYSTEM_PROMPT =
   "Lead with whatever fact matters most this time rather than always opening the same way: if the crack is " +
   "meaningfully outdated, how long it's been outdated is usually the most useful thing to say first; if it's a " +
   "repack, that distinction matters more than currency; if it was cracked unusually fast or leaked early, that's " +
-  "often the most interesting fact available. Use the real numbers given (days outdated, crack timing) rather " +
-  "than vague words like \"recently\" or \"a while ago\" when a specific number is available.\n\n" +
+  "often the most interesting fact available; if a Formerly-used-protection fact is given AND a hypervisor method " +
+  "is tracked, that's usually the single most interesting thing about this game -- say plainly that the " +
+  "hypervisor crack originally bypassed that protection and the publisher has since removed it, don't bury or " +
+  "skip that story in favor of a blander opening. Use the real numbers given (days outdated, crack timing) " +
+  "rather than vague words like \"recently\" or \"a while ago\" when a specific number is available.\n\n" +
   "If the tracked crack is outdated AND its method is hypervisor, remember that hypervisor bypasses are tied to " +
   "one specific game build by nature of the method -- an anti-tamper update on literally the next patch " +
   "routinely breaks them, so being outdated is normal, expected behavior for that method, not a sign of a " +
   "neglected or lower-quality release. Frame it that way (e.g. \"typical for hypervisor cracks\") rather than " +
   "as a red flag, unless the facts given show it's been outdated for an unusually long time.\n\n" +
-  "When no Protection fact is given below, you were not told what DRM or anti-cheat (if any) this game uses -- " +
-  "do not name or guess one (e.g. Denuvo, EAC/Easy Anti-Cheat, BattlEye, VMProtect, Arxan, SecuROM, StarForce, " +
-  "or any other specific product), even if a game like this typically has one. You may still freely describe " +
-  "the crack method (hypervisor vs. traditional) when that's given, since that's real data -- just never name " +
-  "what protection it bypasses unless a Protection fact is explicitly given. Plain text, no markdown, no " +
-  "preamble, no quotes.";
+  "When neither a Protection fact nor a Formerly-used-protection fact is given below, you were not told what " +
+  "DRM or anti-cheat (if any) this game uses or ever used -- do not name or guess one (e.g. Denuvo, EAC/Easy " +
+  "Anti-Cheat, BattlEye, VMProtect, Arxan, SecuROM, StarForce, or any other specific product), even if a game " +
+  "like this typically has one. You may still freely describe the crack method (hypervisor vs. traditional) " +
+  "when that's given, since that's real data -- just never name what protection it bypasses unless one of " +
+  "those two facts is explicitly given.\n\n" +
+  "When a Formerly-used-protection fact IS given, you may name it -- but strictly as something this game USED " +
+  "TO have and its publisher has since removed, never as active protection today (e.g. \"originally bypassed " +
+  "Denuvo Anti-Tamper via a hypervisor crack; Denuvo has since been removed\" is grounded; \"this crack bypasses " +
+  "Denuvo\" in the present tense is not, when Denuvo is only in the former-protection fact and not in Protection " +
+  "itself). If a Protection fact is ALSO given, that's what's true right now -- the former one only explains " +
+  "history, it never overrides or contradicts the current one. Plain text, no markdown, no preamble, no quotes.";
 
 /* Confirmed live on Ground Branch: page's own Protection field correctly showed
    "--" (game.tags empty, so buildFacts below omits the Protection line entirely),
@@ -75,7 +92,7 @@ const DRM_LEAK =
   /\b(denuvo|easy\s*anti-?cheat|\bEAC\b|battle\s*eye|vmprotect|arxan|securom|starforce|themida|enigma\s*protector|safedisc|tages|codemeter|cmactlicense|wibu(-|\s)?systems|pace\s*anti-?piracy|cactus\s*(protection\s*system)?|games?\s*for\s*windows\s*live|\bGFWL\b|ubisoft\s*connect|uplay)\b/i;
 
 function violatesGrounding(body: OutlookRequest, text: string): boolean {
-  return !body.protection?.length && DRM_LEAK.test(text);
+  return !body.protection?.length && !body.formerProtection?.length && DRM_LEAK.test(text);
 }
 
 function buildFacts(body: OutlookRequest): string {
@@ -99,6 +116,7 @@ function buildFacts(body: OutlookRequest): string {
           : `Leaked ${Math.abs(body.crackTimingDays)} day(s) before release`
       : null,
     body.protection?.length ? `Protection: ${body.protection.join(", ")}` : null,
+    body.formerProtection?.length ? `Formerly used protection (since removed by the publisher): ${body.formerProtection.join(", ")}` : null,
     body.releaseCount ? `Number of tracked crack releases: ${body.releaseCount}` : null,
   ];
   return lines.filter(Boolean).join("\n");

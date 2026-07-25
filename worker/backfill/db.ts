@@ -15,12 +15,12 @@ export async function setBackfillState(db: D1Database, key: string, value: strin
 }
 
 const UPSERT_GAME_SQL = `
-  INSERT INTO games (id, xrel_key, title, appid, year, released, developer, publisher, genres, tags, current_build, current_build_updated_at, desc, fact, metacritic, source_name, source_url, header, accent_color_primary, accent_color_secondary, updated_at)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  INSERT INTO games (id, xrel_key, title, appid, year, released, developer, publisher, genres, tags, former_tags, current_build, current_build_updated_at, desc, fact, metacritic, source_name, source_url, header, accent_color_primary, accent_color_secondary, updated_at)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   ON CONFLICT(id) DO UPDATE SET
     xrel_key = excluded.xrel_key, title = excluded.title, appid = excluded.appid, year = excluded.year,
     released = excluded.released, developer = excluded.developer, publisher = excluded.publisher,
-    genres = excluded.genres, tags = excluded.tags, current_build = excluded.current_build,
+    genres = excluded.genres, tags = excluded.tags, former_tags = excluded.former_tags, current_build = excluded.current_build,
     -- Straight overwrite, unlike accent colors below -- Steam's own
     -- timebuildupdated is always the ground truth of when current_build
     -- last changed, no "only if different" conditional needed (see
@@ -68,7 +68,7 @@ const UPSERT_RELEASE_SQL = `
 
 const REFRESH_GAME_SQL = `
   UPDATE games SET
-    title = ?, year = ?, released = ?, developer = ?, publisher = ?, genres = ?, tags = ?,
+    title = ?, year = ?, released = ?, developer = ?, publisher = ?, genres = ?, tags = ?, former_tags = ?,
     current_build = ?, current_build_updated_at = ?, desc = ?, metacritic = ?, header = ?,
     accent_color_primary = CASE
       WHEN ? != ? OR accent_color_primary IS NULL OR accent_color_primary = ''
@@ -113,6 +113,7 @@ export async function refreshStaleGame(db: D1Database, id: string, currentTitle:
       e.publisher,
       JSON.stringify(e.genres),
       JSON.stringify(e.tags),
+      JSON.stringify(e.formerTags),
       e.currentBuild,
       e.currentBuildUpdatedAt,
       e.desc,
@@ -239,6 +240,7 @@ export async function upsertGames(db: D1Database, games: ParsedGame[], enrichmen
           // this same appid) -- an empty array when it finds no match, never a
           // guessed fallback.
           JSON.stringify(enrichment.tags),
+          JSON.stringify(enrichment.formerTags),
           enrichment.currentBuild,
           enrichment.currentBuildUpdatedAt,
           enrichment.desc,

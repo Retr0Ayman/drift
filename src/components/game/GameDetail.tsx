@@ -300,6 +300,20 @@ export default function GameDetail() {
                     {(mergedGame.tags || []).length
                       ? (mergedGame.tags || []).map((t) => <DrmTag key={t}>{t}</DrmTag>)
                       : "None confirmed"}
+                    {/* BUG FIX (confirmed live, 007 First Light): current
+                        tags alone made this game look like it only ever had
+                        plain Steam DRM, directly contradicting its own Crack
+                        Timeline (a hypervisor release -- a technique that
+                        exists specifically to bypass Denuvo Anti-Tamper, not
+                        plain Steam DRM). formerTags is real PCGamingWiki
+                        Removed_DRM data (pcgamingwiki.ts's classifyDrm),
+                        never inferred -- muted "unv" tone since this is
+                        informational history, not a current-state claim. */}
+                    {(mergedGame.formerTags || []).map((t) => (
+                      <DrmTag key={"former-" + t} className="drm-tag--former" title={`Previously used, since removed -- ${t} no longer protects this game`}>
+                        {t} (removed)
+                      </DrmTag>
+                    ))}
                   </span>
                 </div>
               </div>

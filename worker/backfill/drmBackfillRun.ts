@@ -50,7 +50,12 @@ export async function runDrmBackfillTick(env: Env): Promise<void> {
 
   const statements = withAppid
     .filter((r) => drm.has(r.appid)) // no match found -- leave the row's existing (already-blanked) tags alone
-    .map((r) => db.prepare("UPDATE games SET tags = ? WHERE id = ?").bind(JSON.stringify(drm.get(r.appid)), r.id));
+    .map((r) => {
+      const result = drm.get(r.appid)!;
+      return db
+        .prepare("UPDATE games SET tags = ?, former_tags = ? WHERE id = ?")
+        .bind(JSON.stringify(result.tags), JSON.stringify(result.formerTags), r.id);
+    });
   if (statements.length) await db.batch(statements);
 
   await setBackfillState(db, "drm_backfill_cursor", rows[rows.length - 1].id);
@@ -83,12 +88,15 @@ export async function runDrmRecheckTick(env: Env): Promise<void> {
 
   const drm = await lookupDrmForAppids(rows.map((r) => r.appid));
   const now = Date.now();
-  const statements = rows.map((r) =>
-    drm.has(r.appid)
-      ? db.prepare("UPDATE games SET tags = ?, drm_checked_at = ? WHERE id = ?").bind(JSON.stringify(drm.get(r.appid)), now, r.id)
+  const statements = rows.map((r) => {
+    const result = drm.get(r.appid);
+    return result
+      ? db
+          .prepare("UPDATE games SET tags = ?, former_tags = ?, drm_checked_at = ? WHERE id = ?")
+          .bind(JSON.stringify(result.tags), JSON.stringify(result.formerTags), now, r.id)
       : // no PCGamingWiki match this time either -- still stamp drm_checked_at so this row
         // cycles to the back of the queue instead of being retried every single tick forever
-        db.prepare("UPDATE games SET drm_checked_at = ? WHERE id = ?").bind(now, r.id),
-  );
+        db.prepare("UPDATE games SET drm_checked_at = ? WHERE id = ?").bind(now, r.id);
+  });
   await db.batch(statements);
 }

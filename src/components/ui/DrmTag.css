@@ -18,3 +18,15 @@
   height: 10px;
   flex: none;
 }
+
+/* Historical DRM (worker's former_tags -- PCGamingWiki's Removed_DRM,
+   e.g. Denuvo dropped post-launch) is real, but a current-tense claim, not
+   this: --unv is the same muted grey-tan the site already uses everywhere
+   else for "informational, no judgment being made" (Unverified pills,
+   likely-current/outdated labels) rather than --drm's alarming-looking
+   warm tint, which would misread a real past fact as a current threat. */
+.drm-tag.drm-tag--former {
+  color: var(--unv);
+  background: color-mix(in srgb, var(--unv) 10%, transparent);
+  border-color: color-mix(in srgb, var(--unv) 35%, transparent);
+}

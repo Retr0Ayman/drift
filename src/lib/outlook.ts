@@ -13,7 +13,14 @@ import { relStatus, outdatedDays, crackTimingDays, sortReleasesByPriority } from
 // real per-game stat). v2 cache entries could have that fabricated-precision
 // number baked into their cached text forever with no way to notice, same
 // class of problem as the v1->v2 bump above.
-const CACHE_PREFIX = "drift.outlook.v3.";
+// v4: bumped again -- same 007 First Light game exposed a second real gap:
+// its current `protection` fact alone (no Denuvo) contradicted its own
+// Crack Timeline (a hypervisor release, a technique that exists
+// specifically to bypass Denuvo). formerProtection (real PCGamingWiki
+// Removed_DRM data, worker/backfill/pcgamingwiki.ts) now lets the outlook
+// explain that history -- v3 cache entries never had that fact available
+// and would otherwise keep serving a Denuvo-silent blurb forever.
+const CACHE_PREFIX = "drift.outlook.v4.";
 
 export interface OutlookResult {
   outlook: string | null;
@@ -50,6 +57,7 @@ export async function fetchOutlook(game: Game): Promise<OutlookResult> {
         isRepack: lead?.isRepack,
         crackTimingDays: timing,
         protection: game.tags,
+        formerProtection: game.formerTags,
         releaseCount: releases.length,
       }),
     });

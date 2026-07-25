@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import type { Game, Release } from "../../types/game";
-import { relStatus, fmtBuild, slugify, crackTimingLabel, hvOutdatedReason, type RecencyStatus } from "../../lib/format";
+import { relStatus, fmtBuild, slugify, crackTimingLabel, hvOutdatedReason, outdatedDays, type RecencyStatus } from "../../lib/format";
 import Pill, { type PillTone } from "../ui/Pill";
 import DrmTag from "../ui/DrmTag";
 import GlassPanel from "../ui/GlassPanel";
@@ -36,7 +36,7 @@ interface ReleaseCardProps {
 export default function ReleaseCard({ game, release, recencyStatus }: ReleaseCardProps) {
   const st = relStatus(game, release);
   const displayStatus = st === "unv" && recencyStatus ? recencyStatus : st;
-  const delta = st === "out" && release.build && game.currentBuild ? game.currentBuild - release.build : 0;
+  const outdatedFor = st === "out" ? outdatedDays(game) : null;
   const timing = crackTimingLabel(game, release);
   const groupKey = slugify(release.group || "unknown");
   const cardVariant = release.isRepack || release.isAnonymous ? "neutral" : release.method;
@@ -119,7 +119,21 @@ export default function ReleaseCard({ game, release, recencyStatus }: ReleaseCar
           <div className="release-tag-row">
             {(game.tags || []).length
               ? (game.tags || []).map((t) => <DrmTag key={t}>{t}</DrmTag>)
-              : <span className="v">—</span>}
+              : (game.formerTags || []).length ? null : <span className="v">—</span>}
+            {/* BUG FIX (confirmed live, 007 First Light): a hypervisor
+                release here next to a bare "Steam DRM" Protection row reads
+                as a contradiction -- hypervisor cracking exists specifically
+                to bypass Denuvo Anti-Tamper, not plain Steam DRM. formerTags
+                is the real PCGamingWiki Removed_DRM fact (game.tags no
+                longer includes it because it's genuinely been removed by
+                the publisher since) that actually explains it -- same real
+                data, same muted "former" treatment as GameDetail.tsx's own
+                Protection field. */}
+            {(game.formerTags || []).map((t) => (
+              <DrmTag key={"former-" + t} className="drm-tag--former" title={`Previously used, since removed -- ${t} no longer protects this game`}>
+                {t} (removed)
+              </DrmTag>
+            ))}
           </div>
         </div>
         <div className="release-info">
@@ -165,9 +179,19 @@ export default function ReleaseCard({ game, release, recencyStatus }: ReleaseCar
         </div>
         {st === "out" ? (
           <div className="release-datum">
-            <span className="k">Build gap</span>
+            {/* BUG FIX (confirmed live, 007 First Light: "−388825"): this
+                used to be game.currentBuild - release.build, a raw Steam
+                BuildID subtraction -- BuildID is one global counter shared
+                across Valve's ENTIRE platform, not a per-game update count,
+                so that delta mostly reflected elapsed time plus unrelated
+                platform-wide activity (see src/lib/format.ts's outdatedDays
+                for the full reasoning, and lib/outlook.ts's own history of
+                this same bug in the Crack Outlook text). outdatedDays is
+                the real, time-based replacement, driven by the game's own
+                currentBuildUpdatedAt Steam timestamp. */}
+            <span className="k">Outdated for</span>
             <span className="v" style={{ color: "var(--out)" }}>
-              −{delta.toLocaleString("en-US")}
+              {outdatedFor != null ? (outdatedFor === 0 ? "<1d" : `${outdatedFor}d`) : "—"}
             </span>
           </div>
         ) : null}

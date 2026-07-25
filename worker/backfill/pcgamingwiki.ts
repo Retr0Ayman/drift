@@ -99,13 +99,31 @@ function splitList(v: string | null | undefined): string[] {
    Steam -- show Steam_DRM: "DRM-free". This is the actual signal Uses_DRM
    can't give reliably for "Steam" specifically (see this file's own
    STOREFRONT_NOISE comment), so it's trusted directly rather than inferred
-   from the noisy aggregate. */
-export function classifyDrm(usesDrm: string | null, removedDrm: string | null, anticheat: string | null, steamDrm: string | null): string[] {
+   from the noisy aggregate.
+
+   BUG FIX (confirmed live, 007 First Light): Removed_DRM used to be read
+   ONLY to exclude its entries from the current-tags list above, then
+   thrown away entirely -- but it's real, dated-by-PCGamingWiki-edit
+   historical fact ("this game used to have Denuvo, since removed"), not
+   noise. Discarding it left the site with no way to explain a hypervisor
+   crack (a technique that exists specifically to bypass Denuvo Anti-
+   Tamper) showing up in a game's Crack Timeline when current tags show
+   only "Steam DRM" -- confirmed live via PCGamingWiki's own Cargo API that
+   007 First Light's Removed_DRM genuinely lists "Denuvo Anti-Tamper".
+   formerTags surfaces that fact instead of dropping it. */
+export function classifyDrm(
+  usesDrm: string | null,
+  removedDrm: string | null,
+  anticheat: string | null,
+  steamDrm: string | null,
+): { tags: string[]; formerTags: string[] } {
   const removed = new Set(splitList(removedDrm));
   const real = splitList(usesDrm).filter((v) => !STOREFRONT_NOISE.has(v) && !removed.has(v));
   const ac = splitList(anticheat);
   const steamHasDrm = splitList(steamDrm).includes("Steam") && !removed.has("Steam");
-  return [...new Set([...real, ...ac, ...(steamHasDrm ? ["Steam DRM"] : [])])];
+  const tags = [...new Set([...real, ...ac, ...(steamHasDrm ? ["Steam DRM"] : [])])];
+  const formerTags = [...removed].filter((v) => !STOREFRONT_NOISE.has(v) && !tags.includes(v));
+  return { tags, formerTags };
 }
 
 interface CargoRow {
@@ -138,8 +156,13 @@ const BATCH_SIZE = 25;
    simply absent from the returned map -- same honesty rule as the rest of
    this codebase: no match or a failed call means the caller gets nothing
    back for that appid, never a fabricated guess. */
-export async function lookupDrmForAppids(appids: number[]): Promise<Map<number, string[]>> {
-  const out = new Map<number, string[]>();
+export interface DrmLookupResult {
+  tags: string[];
+  formerTags: string[];
+}
+
+export async function lookupDrmForAppids(appids: number[]): Promise<Map<number, DrmLookupResult>> {
+  const out = new Map<number, DrmLookupResult>();
   for (let i = 0; i < appids.length; i += BATCH_SIZE) {
     const chunk = appids.slice(i, i + BATCH_SIZE);
     const where = chunk.map((id) => `Infobox_game.Steam_AppID HOLDS "${id}"`).join(" OR ");
@@ -161,10 +184,10 @@ export async function lookupDrmForAppids(appids: number[]): Promise<Map<number, 
       const data = (await r.json()) as CargoResponse;
       if (data.error) continue;
       for (const row of data.cargoquery || []) {
-        const tags = classifyDrm(row.title["Uses DRM"] ?? null, row.title["Removed DRM"] ?? null, row.title.Anticheat ?? null, row.title["Steam DRM"] ?? null);
+        const result = classifyDrm(row.title["Uses DRM"] ?? null, row.title["Removed DRM"] ?? null, row.title.Anticheat ?? null, row.title["Steam DRM"] ?? null);
         for (const idStr of splitList(row.title.AppID)) {
           const id = Number(idStr);
-          if (chunk.includes(id)) out.set(id, tags);
+          if (chunk.includes(id)) out.set(id, result);
         }
       }
     } catch {

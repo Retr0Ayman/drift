@@ -64,6 +64,13 @@ export interface Enrichment {
      match or a failed query, never a guessed fallback (see that file's own
      comment for why title-based matching isn't used here). */
   tags: string[];
+  /* DRM this game genuinely used to have, per PCGamingWiki's own
+     Removed_DRM field, that's since been removed (e.g. Denuvo dropped
+     post-launch) -- see pcgamingwiki.ts's classifyDrm for why this is kept
+     separate from `tags` (which is current-state only) rather than
+     discarded. Empty array when no match/failed query or nothing on
+     record as removed, same honesty rule as `tags`. */
+  formerTags: string[];
 }
 
 /* CONFIRMED live: xREL's own ext_info.title (the master_game's canonical
@@ -187,7 +194,8 @@ export async function enrichFromSteam(env: Env, appid: number): Promise<Enrichme
     header,
     accentColorPrimary: accent?.primary ?? FALLBACK_PRIMARY,
     accentColorSecondary: accent?.secondary ?? FALLBACK_SECONDARY,
-    tags: drm.get(d.appid) ?? [],
+    tags: drm.get(d.appid)?.tags ?? [],
+    formerTags: drm.get(d.appid)?.formerTags ?? [],
   };
 }
 

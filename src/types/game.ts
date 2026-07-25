@@ -75,6 +75,16 @@ export interface Game {
   publisher?: string;
   genres?: string[];
   tags?: string[];
+  /* DRM this game genuinely used to have, per PCGamingWiki's own
+     Removed_DRM field, that's since been removed (e.g. Denuvo dropped
+     post-launch) -- worker/backfill/pcgamingwiki.ts's classifyDrm keeps
+     this separate from `tags` (current-state only) instead of discarding
+     it, since it's the real fact that explains a hypervisor crack (a
+     technique that exists specifically to bypass Denuvo Anti-Tamper)
+     showing up in a game's Crack Timeline even when current tags show no
+     Denuvo. Empty/undefined means "nothing on record as removed", never
+     "confirmed DRM-free historically". */
+  formerTags?: string[];
   currentBuild: number;
   /* Real Steam-side unix-seconds timestamp of when currentBuild was last
      actually published (steamcmd.net's own timebuildupdated field, see

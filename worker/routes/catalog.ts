@@ -12,6 +12,7 @@ interface JoinedRow {
   publisher: string | null;
   genres: string | null;
   tags: string | null;
+  former_tags: string | null;
   current_build: number | null;
   current_build_updated_at: number | null;
   desc: string | null;
@@ -123,6 +124,7 @@ export const handleCatalog: Handler = async ({ request, env }) => {
         publisher: g.publisher || "",
         genres: g.genres ? JSON.parse(g.genres) : [],
         tags: g.tags ? JSON.parse(g.tags) : [],
+        formerTags: g.former_tags ? JSON.parse(g.former_tags) : [],
         currentBuild: g.current_build ?? 0,
         currentBuildUpdatedAt: g.current_build_updated_at ?? null,
         desc: g.desc || "",

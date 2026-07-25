@@ -1,0 +1,13 @@
+-- Real historical DRM data from PCGamingWiki's own Removed_DRM field
+-- (worker/backfill/pcgamingwiki.ts) -- classifyDrm previously discarded
+-- this entirely, only ever returning CURRENT protection tags. Confirmed
+-- live: 007 First Light's real PCGamingWiki page lists "Denuvo Anti-Tamper"
+-- in Removed_DRM even though Uses_DRM/this site's own `tags` column no
+-- longer shows it -- the game's Crack Timeline still has a hypervisor
+-- release (a technique that exists specifically to bypass Denuvo), which
+-- read as a contradiction without this. former_tags is the real, non-
+-- fabricated fact that resolves it: DRM the game used to have, since
+-- removed by the publisher. JSON array, same shape as tags; empty/NULL
+-- means "no confirmed removed DRM on record", never "confirmed DRM-free
+-- historically" -- same honesty convention tags itself already follows.
+ALTER TABLE games ADD COLUMN former_tags TEXT;
