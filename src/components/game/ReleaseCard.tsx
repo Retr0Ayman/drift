@@ -91,7 +91,24 @@ export default function ReleaseCard({ game, release, recencyStatus }: ReleaseCar
      DrmTag styling (not the muted "former" treatment), since for this
      specific release it wasn't a historical curiosity, it was the real
      problem the crack solved. */
-  const formerAsActiveForThisRelease = release.method === "hv" ? (game.formerTags || []).filter((t) => !(game.tags || []).includes(t)) : [];
+  /* FIX (confirmed live, 007 First Light's voices38 release, 9 Jun 2026):
+     restricting the rule above to method==="hv" left every traditional
+     release with no annotation at all, even when we DO have real,
+     non-guessed evidence for one -- DenuvOwO (the same game's hypervisor
+     group) kept shipping new Denuvo-bypass updates through 27 Jun 2026,
+     which is only possible if Denuvo was still genuinely active that whole
+     time. Any OTHER release timestamped at or before that latest confirmed-
+     active hypervisor date (voices38's 9 Jun release included) falls
+     inside a window we can now positively confirm, from the hv group's own
+     continued activity, not a guess about this specific traditional
+     release. A release timestamped AFTER that point (RUNE's 24 Jul release,
+     ElAmigos'/RIDDICK's latest updates in Jul) still gets no annotation --
+     we have no hv activity that late to confirm against, so "we don't
+     know" stays the honest answer for those. */
+  const hvTimestamps = (game.releases || []).filter((r) => r.method === "hv" && r.ts).map((r) => r.ts as number);
+  const latestConfirmedHvTs = hvTimestamps.length ? Math.max(...hvTimestamps) : 0;
+  const confirmedActiveWindow = release.method === "hv" || (latestConfirmedHvTs > 0 && !!release.ts && release.ts <= latestConfirmedHvTs);
+  const formerAsActiveForThisRelease = confirmedActiveWindow ? (game.formerTags || []).filter((t) => !(game.tags || []).includes(t)) : [];
 
   return (
     <GlassPanel className={`release-card release-card--${cardVariant}`} frostStrong>
@@ -140,12 +157,20 @@ export default function ReleaseCard({ game, release, recencyStatus }: ReleaseCar
             {(game.tags || []).length
               ? (game.tags || []).map((t) => <DrmTag key={t}>{t}</DrmTag>)
               : formerAsActiveForThisRelease.length ? null : <span className="v">—</span>}
-            {/* Real, build-specific evidence (see formerAsActiveForThisRelease's
-                own comment above) -- shown as active protection for THIS
-                release, not the muted "(removed)" treatment, since at this
-                build it genuinely was live. */}
+            {/* Real, date/method-confirmed evidence (see
+                formerAsActiveForThisRelease's own comment above) -- shown as
+                active protection for THIS release, not the muted "(removed)"
+                treatment, since at this release's own date it genuinely was
+                live. */}
             {formerAsActiveForThisRelease.map((t) => (
-              <DrmTag key={"active-former-" + t} title={`Not in PCGamingWiki's current data, but this hypervisor crack targets ${t} specifically -- real evidence it was active on this release's own build, even though it's since been removed`}>
+              <DrmTag
+                key={"active-former-" + t}
+                title={
+                  release.method === "hv"
+                    ? `Not in PCGamingWiki's current data, but this hypervisor crack targets ${t} specifically -- real evidence it was active on this release's own build, even though it's since been removed`
+                    : `Not in PCGamingWiki's current data, but this release predates the last confirmed hypervisor bypass update for this game -- real evidence ${t} was still active when this crack was made, even though it's since been removed`
+                }
+              >
                 {t}
               </DrmTag>
             ))}
