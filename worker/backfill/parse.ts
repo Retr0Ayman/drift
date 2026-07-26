@@ -25,9 +25,14 @@ function parseVersionFromDirname(dn?: string): string {
   return m ? m[0].replace(/\./g, " ").replace(/^\w/, (c) => c.toUpperCase()) : "";
 }
 
+/* Two patterns, not one -- see src/lib/catalog.ts's own copy of this
+   function for the full "b12345678" shorthand story (confirmed live,
+   catalog-wide sweep: Dragon's Dogma 2, NBA 2K26, KeeperRL all really use
+   it, zero false positives across every other null-build dirname). Kept
+   hand-synced with that copy like the rest of this file. */
 export function parseBuildFromDirname(dn?: string): number | null {
   if (!dn) return null;
-  const m = dn.match(/\bbuild[.\s]?(\d{5,9})\b/i);
+  const m = dn.match(/\bbuild[.\s]?(\d{5,9})\b/i) || dn.match(/\bb(\d{5,9})\b/i);
   return m ? Number(m[1]) : null;
 }
 

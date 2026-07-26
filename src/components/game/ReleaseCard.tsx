@@ -73,6 +73,26 @@ export default function ReleaseCard({ game, release, recencyStatus }: ReleaseCar
   const firstCrackDate = release.firstSeenDate || release.date;
   const hasLatestUpdate = !!release.updateCount && release.updateCount > 1 && release.date && release.date !== firstCrackDate;
 
+  /* FIX (confirmed live, 007 First Light): the first cut of former-DRM
+     display stamped game.formerTags identically onto EVERY release
+     regardless of that release's own build/date -- wrong, since former_tags
+     only says "removed at SOME point," not when, and a release from before
+     the removal genuinely had that protection as real, active, current
+     protection at the time (not a historical footnote). We have no
+     per-release DRM-change date to place a traditional crack's build
+     precisely relative to a removal event, so it gets no annotation either
+     way here -- only current game.tags, same honest "we don't know" as
+     before this feature existed. A hypervisor release is different: the
+     technique exists specifically to bypass Denuvo-class anti-tamper, so
+     the crack's own existence at THIS build is real, build-specific
+     evidence that protection was genuinely live when it was made --
+     independent of PCGamingWiki's current-day Removed_DRM state, and true
+     regardless of whether it's since been removed. Shown as normal active
+     DrmTag styling (not the muted "former" treatment), since for this
+     specific release it wasn't a historical curiosity, it was the real
+     problem the crack solved. */
+  const formerAsActiveForThisRelease = release.method === "hv" ? (game.formerTags || []).filter((t) => !(game.tags || []).includes(t)) : [];
+
   return (
     <GlassPanel className={`release-card release-card--${cardVariant}`} frostStrong>
       <div className="release-top">
@@ -119,19 +139,14 @@ export default function ReleaseCard({ game, release, recencyStatus }: ReleaseCar
           <div className="release-tag-row">
             {(game.tags || []).length
               ? (game.tags || []).map((t) => <DrmTag key={t}>{t}</DrmTag>)
-              : (game.formerTags || []).length ? null : <span className="v">—</span>}
-            {/* BUG FIX (confirmed live, 007 First Light): a hypervisor
-                release here next to a bare "Steam DRM" Protection row reads
-                as a contradiction -- hypervisor cracking exists specifically
-                to bypass Denuvo Anti-Tamper, not plain Steam DRM. formerTags
-                is the real PCGamingWiki Removed_DRM fact (game.tags no
-                longer includes it because it's genuinely been removed by
-                the publisher since) that actually explains it -- same real
-                data, same muted "former" treatment as GameDetail.tsx's own
-                Protection field. */}
-            {(game.formerTags || []).map((t) => (
-              <DrmTag key={"former-" + t} className="drm-tag--former" title={`Previously used, since removed -- ${t} no longer protects this game`}>
-                {t} (removed)
+              : formerAsActiveForThisRelease.length ? null : <span className="v">—</span>}
+            {/* Real, build-specific evidence (see formerAsActiveForThisRelease's
+                own comment above) -- shown as active protection for THIS
+                release, not the muted "(removed)" treatment, since at this
+                build it genuinely was live. */}
+            {formerAsActiveForThisRelease.map((t) => (
+              <DrmTag key={"active-former-" + t} title={`Not in PCGamingWiki's current data, but this hypervisor crack targets ${t} specifically -- real evidence it was active on this release's own build, even though it's since been removed`}>
+                {t}
               </DrmTag>
             ))}
           </div>
@@ -140,7 +155,20 @@ export default function ReleaseCard({ game, release, recencyStatus }: ReleaseCar
           <span className="k">First cracked</span>
           <span className="v release-fact--first">
             {firstCrackDate || "—"}
-            {release.firstSeenBuild ?? release.build ? ` · ${fmtBuild(release.firstSeenBuild ?? release.build)}` : ""}
+            {/* BUG FIX (confirmed live, 007 First Light/DenuvOwO): this used
+                to fall back to release.build (the CURRENT/latest known
+                build) whenever firstSeenBuild was null -- wrong, and not
+                just imprecise: DenuvOwO's true earliest dirname for this
+                game ("007.First.Light-DenuvOwO") genuinely carries no build
+                number, but the fallback silently showed "26 May 2026 ·
+                #23,909,702" anyway, asserting build 23909702 existed on the
+                first-crack date when that exact build wasn't actually
+                cracked until 27 Jun 2026, over a month later. firstSeenBuild
+                being null here isn't missing data to paper over with the
+                latest number -- it's the honest, confirmed state (this row
+                IS first_seen_verified) that this specific historical
+                moment's build genuinely isn't known. */}
+            {release.firstSeenBuild != null ? ` · ${fmtBuild(release.firstSeenBuild)}` : ""}
             {/* firstSeenVerified === false means this date is a known-flawed
                 placeholder (see migrations/0005's own comment), not a
                 genuinely confirmed original crack moment -- flagged as an

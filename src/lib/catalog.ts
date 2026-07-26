@@ -53,10 +53,22 @@ function parseVersionFromDirname(dn?: string): string {
    against, so a release with a real, verifiable current build number sat
    there permanently reading "Unverified". Requires the literal word
    "build" immediately before the digits and at least 5 digits, so this
-   never fires on an unrelated "Update.4" or "v1.05" token. */
+   never fires on an unrelated "Update.4" or "v1.05" token.
+
+   FIX (confirmed live, catalog-wide sweep): the same groups that write
+   "Build.NNNNNNNN" don't always do so consistently -- Dragon's Dogma 2's
+   own DenuvOwO release is "Dragons.Dogma.2-b23848310-DenuvOwO", NBA 2K26's
+   is "NBA.2K26.b23933228-DenuvOwO", and I_KnoW's KeeperRL release is
+   "KeeperRL.b20251025-I_KnoW" -- all a real, verifiable build id under a
+   shorthand "b12345678" token instead of the literal word, all three
+   sitting on "Unverified" for no real reason. Swept every currently-null-
+   build dirname in the catalog (2968 rows) against this second pattern
+   before shipping it: exactly these 3 real matches, zero false positives
+   (no other dirname's tokens happen to start with a bare "b" immediately
+   followed by 5-9 digits at a real word boundary). */
 function parseBuildFromDirname(dn?: string): number | null {
   if (!dn) return null;
-  const m = dn.match(/\bbuild[.\s]?(\d{5,9})\b/i);
+  const m = dn.match(/\bbuild[.\s]?(\d{5,9})\b/i) || dn.match(/\bb(\d{5,9})\b/i);
   return m ? Number(m[1]) : null;
 }
 

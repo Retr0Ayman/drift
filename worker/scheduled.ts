@@ -30,39 +30,66 @@ const SEEDED_MARKER_KEY = "__seeded__";
    can sit weeks stale even though the group has posted more recently.
    Without this upgrade here, every 15-minute alert/D1-sync tick was
    checking a source that could already be stale on arrival. */
+/* FIX (confirmed live gap, reliability sweep): none of the three fetch+parse
+   steps below were isolated -- a malformed/empty body from xREL (a real,
+   observed failure mode elsewhere in this codebase, see appdetails.ts's own
+   history) makes `.json()` throw, and a raw network-level failure makes the
+   `fetch()` inside handleXrelBrowse/handleXrelGroup/handleXrelP2PGroup throw
+   too. Either one, uncaught, propagated all the way out of collectCandidates
+   -- meaning ONE starred group having a bad moment took down the ENTIRE
+   15-minute tick, both the Discord alert path and the D1 steady-state sync,
+   not just that one group's slice. Every other fetch loop in this codebase
+   (resolveAndEnrichBatch, drmBackfillRun, lookupDrmForAppids) already
+   isolates per-item failures so one bad item can't sink an entire batch --
+   this brings collectCandidates in line with that same discipline. */
 export async function collectCandidates(env: Env): Promise<RawXrelRelease[]> {
   const seen = new Map<string, RawXrelRelease>();
 
-  const browseRes = await handleXrelBrowse({
-    request: new Request("https://internal.invalid/api/xrel/browse?page=1&per_page=100"),
-    env,
-  });
-  if (browseRes.ok) {
-    const data = (await browseRes.json()) as ListResponse;
-    for (const rel of data.list || []) seen.set(rel.id, rel);
+  try {
+    const browseRes = await handleXrelBrowse({
+      request: new Request("https://internal.invalid/api/xrel/browse?page=1&per_page=100"),
+      env,
+    });
+    if (browseRes.ok) {
+      const data = (await browseRes.json()) as ListResponse;
+      for (const rel of data.list || []) seen.set(rel.id, rel);
+    }
+  } catch {
+    // Browse feed having a bad moment must not stop the starred-group loop
+    // below from still contributing whatever it can this tick.
   }
 
   for (const name of STARRED_GROUPS) {
-    const groupRes = await handleXrelGroup({
-      request: new Request(`https://internal.invalid/api/xrel/group?name=${encodeURIComponent(name)}`),
-      env,
-    });
-    let rows: RawXrelRelease[] = [];
-    if (groupRes.ok) rows = ((await groupRes.json()) as ListResponse).list || [];
-
-    const groupId = rows.find((r) => r.group_id)?.group_id;
-    if (groupId) {
-      const deepRes = await handleXrelP2PGroup({
-        request: new Request(`https://internal.invalid/api/xrel/p2p-group?group_id=${encodeURIComponent(groupId)}`),
+    try {
+      const groupRes = await handleXrelGroup({
+        request: new Request(`https://internal.invalid/api/xrel/group?name=${encodeURIComponent(name)}`),
         env,
       });
-      if (deepRes.ok) {
-        const deepRows = ((await deepRes.json()) as ListResponse).list || [];
-        if (deepRows.length > rows.length) rows = deepRows;
-      }
-    }
+      let rows: RawXrelRelease[] = [];
+      if (groupRes.ok) rows = ((await groupRes.json()) as ListResponse).list || [];
 
-    for (const rel of rows) seen.set(rel.id, rel);
+      const groupId = rows.find((r) => r.group_id)?.group_id;
+      if (groupId) {
+        try {
+          const deepRes = await handleXrelP2PGroup({
+            request: new Request(`https://internal.invalid/api/xrel/p2p-group?group_id=${encodeURIComponent(groupId)}`),
+            env,
+          });
+          if (deepRes.ok) {
+            const deepRows = ((await deepRes.json()) as ListResponse).list || [];
+            if (deepRows.length > rows.length) rows = deepRows;
+          }
+        } catch {
+          // Deep P2P upgrade failing still leaves the baseline `rows` from
+          // the search endpoint above intact -- degrade, don't lose it.
+        }
+      }
+
+      for (const rel of rows) seen.set(rel.id, rel);
+    } catch {
+      // One starred group's lookup failing must not lose every other
+      // group's (or the browse feed's) already-collected candidates.
+    }
   }
 
   return [...seen.values()];
