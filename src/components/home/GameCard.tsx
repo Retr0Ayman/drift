@@ -5,7 +5,27 @@ import type { Game } from "../../types/game";
 import { coverImg, fmtBuild, gStatus, hvOutdatedReason, relStatus, sortReleasesByPriority, statusMeta, versionLabel } from "../../lib/format";
 import "./GameCard.css";
 
-export default function GameCard({ game }: { game: Game }) {
+interface GameCardProps {
+  game: Game;
+  /* PERF FIX (confirmed live via Lighthouse against production): every
+     GameCard hardcoded loading="lazy" unconditionally, including the one
+     in the first visible grid row -- lcp-discovery-insight flagged exactly
+     that: the real LCP candidate on the homepage is a GameCard cover
+     image, and lazy-loading an above-the-fold image only delays it for no
+     benefit (lazy-loading exists to skip fetching off-screen images, not
+     ones already in the initial viewport). Deliberately only the SINGLE
+     first card, not a whole row -- an earlier version of this fix eagerly
+     fetchPriority="high"'d the first 8 at once, and a follow-up Lighthouse
+     run under the same throttled-mobile profile showed LCP getting WORSE,
+     not better (though the specific number was too inconsistent run-to-run
+     to fully pin the cause on that alone -- see git history). Prioritizing
+     only the one card most likely to actually BE the LCP element avoids
+     that bandwidth-contention risk on a throttled connection while still
+     fixing the real, confirmed lazy-loading problem. */
+  priority?: boolean;
+}
+
+export default function GameCard({ game, priority }: GameCardProps) {
   const sm = statusMeta(game);
   const img = coverImg(game);
   const code = game.title.split(/[:\s]/)[0].slice(0, 10).toUpperCase();
@@ -28,7 +48,14 @@ export default function GameCard({ game }: { game: Game }) {
       <GlassPanel className="game-card" frostStrong>
         <div className="game-card-cover">
           {img ? (
-            <img className="game-card-thumb" src={img} alt="" loading="lazy" onError={(e) => e.currentTarget.remove()} />
+            <img
+              className="game-card-thumb"
+              src={img}
+              alt=""
+              loading={priority ? "eager" : "lazy"}
+              fetchPriority={priority ? "high" : "auto"}
+              onError={(e) => e.currentTarget.remove()}
+            />
           ) : (
             <div className="game-card-code">{code}</div>
           )}

@@ -30,7 +30,7 @@ export default function GameGrid({ games, filters, initialLoading }: GameGridPro
         <div className="catalogue-grid">
           {games.map((g, i) => (
             <Reveal key={g.id} as="div" delay={Math.min(i, 8) * 0.045}>
-              <GameCard game={g} />
+              <GameCard game={g} priority={i === 0} />
             </Reveal>
           ))}
         </div>
