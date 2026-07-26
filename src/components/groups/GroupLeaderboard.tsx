@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { colorForName } from "../../lib/format";
+import { colorForName, readableTextForName } from "../../lib/format";
 import { RATING_TIERS } from "../../lib/groups";
 import GlassPanel from "../ui/GlassPanel";
 import type { GroupReliability } from "../../hooks/useGroupReliability";
@@ -49,7 +49,7 @@ export default function GroupLeaderboard({ groups }: { groups: RankedGroup[] }) 
               const pct = Math.round(g.rate * 100);
               return (
                 <Link key={g.key} to={`/group/${g.key}`} className="leaderboard-row" title={`${pct}% clean · ${g.reliability.genuine_count} tracked`}>
-                  <span className="leaderboard-badge" style={{ background: colorForName(g.name) }}>
+                  <span className="leaderboard-badge" style={{ background: colorForName(g.name), color: readableTextForName(g.name) }}>
                     {g.name.slice(0, 2).toUpperCase()}
                   </span>
                   <span className="leaderboard-name">

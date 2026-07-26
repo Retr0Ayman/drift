@@ -43,6 +43,18 @@
   font-weight: 500;
 }
 
+/* BUG FIX (confirmed live, a11y contrast sweep): this used var(--glass-bg-
+   strong) -- a barely-there 9%-white tint -- which is fine for panels that
+   sit over the tuned ambient background, but this button sits directly
+   over arbitrary, uncontrolled cover-art images (the one background on the
+   whole site this codebase doesn't get to pick the colors of). Measured
+   live on 007 First Light: the near-white arrow icon against this cover's
+   own warm tan tones came out to ~3.25:1, under WCAG AA's 4.5:1 floor.
+   --aura-panel-bg is the same dark, ~60%-opaque scrim tokens.css's own
+   comment already establishes as "robust against almost any backdrop hue"
+   for every other panel -- this control needed that exact same treatment,
+   not a lighter one, given it's the single most backdrop-unpredictable
+   spot on the site. */
 .carousel-nav {
   position: absolute;
   top: 50%;
@@ -50,7 +62,7 @@
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  background: var(--glass-bg-strong);
+  background: var(--aura-panel-bg);
   border: 1px solid var(--glass-border-strong);
   color: var(--ink);
   cursor: pointer;

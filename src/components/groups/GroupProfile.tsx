@@ -6,7 +6,7 @@ import { useGroupReleases } from "../../hooks/useGroupReleases";
 import { usePlatformP2PIndex } from "../../hooks/usePlatformP2PIndex";
 import { useGroupReliability } from "../../hooks/useGroupReliability";
 import { allReleases } from "../../lib/groups";
-import { colorForName, coverImg, fmtDateMs, recencyStatusFor, relOutdated, releaseTs, slugify } from "../../lib/format";
+import { colorForName, readableTextForName, coverImg, fmtDateMs, recencyStatusFor, relOutdated, releaseTs, slugify } from "../../lib/format";
 import { STARRED_GROUPS, isP2PGroup } from "../../lib/constants";
 import { buildLiveGameFromRows, mergeP2PReleases, releaseFromRow } from "../../lib/catalog";
 import GlassPanel from "../ui/GlassPanel";
@@ -232,7 +232,7 @@ export default function GroupProfile() {
 
       <Reveal>
         <div className="grouphead">
-          <div className="grouphead-avatar" style={{ background: colorForName(name) }}>
+          <div className="grouphead-avatar" style={{ background: colorForName(name), color: readableTextForName(name) }}>
             {name.slice(0, 2).toUpperCase()}
           </div>
           <div>

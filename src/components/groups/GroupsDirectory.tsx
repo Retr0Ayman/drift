@@ -4,7 +4,7 @@ import { useCatalog } from "../../hooks/useCatalog";
 import { useStarredGroupSummaries } from "../../hooks/useStarredGroupSummaries";
 import { useGroupReliability } from "../../hooks/useGroupReliability";
 import { groupsIndex, RATING_TIERS } from "../../lib/groups";
-import { colorForName, fmtDateMs } from "../../lib/format";
+import { colorForName, readableTextForName, fmtDateMs } from "../../lib/format";
 import { isRepackGroup } from "../../lib/constants";
 import GlassPanel from "../ui/GlassPanel";
 import Pill from "../ui/Pill";
@@ -85,7 +85,7 @@ export default function GroupsDirectory() {
         <Link to={`/group/${e.key}`}>
           <GlassPanel className={`group-card${e.starred ? " group-card--starred" : ""}`} frostStrong>
             <div className="group-card-top">
-              <div className="group-badge" style={{ background: colorForName(e.name) }}>
+              <div className="group-badge" style={{ background: colorForName(e.name), color: readableTextForName(e.name) }}>
                 {e.name.slice(0, 2).toUpperCase()}
               </div>
               <div>

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { companyIcon } from "../../lib/companies";
-import { colorForName } from "../../lib/format";
+import { colorForName, readableTextForName } from "../../lib/format";
 import "./CompanyLogo.css";
 
 interface CompanyLogoProps {
@@ -23,7 +23,7 @@ export default function CompanyLogo({ name, domain, size = 36 }: CompanyLogoProp
       {showImage ? (
         <img src={companyIcon(domain)} alt="" onError={() => setFailed(true)} />
       ) : (
-        <span style={{ fontSize: size * 0.36 }}>{name.slice(0, 2).toUpperCase()}</span>
+        <span style={{ fontSize: size * 0.36, color: readableTextForName(name) }}>{name.slice(0, 2).toUpperCase()}</span>
       )}
     </div>
   );
