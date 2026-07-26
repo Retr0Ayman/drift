@@ -4,24 +4,22 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="color-scheme" content="light" />
+    <meta name="color-scheme" content="dark" />
+    <!-- Perf pass (confirmed live via Lighthouse's own network-dependency-
+         tree-insight): the variable body font was only ever discovered via
+         globals.css's @font-face, a 3-deep critical chain (HTML -> CSS ->
+         font) that measured ~950ms to resolve under throttled mobile
+         conditions -- the font couldn't even START downloading until the
+         stylesheet had been fetched AND parsed. Preloading it here lets the
+         browser fetch it in parallel with CSS discovery instead of
+         sequentially after it. font-display: swap (globals.css) already
+         means body text never sits invisible waiting on this either way --
+         preload shortens how long that fallback-to-real-font swap takes to
+         actually happen. -->
+    <link rel="preload" href="/fonts/Geist-Variable.woff2" as="font" type="font/woff2" crossorigin />
     <title>orlaz · by DaRealAyman</title>
   </head>
   <body>
-    <!-- Runs before React mounts, before first paint -- an explicit stored
-         theme choice (from useTheme.ts's toggle) needs to be on <html>
-         immediately, or a returning user whose choice differs from their
-         current OS setting sees a flash of the wrong theme while React
-         hydrates. "system" (no stored choice) needs nothing here: the CSS
-         media query alone already renders correctly on first paint. -->
-    <script>
-      (function () {
-        try {
-          var t = localStorage.getItem("orlaz:theme");
-          if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
-        } catch (e) {}
-      })();
-    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

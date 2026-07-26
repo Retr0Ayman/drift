@@ -321,9 +321,27 @@ export default function LavaLampCanvas() {
       raf = requestAnimationFrame(loop);
     }
 
+    // BUG FIX (confirmed live: "the lava lamp goes static after a while"):
+    // loop() only ever reassigns raf when NOT paused (`if (!paused) raf =
+    // requestAnimationFrame(loop)`) -- so the moment the tab is backgrounded,
+    // raf freezes holding whatever ID it last had, which has ALREADY fired
+    // and will never fire again. Coming back to the tab, this handler's own
+    // restart check (`!raf`) reads that stale-but-truthy ID as "a frame is
+    // still pending" and never calls requestAnimationFrame again -- the
+    // whole animation silently dies forever after the first tab-switch/
+    // minimize/app-switch, exactly the "static after a while" symptom (it
+    // takes a real background/foreground cycle to trigger, not time alone,
+    // but any real browsing session eventually does that). Resetting raf to
+    // 0 the moment we actually pause is what makes the later truthy-check
+    // correct again.
     const onVisibility = () => {
       paused = document.hidden;
-      if (!paused && !reduced && !raf) raf = requestAnimationFrame(loop);
+      if (paused) {
+        cancelAnimationFrame(raf);
+        raf = 0;
+      } else if (!reduced && !raf) {
+        raf = requestAnimationFrame(loop);
+      }
     };
     document.addEventListener("visibilitychange", onVisibility);
 
