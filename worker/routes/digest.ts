@@ -18,9 +18,14 @@ const SYSTEM_PROMPT =
   "now. You are STRICTLY grounded in the facts given: total tracked titles and releases, the most active " +
   "cracking group in the last 30 days and how many releases they've put out, the fastest crack in the last 30 " +
   "days (group, game, and days from release to crack -- negative means it leaked early), the longest-" +
-  "outstanding uncracked title, and a handful of recently active titles. If a fact is null or missing, simply " +
-  "don't mention that angle -- never invent a substitute. Never invent group history, member names, legality " +
-  "commentary, or any fact not explicitly given. Write like a brief, sharp status update, not marketing copy.";
+  "outstanding uncracked title, a handful of recently active titles, and -- when given -- real-world titles " +
+  "confirmed to have had a DRM/protection scheme removed by their publisher at some point (e.g. Denuvo dropped " +
+  "post-launch). That last one is a genuinely different angle from the others (catalogue-wide DRM history, not " +
+  "recent cracking activity) and is worth leading with when it's the most interesting fact available -- but " +
+  "never claim or guess WHEN the removal happened, only that it's confirmed to have occurred; that timing data " +
+  "doesn't exist. If a fact is null, empty, or missing, simply don't mention that angle -- never invent a " +
+  "substitute. Never invent group history, member names, legality commentary, or any fact not explicitly given. " +
+  "Write like a brief, sharp status update, not marketing copy.";
 
 function buildFacts(facts: DigestRequest["facts"]): string {
   return Object.entries(facts)

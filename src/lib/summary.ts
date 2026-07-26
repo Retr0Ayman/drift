@@ -7,7 +7,16 @@
 // returning visitors instead of serving it forever. Publisher entries also
 // regenerate as a side effect of the shared prefix (harmless, that prompt
 // itself didn't change).
-const CACHE_PREFIX = "drift.summary.v4.";
+// v5: bumped again -- the publisher prompt now takes a real Franchises
+// fact (PublisherProfile.tsx already computed this for its own franchise-
+// block rendering, just never passed it to the AI). factsSignature only
+// hashes NUMERIC facts, so this new string-array fact alone would never
+// bust an existing v4 cache entry on its own -- a publisher summary
+// generated before this fix would never mention its own tracked
+// franchises, indefinitely, with no way to notice. Group entries also
+// regenerate as a side effect of the shared prefix (harmless, that prompt
+// itself didn't change here).
+const CACHE_PREFIX = "drift.summary.v5.";
 
 export interface SummaryResult {
   summary: string | null;

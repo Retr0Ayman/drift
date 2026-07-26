@@ -10,6 +10,15 @@ export interface DigestFacts {
   fastestCrack30d: { group: string; game: string; days: number } | null;
   longestUncracked: { title: string; days: number } | null;
   recentTitles: string[];
+  /* Real, non-fabricated angle added alongside the per-game Denuvo-history
+     work this session (former_tags, worker/backfill/pcgamingwiki.ts) --
+     titles PCGamingWiki confirms once had a protection scheme that's since
+     been removed. Deliberately doesn't claim WHEN it was removed (that
+     data doesn't exist, see ReleaseCard.tsx's own per-build-timing
+     comment) -- just that it's a real, confirmed historical fact, distinct
+     from every other angle already computed here (all of which are about
+     recent cracking activity, not the games' own DRM history). */
+  drmRemovedTitles: string[];
 }
 
 /* Every fact here is a real, directly-computed number or name from already-
@@ -65,6 +74,11 @@ export function buildDigestFacts(games: Game[]): DigestFacts {
     .slice(0, 6)
     .map((g) => g.title);
 
+  const drmRemovedTitles = games
+    .filter((g) => (g.formerTags || []).some((t) => !(g.tags || []).includes(t)))
+    .map((g) => g.title)
+    .slice(0, 6);
+
   return {
     totalGames: games.length,
     totalReleases,
@@ -73,5 +87,6 @@ export function buildDigestFacts(games: Game[]): DigestFacts {
     fastestCrack30d: fastest,
     longestUncracked: uncracked ? { title: uncracked.title, days: uncracked.daysSince } : null,
     recentTitles,
+    drmRemovedTitles,
   };
 }

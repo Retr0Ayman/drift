@@ -67,6 +67,11 @@ export default function PublisherProfile() {
                 "Titles tracked": matches.length,
                 "AAA tier": isAaaPublisher(name) ? "yes" : "no",
                 "HQ region": publisherCountry(name) || "unknown",
+                // Already computed above for the header/franchise-block
+                // rendering -- real, currently-unused-by-the-AI data, same
+                // "don't restate metadata, use what's actually distinctive"
+                // fix already applied to fact.ts's Did You Know box.
+                Franchises: franchises.length ? franchises.map((f) => f.name) : undefined,
                 "Tracked titles": matches.slice(0, 8).map((g) => g.title),
               }}
             />

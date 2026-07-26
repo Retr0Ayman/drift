@@ -1,6 +1,11 @@
 import type { DigestFacts } from "./digest";
 
-const CACHE_KEY = "drift.digest.v1.";
+// v2: bumped -- buildDigestFacts (lib/digest.ts) picked up a new
+// drmRemovedTitles fact (real PCGamingWiki Removed_DRM data from this
+// session's per-build DRM history work); a v1 cache entry generated before
+// that fact existed would never mention it even after it becomes the most
+// interesting available angle, with no way to notice.
+const CACHE_KEY = "drift.digest.v2.";
 
 export interface DigestResult {
   digest: string | null;
