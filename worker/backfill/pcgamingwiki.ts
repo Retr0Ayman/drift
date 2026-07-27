@@ -32,6 +32,27 @@ const CARGO_URL = "https://www.pcgamingwiki.com/w/api.php";
 // Availability.Steam_DRM below, a separate dedicated field that resolves
 // this precisely. Everything else in this set is genuine noise
 // (storefront/launcher names, non-blocking markers) to filter out.
+/* FIX (confirmed live, Rockstar/Arxan coverage gap): Rockstar Games
+   Launcher, Ubisoft Connect, Battle.net, and EA app used to live in this
+   set, filtered out identically to genuinely ambiguous OPEN storefronts
+   like Steam/GOG/Epic. But those four are structurally different --
+   they're each a single publisher's own closed launcher (RGL only ever
+   distributes Rockstar's catalog, Ubisoft Connect only Ubisoft's, etc.),
+   so unlike "this game is also listed on Steam" telling you nothing about
+   real DRM, "this game requires Rockstar Games Launcher" can only ever
+   mean one thing: the release is genuinely gated behind that launcher.
+   Confirmed live across four real titles (GTA V/RDR2 + Rockstar Games
+   Launcher, Assassin's Creed Valhalla + Ubisoft Connect, Diablo IV +
+   Battle.net, Star Wars Jedi: Survivor + EA app) that PCGamingWiki's own
+   dedicated Availability.Steam_DRM field pairs each of these with "Steam"
+   as an equally real DRM requirement on the Steam release specifically --
+   the same tier of signal this field already trusts "Steam" itself from
+   (see classifyDrm's own comment). Bethesda.net stays in this set: unlike
+   the four above, a real counter-example (DOOM Eternal) confirmed live
+   that its Steam release's Steam_DRM does NOT include Bethesda.net even
+   though Uses_DRM's noisy aggregate lists it -- Bethesda's launcher
+   requirement isn't reliably tied to every one of its games the way the
+   other four are to theirs, so it stays treated as ambiguous. */
 const STOREFRONT_NOISE = new Set([
   "Steam",
   "GOG.com",
@@ -39,16 +60,12 @@ const STOREFRONT_NOISE = new Set([
   "Epic Games Launcher",
   "Epic Online Services",
   "Microsoft Store",
-  "EA app",
-  "Battle.net",
   "Bethesda.net",
   "Discord",
   "Twitch",
   "Twitch Desktop App",
   "Meta Store",
   "Mac App Store",
-  "Ubisoft Connect",
-  "Rockstar Games Launcher",
   "Games for Windows - LIVE",
   "Playfire Client",
   "Amazon",
@@ -101,6 +118,20 @@ function splitList(v: string | null | undefined): string[] {
    STOREFRONT_NOISE comment), so it's trusted directly rather than inferred
    from the noisy aggregate.
 
+   FIX (confirmed live, Rockstar/Arxan coverage gap): steamDrm used to be
+   read ONLY for the literal string "Steam" (steamHasDrm below), discarding
+   every other value the field can genuinely hold -- confirmed live that
+   RDR2/GTA V's own Steam_DRM is "Steam,Rockstar Games Launcher", not just
+   "Steam", and the second value was silently thrown away. Now every entry
+   in this field is treated as real (it's the precise per-Steam-release
+   field, not the ambiguous storefront-rolled-up Uses_DRM), still passed
+   through STOREFRONT_NOISE/removed same as Uses_DRM's own entries, with
+   "Steam" itself specially relabeled to "Steam DRM" (a bare "Steam" tag
+   would read as a storefront name, not a protection scheme) while any
+   other real value (Rockstar Games Launcher, Ubisoft Connect, Battle.net,
+   EA app, or a scheme this code has never seen before) passes through
+   under its own real name -- no fixed allowlist of recognized DRM names.
+
    BUG FIX (confirmed live, 007 First Light): Removed_DRM used to be read
    ONLY to exclude its entries from the current-tags list above, then
    thrown away entirely -- but it's real, dated-by-PCGamingWiki-edit
@@ -120,8 +151,10 @@ export function classifyDrm(
   const removed = new Set(splitList(removedDrm));
   const real = splitList(usesDrm).filter((v) => !STOREFRONT_NOISE.has(v) && !removed.has(v));
   const ac = splitList(anticheat);
-  const steamHasDrm = splitList(steamDrm).includes("Steam") && !removed.has("Steam");
-  const tags = [...new Set([...real, ...ac, ...(steamHasDrm ? ["Steam DRM"] : [])])];
+  const steamDrmReal = splitList(steamDrm)
+    .filter((v) => !removed.has(v) && (v === "Steam" || !STOREFRONT_NOISE.has(v)))
+    .map((v) => (v === "Steam" ? "Steam DRM" : v));
+  const tags = [...new Set([...real, ...ac, ...steamDrmReal])];
   const formerTags = [...removed].filter((v) => !STOREFRONT_NOISE.has(v) && !tags.includes(v));
   return { tags, formerTags };
 }
