@@ -1,5 +1,6 @@
 import type { Handler } from "../../shared/types";
 import { relay, enc } from "../../shared/http";
+import { fetchWithRetry } from "../../shared/fetchRetry";
 
 /* release/browse_category.json?category_name=WINDOWS is xREL's actual Windows-
    games category (confirmed live against release/categories.json + the endpoint
@@ -23,6 +24,6 @@ export const handleXrelBrowse: Handler = async ({ request }) => {
   // caches a real 2xx response same as before but never caches an error
   // status, so a transient failure retries on the very next request
   // instead of getting stuck.
-  const r = await fetch(api, { cf: { cacheTtlByStatus: { "200-299": 900, "300-599": 0 } } } as RequestInit);
+  const r = await fetchWithRetry(api, { cf: { cacheTtlByStatus: { "200-299": 900, "300-599": 0 } } } as RequestInit);
   return relay(r);
 };

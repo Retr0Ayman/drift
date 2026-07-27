@@ -1,6 +1,7 @@
 import type { Handler } from "../../shared/types";
 import { json, enc } from "../../shared/http";
 import { normalizeP2P, type RawXrelRelease } from "../../shared/xrel";
+import { fetchWithRetry } from "../../shared/fetchRetry";
 
 interface SearchReleasesResponse {
   results?: RawXrelRelease[];
@@ -46,9 +47,12 @@ export const handleXrelGroup: Handler = async ({ request }) => {
   // Confirmed live: xREL's search intermittently returns a non-OK response
   // under load -- this route gets hit far more often now that the catalog
   // proactively seeds starred groups on every page load, not just when
-  // someone opens a group profile. One retry after a brief pause recovers
-  // most of these without meaningfully slowing down the common case (only
-  // the failing page pays the extra round trip).
+  // someone opens a group profile. fetchWithRetry (shared/fetchRetry.ts,
+  // same retry discipline callGroq established) now covers the "retry a
+  // non-ok response" case below -- this used to be a bespoke single retry
+  // after a fixed 400ms pause, hand-rolled before that shared helper
+  // existed; consolidated onto the same pattern every other external call
+  // site in this app now uses, not a second divergent implementation.
   function apiUrl(page: number, bustCache: boolean): string {
     return (
       "https://api.xrel.to/v2/search/releases.json?q=" +
@@ -74,11 +78,8 @@ export const handleXrelGroup: Handler = async ({ request }) => {
   // for 5 minutes per attempt. cacheTtlByStatus never caches an error
   // status, so a 429 self-heals on the very next request instead.
   const fetchOpts = { cf: { cacheTtlByStatus: { "200-299": 300, "300-599": 0 } } } as RequestInit;
-  async function fetchPage(page: number): Promise<Response> {
-    const first = await fetch(apiUrl(page, false), fetchOpts);
-    if (first.ok) return first;
-    await new Promise((res) => setTimeout(res, 400));
-    return fetch(apiUrl(page, false), fetchOpts);
+  function fetchPage(page: number): Promise<Response> {
+    return fetchWithRetry(apiUrl(page, false), fetchOpts);
   }
 
   function extractPageItems(data: SearchReleasesResponse): RawXrelRelease[] {
@@ -113,7 +114,7 @@ export const handleXrelGroup: Handler = async ({ request }) => {
     // Cloudflare's own cached copy of the same empty response.
     if (!pageItems.length && page === 1) {
       await new Promise((res) => setTimeout(res, 500));
-      const retry = await fetch(apiUrl(1, true), fetchOpts);
+      const retry = await fetchWithRetry(apiUrl(1, true), fetchOpts);
       if (retry.ok) pageItems = extractPageItems((await retry.json()) as SearchReleasesResponse);
     }
 

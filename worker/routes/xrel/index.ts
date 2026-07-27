@@ -1,6 +1,7 @@
 import type { Handler } from "../../shared/types";
 import { json, relay, enc } from "../../shared/http";
 import { normalizeP2P, type RawXrelRelease } from "../../shared/xrel";
+import { fetchWithRetry } from "../../shared/fetchRetry";
 
 interface SearchReleasesResponse {
   total?: number;
@@ -18,13 +19,13 @@ export const handleXrelSearch: Handler = async ({ request }) => {
     const api =
       "https://api.xrel.to/v2/release/latest.json?per_page=" +
       enc(url.searchParams.get("per_page") || "100");
-    const r = await fetch(api, { cf: { cacheTtlByStatus: { "200-299": 900, "300-599": 0 } } } as RequestInit);
+    const r = await fetchWithRetry(api, { cf: { cacheTtlByStatus: { "200-299": 900, "300-599": 0 } } } as RequestInit);
     return relay(r);
   }
 
   const api =
     "https://api.xrel.to/v2/search/releases.json?q=" + enc(url.searchParams.get("q")) + "&scene=1&p2p=1";
-  const r = await fetch(api, { cf: { cacheTtlByStatus: { "200-299": 900, "300-599": 0 } } } as RequestInit);
+  const r = await fetchWithRetry(api, { cf: { cacheTtlByStatus: { "200-299": 900, "300-599": 0 } } } as RequestInit);
   if (!r.ok) return json({ total: 0, list: [] }, 60, r.status);
   const data = (await r.json()) as SearchReleasesResponse;
   // FIX: this route already asked for p2p=1, but xREL splits the response into

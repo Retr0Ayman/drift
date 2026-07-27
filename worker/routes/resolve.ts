@@ -1,5 +1,6 @@
 import type { Handler } from "../shared/types";
 import { json, enc } from "../shared/http";
+import { fetchWithRetry } from "../shared/fetchRetry";
 
 interface StoreSearchItem {
   type: string;
@@ -73,7 +74,7 @@ export const handleResolve: Handler = async ({ request }) => {
     // route is hit constantly during backfill/enrichment) while still never
     // caching an error status, so a bad response still just retries later
     // instead of getting stuck.
-    const r = await fetch("https://store.steampowered.com/api/storesearch/?term=" + enc(title) + "&l=english&cc=us", {
+    const r = await fetchWithRetry("https://store.steampowered.com/api/storesearch/?term=" + enc(title) + "&l=english&cc=us", {
       cf: { cacheTtlByStatus: { "200-299": 3600, "300-599": 0 } },
     } as RequestInit);
     if (!r.ok) return json({ query: title, appid: null }, 30);

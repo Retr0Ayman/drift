@@ -15,6 +15,8 @@
    title-formatting difference -- every game this site tracks already has
    a real resolved appid by the time this runs. */
 
+import { fetchWithRetry } from "../shared/fetchRetry";
+
 const CARGO_URL = "https://www.pcgamingwiki.com/w/api.php";
 
 // Confirmed live via a 500-row group_by=Uses_DRM sample of the real
@@ -200,7 +202,7 @@ export async function lookupDrmForAppids(appids: number[]): Promise<Map<number, 
     const chunk = appids.slice(i, i + BATCH_SIZE);
     const where = chunk.map((id) => `Infobox_game.Steam_AppID HOLDS "${id}"`).join(" OR ");
     try {
-      const r = await fetch(CARGO_URL, {
+      const r = await fetchWithRetry(CARGO_URL, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({

@@ -1,6 +1,7 @@
 import type { Handler } from "../../shared/types";
 import { json, relay, enc } from "../../shared/http";
 import { getXrelToken } from "../../shared/xrelToken";
+import { fetchWithRetry } from "../../shared/fetchRetry";
 
 /* Real path is /nfo/release.json (needs the "viewnfo" OAuth scope). Without
    XREL_CLIENT_ID/XREL_CLIENT_SECRET set (dashboard env vars -- see DEPLOY.md)
@@ -17,6 +18,6 @@ export const handleXrelNfo: Handler = async ({ request, env }) => {
     );
   }
   const api = "https://api.xrel.to/v2/nfo/release.json?id=" + enc(url.searchParams.get("id"));
-  const r = await fetch(api, { headers: { Authorization: "Bearer " + token } });
+  const r = await fetchWithRetry(api, { headers: { Authorization: "Bearer " + token } });
   return relay(r);
 };

@@ -1,5 +1,6 @@
 import type { Handler } from "../shared/types";
 import { json, enc } from "../shared/http";
+import { fetchWithRetry } from "../shared/fetchRetry";
 
 type WishlistData = Record<string, { name?: string }>;
 
@@ -20,7 +21,7 @@ export const handleWishlist: Handler = async ({ request }) => {
   // FIX (confirmed live, QA sweep): cacheEverything caches ANY status code
   // for the full cacheTtl, including a transient Steam failure -- never
   // caches an error status now.
-  const r = await fetch(`https://store.steampowered.com/wishlist/${path}/wishlistdata/`, {
+  const r = await fetchWithRetry(`https://store.steampowered.com/wishlist/${path}/wishlistdata/`, {
     cf: { cacheTtlByStatus: { "200-299": 300, "300-599": 0 } },
   } as RequestInit);
 

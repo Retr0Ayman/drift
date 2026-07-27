@@ -1,6 +1,7 @@
 import type { Handler } from "../../shared/types";
 import { json } from "../../shared/http";
 import { normalizeP2P, type RawXrelRelease } from "../../shared/xrel";
+import { fetchWithRetry } from "../../shared/fetchRetry";
 
 interface P2PReleasesResponse {
   total_count?: number;
@@ -55,7 +56,7 @@ export const handleXrelP2PGroup: Handler = async ({ request }) => {
     // FIX (confirmed live, QA sweep): cacheEverything caches ANY status
     // code for the full cacheTtl, including a 429 -- same root cause as
     // group.ts's own fix. cacheTtlByStatus never caches an error status.
-    const r = await fetch(api, { cf: { cacheTtlByStatus: { "200-299": 900, "300-599": 0 } } } as RequestInit);
+    const r = await fetchWithRetry(api, { cf: { cacheTtlByStatus: { "200-299": 900, "300-599": 0 } } } as RequestInit);
     if (!r.ok) {
       upstreamFailed = page === 1;
       break;

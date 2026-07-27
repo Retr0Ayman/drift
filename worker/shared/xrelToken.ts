@@ -1,4 +1,5 @@
 import type { Env } from "./env";
+import { fetchWithRetry } from "./fetchRetry";
 
 /* xREL OAuth (Client Credentials Grant) -- optional, NFO-image endpoint only.
    Every other xREL route is unauthenticated. Access tokens expire after 1hr
@@ -20,7 +21,7 @@ export async function getXrelToken(env: Env): Promise<string | null> {
       client_secret: env.XREL_CLIENT_SECRET,
       scope: "viewnfo",
     });
-    const r = await fetch("https://api.xrel.to/v2/oauth2/token", {
+    const r = await fetchWithRetry("https://api.xrel.to/v2/oauth2/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: body.toString(),

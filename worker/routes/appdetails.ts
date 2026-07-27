@@ -1,6 +1,7 @@
 import type { Handler } from "../shared/types";
 import { json } from "../shared/http";
 import { fetchBuildInfo, parseYear, reqLines } from "../shared/steam";
+import { fetchWithRetry } from "../shared/fetchRetry";
 
 interface SteamAppData {
   name: string;
@@ -37,7 +38,7 @@ export const handleAppdetails: Handler = async ({ request }) => {
     // error response -- a single bad moment could get replayed as "success:
     // false" for every caller for a full hour. cacheTtlByStatus caches a
     // real 2xx the same as before but never caches an error status.
-    const r = await fetch(`https://store.steampowered.com/api/appdetails?appids=${appid}&l=english&cc=us`, {
+    const r = await fetchWithRetry(`https://store.steampowered.com/api/appdetails?appids=${appid}&l=english&cc=us`, {
       cf: { cacheTtlByStatus: { "200-299": 3600, "300-599": 0 } },
     } as RequestInit);
     data = (await r.json()) as SteamAppDetailsResponse;

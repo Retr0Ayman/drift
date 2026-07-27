@@ -1,5 +1,6 @@
 import type { Handler } from "../../shared/types";
 import { json, relay, enc } from "../../shared/http";
+import { fetchWithRetry } from "../../shared/fetchRetry";
 
 /* Deep-history crawl by calendar month, for catalog depth browse_category can't
    reach (its total_count caps around ~5000 most-recent releases). archive does
@@ -20,6 +21,6 @@ export const handleXrelArchive: Handler = async ({ request }) => {
   // Same fix as browse.ts: cacheTtlByStatus never caches an error status,
   // so a transient xREL failure retries next request instead of getting
   // stuck for the full TTL.
-  const r = await fetch(api, { cf: { cacheTtlByStatus: { "200-299": 900, "300-599": 0 } } } as RequestInit);
+  const r = await fetchWithRetry(api, { cf: { cacheTtlByStatus: { "200-299": 900, "300-599": 0 } } } as RequestInit);
   return relay(r);
 };

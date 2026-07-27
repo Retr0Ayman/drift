@@ -1,3 +1,5 @@
+import { fetchWithRetry } from "./fetchRetry";
+
 interface SteamCmdInfo {
   data?: Record<
     string,
@@ -25,7 +27,7 @@ export async function fetchBuildInfo(appid: string): Promise<BuildInfo> {
     // code for the full cacheTtl -- a transient steamcmd.net failure could
     // get replayed as "no build id" for a full hour. cacheTtlByStatus
     // caches a real 2xx the same as before but never caches an error.
-    const r = await fetch(`https://api.steamcmd.net/v1/info/${appid}`, {
+    const r = await fetchWithRetry(`https://api.steamcmd.net/v1/info/${appid}`, {
       cf: { cacheTtlByStatus: { "200-299": 3600, "300-599": 0 } },
     } as RequestInit);
     const jn = (await r.json()) as SteamCmdInfo;
@@ -109,7 +111,7 @@ export interface ReviewSummary {
    live-catalog game had a real review score wired in before this. */
 export async function fetchReviewSummary(appid: string): Promise<ReviewSummary> {
   try {
-    const r = await fetch(
+    const r = await fetchWithRetry(
       `https://store.steampowered.com/appreviews/${appid}?json=1&language=all&purchase_type=all&num_per_page=0`,
       { cf: { cacheTtlByStatus: { "200-299": 3600, "300-599": 0 } } } as RequestInit,
     );
