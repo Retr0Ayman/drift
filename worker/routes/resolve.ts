@@ -46,14 +46,25 @@ interface StoreSearchResponse {
    possessive apostrophe where Steam uses proper typography would hit the
    identical failure; the curly apostrophe is common enough on Steam's
    side that this is worth a real character-class fix, not a one-off
-   special case for this title. */
+   special case for this title.
+
+   FOURTH FIX (confirmed live, catalog-completeness sweep): Steam's real
+   listing for GTA IV is "Grand Theft Auto IV: The Complete Edition" --
+   the edition-word strip above already removes "Complete Edition", but
+   left the preceding "The" dangling ("grand theft auto iv the" after
+   normalization), which never matched norm("Grand Theft Auto IV") =
+   "grand theft auto iv". Any other title following the same real Steam
+   naming convention ("<Title>: The <X> Edition") would hit the identical
+   dangling-"the" failure -- the edition-word alternation now optionally
+   consumes a preceding "the " as part of the same match instead of
+   leaving it behind. */
 function norm(s?: string | null): string {
   return (s || "")
     .replace(/[™®©]/g, "")
     .replace(/_/g, " ")
     .replace(/^ea sports\s+/i, "")
     .replace(
-      /\b(game of the year|goty|definitive|deluxe|ultimate|enhanced|complete|remastered|remake|director'?s cut|gold|standard|digital)\s*(edition)?\b/gi,
+      /\b(the\s+)?(game of the year|goty|definitive|deluxe|ultimate|enhanced|complete|remastered|remake|director'?s cut|gold|standard|digital)\s*(edition)?\b/gi,
       "",
     )
     .replace(/[:\-–—'’‘".!]/g, " ")
@@ -62,10 +73,43 @@ function norm(s?: string | null): string {
     .toLowerCase();
 }
 
+/* Small, explicit, confirmed-only overrides for real, live Steam listings
+   that storesearch's own ranking simply never returns as a candidate item
+   at all, for any query text tried -- no normalization fix can help when
+   the item isn't even in the result set to match against. Confirmed live:
+   Rockstar delisted the classic GTA III/Vice City/San Andreas store pages
+   in favor of "The Definitive Edition" remaster trilogy, but the original
+   appids are still real, purchasable Steam listings (confirmed via direct
+   /api/appdetails calls returning real title/data) -- storesearch just
+   never surfaces them, only the remaster. That's a genuinely DIFFERENT
+   game (different engine/assets entirely), which is exactly what xREL's
+   own scene-crack history for these titles targets -- mapping to the
+   remaster's appid instead would be a confidently wrong match, worse than
+   staying unresolved. Same "small, explicit, extensible, confirmed not
+   guessed" discipline as worker/backfill/resolve.ts's XREL_TITLE_ALIASES:
+   add an entry only after confirming both that storesearch genuinely never
+   returns it AND that the target appid is real via a direct appdetails
+   check, never as a guess ahead of a confirmed case. */
+// Keys are already the NORMALIZED (norm()-output) form, not the raw display
+// title -- confirmed live this was missed on the first pass here: norm()
+// strips colons, so a raw "grand theft auto: vice city" key never matched
+// norm()'s own colon-free output and silently fell through to storesearch
+// (which then matched the wrong item, the remaster, via the exact-name
+// fallback below) instead of ever hitting this override.
+const KNOWN_APPID_OVERRIDES: Record<string, number> = {
+  "grand theft auto iii": 12100,
+  "grand theft auto vice city": 12110,
+  "grand theft auto san andreas": 12120,
+};
+
 export const handleResolve: Handler = async ({ request }) => {
   const url = new URL(request.url);
   const title = url.searchParams.get("title");
   if (!title) return json({ error: "pass ?title=" }, 60, 400);
+
+  const override = KNOWN_APPID_OVERRIDES[norm(title)];
+  if (override) return json({ query: title, appid: override, matchedName: title }, 3600);
+
   try {
     // FIX (QA sweep): this used to skip caching entirely -- cf.cacheEverything
     // would have let a bad/empty Steam response get stuck cached at the edge

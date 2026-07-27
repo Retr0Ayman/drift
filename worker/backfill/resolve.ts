@@ -112,6 +112,13 @@ const XREL_TITLE_ALIASES: Record<string, string> = {
   "diablo ii: resurrected": "Diablo II: Resurrected Infernal Edition",
   "helldivers": "HELLDIVERS Dive Harder Edition",
   "injustice: götter unter uns": "Injustice: Gods Among Us Ultimate Edition",
+  // Confirmed live during the Rockstar catalog-completeness sweep -- same
+  // German-xREL-title failure mode as LEGO Batman/Dishonored above: real
+  // Bully releases exist under xREL's German master_game title, and
+  // /api/resolve?title=Bully:+Scholarship+Edition already confirmed live
+  // (appid 12200) that Steam's real listing resolves fine once queried
+  // under its actual English name.
+  "bully: die ehrenrunde": "Bully: Scholarship Edition",
 };
 
 /* Steam's real `name` is what enrichment.title now stores/displays (see

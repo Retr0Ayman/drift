@@ -74,26 +74,47 @@ async function processSeedTitleWithRetry(env: Env, title: string): Promise<void>
   }
 }
 
-/* Resumable, one-time deep pass over every title in FRANCHISE_SEED_TITLES --
-   separate progress markers (deep_phase/deep_seed_index) from the existing
-   historical backfill's (phase/browse_page/starred_group_index) in the same
-   backfill_state table, so this runs independently without disturbing that
-   backfill's own state or the browse-feed/starred-groups logic it already
-   owns. Becomes a cheap no-op forever once every seed's been processed,
-   same "safe to leave the cron trigger in place permanently" pattern
-   runBackfillTick already uses. */
+/* FIX (confirmed live, RDR2-missing investigation): this used to track
+   progress as a bare numeric index into FRANCHISE_SEED_TITLES
+   (deep_seed_index) and short-circuit entirely once deep_phase reached
+   "done". That's silently wrong for a list this file's own header comment
+   already documents as meant to grow over time by hand -- confirmed live
+   against production D1: deep_phase was "done" with deep_seed_index at
+   359, yet "red dead redemption 2" sits at index 177 in the CURRENT array
+   and was never written. The only way that happens is the Rockstar block
+   (grand theft auto v/vi/trilogy/iv, red dead redemption 2/1, l.a. noire,
+   max payne) got inserted into the MIDDLE of this array after the cursor
+   had already walked past that position under an earlier, shorter/
+   differently-ordered version of the list -- a numeric index has no way to
+   tell "this position held an already-processed title" apart from "this
+   position now holds a brand-new one after an edit", so anything inserted
+   at or before the cursor's already-reached position was permanently
+   skipped with phase stuck at "done" and no error anywhere to surface it.
+
+   Tracking a persisted SET of already-processed title STRINGS instead
+   (deep_seed_done, JSON-encoded) fixes this structurally: membership is by
+   title text, not array position, so it's immune to future insertions
+   anywhere in FRANCHISE_SEED_TITLES regardless of where they land. First
+   run under this fix starts from an empty set (deep_seed_index/its old
+   "done" phase are no longer read) and re-walks every seed title once --
+   wasteful-looking but harmless (upsertGames is already idempotent, same
+   ON CONFLICT DO UPDATE every other backfill relies on) and is exactly
+   what actually self-heals this bug's full blast radius, not just RDR2's
+   own case: any other franchise title added to companies.ts's
+   FRANCHISE_MAP after the original list reached "done", wherever it
+   landed, gets genuinely re-checked instead of staying silently stuck. */
 export async function runDeepBackfillTick(env: Env): Promise<void> {
   const db = env.orlaz_catalog;
-  const phase = (await getBackfillState(db, "deep_phase")) || "seeding";
-  if (phase === "done") return;
+  const doneRaw = await getBackfillState(db, "deep_seed_done");
+  const done = new Set<string>(doneRaw ? (JSON.parse(doneRaw) as string[]) : []);
 
-  const index = Number((await getBackfillState(db, "deep_seed_index")) || "0");
-  if (index >= FRANCHISE_SEED_TITLES.length) {
+  const remaining = FRANCHISE_SEED_TITLES.filter((t) => !done.has(t));
+  if (!remaining.length) {
     await setBackfillState(db, "deep_phase", "done");
     return;
   }
 
-  const batch = FRANCHISE_SEED_TITLES.slice(index, index + SEEDS_PER_TICK);
+  const batch = remaining.slice(0, SEEDS_PER_TICK);
   for (const title of batch) {
     // processSeedTitleWithRetry already retries a partial-resolve failure up
     // to 3 times internally -- this outer catch is only for something even
@@ -104,11 +125,9 @@ export async function runDeepBackfillTick(env: Env): Promise<void> {
     } catch {
       // skip, move on to the next seed
     }
+    done.add(title);
   }
 
-  const nextIndex = index + batch.length;
-  await setBackfillState(db, "deep_seed_index", String(nextIndex));
-  if (nextIndex >= FRANCHISE_SEED_TITLES.length) {
-    await setBackfillState(db, "deep_phase", "done");
-  }
+  await setBackfillState(db, "deep_seed_done", JSON.stringify([...done]));
+  await setBackfillState(db, "deep_phase", done.size >= FRANCHISE_SEED_TITLES.length ? "done" : "seeding");
 }
