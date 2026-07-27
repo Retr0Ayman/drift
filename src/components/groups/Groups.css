@@ -465,6 +465,27 @@
   gap: 16px;
 }
 
+/* FIX (confirmed live, mobile audit): a bare 340px minimum is wider than
+   any phone viewport (confirmed live at 320/375px) -- auto-fill still
+   forces every track to that minimum regardless of how little space is
+   actually available, so a single column overflowed the page instead of
+   shrinking to fit, the same "unshrinkable content widens the effective
+   mobile viewport" bug SegmentedControl's own fix (see that file's own
+   comment) hit elsewhere. minmax(min(340px, 100%), 1fr) was tried first
+   and rejected: confirmed live it still measured ~360px wide even inside
+   a 320px viewport -- percentage tracks inside minmax() for an auto-fill
+   grid resolve against the container's own width, which here depends on
+   this same grid's content, a circular size that doesn't reliably resolve
+   down to the real available space. An explicit breakpoint, same pattern
+   this file already uses for .groups-hero/.groups-layout above, is the
+   reliable fix: one real column below any phone width, no percentage-
+   resolution edge case to depend on. */
+@media (max-width: 480px) {
+  .group-rel-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .group-rel-card-wrap {
   cursor: pointer;
 }

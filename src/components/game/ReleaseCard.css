@@ -104,6 +104,27 @@
   background: var(--glass-bg);
 }
 
+/* FIX (confirmed live, mobile audit): a DrmTag pill is white-space: nowrap
+   by design (a badge shouldn't wrap mid-word) -- fine at desktop widths,
+   but "Denuvo Anti-Tamper" alone is wider than this grid's 120px column
+   floor, and a grid item's default auto-min-size lets that single
+   unshrinkable pill force (and then overflow past) its own column instead
+   of wrapping onto a new line, confirmed live clipping "Denuvo Anti-T" mid
+   -word on GroupProfile's release cards at 320-375px. Giving Protection
+   the Date column's width back below any phone width, same explicit-
+   breakpoint pattern as group-rel-grid's own fix (Groups.css), means
+   .release-tag-row's existing flex-wrap has real room to stack multiple
+   tags instead of one tag fighting a too-narrow column. */
+@media (max-width: 480px) {
+  .release-infogrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.release-info {
+  min-width: 0;
+}
+
 .release-info .k {
   display: block;
   font-size: 0.56rem;

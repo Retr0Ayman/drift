@@ -19,6 +19,14 @@
 
 .wishlist-import-row input {
   flex: 1;
+  /* FIX (confirmed live, mobile audit): a text input's default intrinsic
+     min-width (browser-default, well over 200px regardless of `flex: 1`)
+     wins over the flex basis on narrow viewports -- at 320px this pushed
+     the fixed-width Check button (flex: none) off the right edge of the
+     screen instead of letting the input actually shrink to share the row.
+     Same fix as SegmentedControl's own mobile bug: flex items need an
+     explicit min-width: 0 to shrink below their content size at all. */
+  min-width: 0;
   height: 40px;
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);

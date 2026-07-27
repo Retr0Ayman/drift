@@ -5,6 +5,27 @@
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
   border-radius: var(--pill);
+  /* FIX (confirmed live, mobile audit): 6 options at this padding/font-size
+     add up to ~570px, wider than any phone viewport -- with nothing here to
+     shrink or scroll it, the control forced its own intrinsic width onto
+     .filterbar's flex layout regardless of viewport, which cascaded into
+     the whole page (and, via the mobile browser's own "expand the layout
+     viewport to fit unshrinkable content" behavior, even the navbar's own
+     breakpoint) rendering ~220px too wide on Home specifically -- the one
+     page with this control on it. overflow-x auto keeps every option
+     reachable via a horizontal swipe instead of clipping/forcing width;
+     per the flexbox spec this also gives the control a real auto-min-size
+     of 0 as a flex item, which is the actual fix for the page-width
+     blowout (a flex item's default min-width:auto is what let its content
+     size win over the viewport in the first place). */
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.seg::-webkit-scrollbar {
+  display: none;
 }
 
 .seg-item {
