@@ -131,6 +131,24 @@ the live path:
 - [`.github/workflows/build-sync.yml`](.github/workflows/build-sync.yml) — runs it
   every 6 hours and commits `status.json` if anything changed.
 
+## 7. Optional: locking down `/api/admin/*`
+
+`/api/admin/refresh-game` and `/api/admin/seed-title` are unauthenticated by
+default, same as every other route in this app — a deliberate tradeoff for a
+solo-admin surface (see `worker/shared/adminAuth.ts`'s own comment), not an
+oversight. `refresh-game` only ever re-fetches a game D1 already has by its
+own known id; `seed-title` is the one route that performs real inserts of new
+rows from arbitrary input, so it's worth a real opt-in gate if this ever
+stops being a low-traffic solo project.
+
+**To require a token:** dashboard → Workers & Pages → `drift` → Settings →
+Variables and Secrets → add `ADMIN_TOKEN` (any random string), marked
+**Secret**. Once set, both `/api/admin/*` routes require either an
+`X-Admin-Token: <value>` header or a `?token=<value>` query param, and
+return `401` without it. Leaving `ADMIN_TOKEN` unset (the default) keeps
+both routes working exactly as they do today — nothing to configure before
+this deploys.
+
 ## Recap: what's free vs. what needs a human
 
 | piece | cost | human touch after setup |
@@ -141,3 +159,4 @@ the live path:
 | xREL NFO images | free | optional, needs an xREL-approved Consumer Key/Secret — skip it, ASCII `.nfo` is permanent |
 | build-id refresh (curated path) | free (GitHub Actions minutes) | none |
 | Discord new-release alerts | free (KV free tier) | one-time: create a Discord webhook, set `DISCORD_WEBHOOK_URL` — see section 5 |
+| Locking down `/api/admin/*` | free | optional, set `ADMIN_TOKEN` — see section 7 |

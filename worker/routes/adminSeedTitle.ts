@@ -5,6 +5,7 @@ import { groupRowsByTitle } from "../backfill/parse";
 import { resolveAndEnrichBatch } from "../backfill/resolve";
 import { upsertGames } from "../backfill/db";
 import type { RawXrelRelease } from "../shared/xrel";
+import { isAdminAuthorized } from "../shared/adminAuth";
 
 interface SearchResponse {
   list?: RawXrelRelease[];
@@ -29,6 +30,7 @@ interface SearchResponse {
    auth, idempotent, only ever does what a cron would do anyway" reasoning
    as /api/admin/refresh-game. */
 export const handleAdminSeedTitle: Handler = async ({ request, env }) => {
+  if (!isAdminAuthorized(request, env)) return json({ error: "unauthorized" }, 5, 401);
   const url = new URL(request.url);
   const title = url.searchParams.get("title");
   if (!title) return json({ error: "pass ?title=<game title>" }, 5, 400);

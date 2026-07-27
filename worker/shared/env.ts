@@ -30,4 +30,18 @@ export interface Env {
   // SEEN_RELEASES above, this one's already provisioned (a real
   // database_id is in wrangler.jsonc) -- not optional at the type level.
   orlaz_catalog: D1Database;
+  // Optional shared-secret gate for /api/admin/* (worker/shared/adminAuth.ts)
+  // -- same dashboard-only, never-in-code-or-chat pattern as GROQ_API_KEY/
+  // DISCORD_WEBHOOK_URL above, and same "unset = feature not active" default
+  // rather than a hard requirement: every other route in this app is
+  // deliberately public/unauthenticated (see groupReliability.ts's own
+  // comment on why that's an accepted tradeoff for a solo-admin surface with
+  // no destructive actions), and /api/admin/refresh-game only ever
+  // re-fetches a game D1 already has, so nothing currently breaks by this
+  // being unset. /api/admin/seed-title is the one route that performs real
+  // inserts of new rows from arbitrary input, though -- setting this secret
+  // is the opt-in lever to require a token for that route (and any future
+  // route added under /api/admin/*) without changing default behavior for
+  // whoever hasn't set it.
+  ADMIN_TOKEN?: string;
 }

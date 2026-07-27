@@ -191,6 +191,32 @@ async function existingGameIds(db: D1Database, ids: string[]): Promise<Set<strin
    missing indefinitely whenever that one extra external call had a bad
    moment, with nothing about the release data itself being at fault. */
 export async function upsertGames(db: D1Database, games: ParsedGame[], enrichments: Map<string, Enrichment>): Promise<number> {
+  // FIX (confirmed via security review of /api/admin/seed-title): two
+  // genuinely distinct real games can share an identical xREL display
+  // title -- a franchise reboot/remake is the common real-world case (e.g.
+  // "Prey" 2006 vs. 2017, both real Steam listings, both independently
+  // cracked). parse.ts's groupRowsByTitle already tells them apart (keyed
+  // by xREL's own per-master_game ext.id), so they arrive here as two
+  // distinct ParsedGame objects -- but each independently computes
+  // id: slugify(title), which only depends on the title text, so both
+  // collapse onto the SAME games.id. Without this guard, both games' own,
+  // unrelated release histories would get written under that one row,
+  // silently interleaving one real game's crack/DRM history with another's
+  // on a live, publicly-displayed catalog page -- seed-title makes this
+  // directly triggerable on demand by any caller (a single xREL title
+  // search can return rows for both games in one response), where the
+  // ordinary cron crawlers would only hit it by incidental timing. Only
+  // the first ParsedGame seen for a given id in THIS batch is kept; a
+  // title collision drops the second one rather than merging it -- an
+  // honestly-missing game next tick is a far better failure mode than a
+  // silently wrong one that's already live.
+  const seenIds = new Set<string>();
+  games = games.filter((g) => {
+    if (seenIds.has(g.id)) return false;
+    seenIds.add(g.id);
+    return true;
+  });
+
   const unenrichedIds = games.filter((g) => !enrichments.has(g.title)).map((g) => g.id);
   const alreadyKnown = unenrichedIds.length ? await existingGameIds(db, unenrichedIds) : new Set<string>();
 

@@ -2,6 +2,7 @@ import type { Handler } from "../shared/types";
 import { json } from "../shared/http";
 import { enrichFromSteam } from "../backfill/resolve";
 import { refreshStaleGame } from "../backfill/db";
+import { isAdminAuthorized } from "../shared/adminAuth";
 
 interface GameRow {
   id: string;
@@ -23,6 +24,7 @@ interface GameRow {
    only re-runs the exact same enrichment a game would eventually get
    anyway. */
 export const handleAdminRefreshGame: Handler = async ({ request, env }) => {
+  if (!isAdminAuthorized(request, env)) return json({ error: "unauthorized" }, 5, 401);
   const url = new URL(request.url);
   const id = url.searchParams.get("id");
   if (!id) return json({ error: "pass ?id=<game-id>" }, 5, 400);
