@@ -2,6 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import type { Game } from "../types/game";
 import { useDebounce } from "./useDebounce";
 import { fetchSearchAssist } from "../lib/searchAssist";
+import { fuzzyIncludes } from "../lib/fuzzyMatch";
+import { groupsIndex } from "../lib/groups";
+import { publishersIndex } from "../lib/companies";
 
 export interface LocalSuggestion {
   kind: "local";
@@ -17,7 +20,21 @@ export interface LiveSuggestion {
   raw: { id: string; dirname: string; time?: number; group_name?: string; ext_info?: { type?: string; title?: string } };
 }
 
-export type Suggestion = LocalSuggestion | LiveSuggestion;
+export interface GroupSuggestion {
+  kind: "group";
+  key: string;
+  name: string;
+  count: number;
+}
+
+export interface PublisherSuggestion {
+  kind: "publisher";
+  key: string;
+  name: string;
+  count: number;
+}
+
+export type Suggestion = LocalSuggestion | LiveSuggestion | GroupSuggestion | PublisherSuggestion;
 
 interface SearchReleasesResponse {
   list?: LiveSuggestion["raw"][];
@@ -67,12 +84,41 @@ export function useAutocomplete(query: string, games: Game[]) {
   const [assisting, setAssisting] = useState(false);
 
   const localMatches: LocalSuggestion[] = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = query.trim();
     if (q.length < 2) return [];
     return games
-      .filter((g) => g.title.toLowerCase().includes(q))
+      .filter((g) => fuzzyIncludes(g.title, q))
       .slice(0, MAX_RESULTS)
       .map((g) => ({ kind: "local", id: g.id, title: g.title, year: g.year }));
+  }, [query, games]);
+
+  /* Groups/publishers, matched the same fuzzy way as titles above --
+     previously this box's own placeholder ("Search titles, groups,
+     publishers…") was aspirational only: nothing here ever matched a group
+     or publisher name, so typing e.g. "denuvowo" or "bandai namco" surfaced
+     nothing at all, no path from the search box to /group/:key or
+     /publisher/:key existed. Derived from the same client-side `games`
+     already loaded -- same "only as good as what's loaded so far" honesty
+     the title/live split above already documents, and the same reason
+     groupsIndex is called without the starred-group `extra` param
+     GroupsDirectory passes: that's a real full-history fetch this
+     lightweight per-keystroke hook has no business making. */
+  const groupMatches: GroupSuggestion[] = useMemo(() => {
+    const q = query.trim();
+    if (q.length < 2) return [];
+    return groupsIndex(games)
+      .filter((g) => fuzzyIncludes(g.name, q))
+      .slice(0, 4)
+      .map((g) => ({ kind: "group" as const, key: g.key, name: g.name, count: g.count }));
+  }, [query, games]);
+
+  const publisherMatches: PublisherSuggestion[] = useMemo(() => {
+    const q = query.trim();
+    if (q.length < 2) return [];
+    return publishersIndex(games)
+      .filter((p) => fuzzyIncludes(p.name, q))
+      .slice(0, 4)
+      .map((p) => ({ kind: "publisher" as const, key: p.key, name: p.name, count: p.count }));
   }, [query, games]);
 
   useEffect(() => {
@@ -107,8 +153,12 @@ export function useAutocomplete(query: string, games: Game[]) {
       if (localTitles.has(live.title.toLowerCase())) continue;
       merged.push(live);
     }
+    // Groups/publishers are a different result kind entirely (never a
+    // near-duplicate of a title match), so these are appended rather than
+    // dedup-checked against localTitles above.
+    merged.push(...groupMatches, ...publisherMatches);
     return merged;
-  }, [localMatches, liveResults]);
+  }, [localMatches, liveResults, groupMatches, publisherMatches]);
 
   useEffect(() => {
     if (loading || results.length > 0 || debounced.length < 4) return;

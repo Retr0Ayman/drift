@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react"
 import * as Dialog from "@radix-ui/react-dialog";
 import { useLenis } from "lenis/react";
 import { useNavigate } from "react-router-dom";
-import { useAutocomplete, type Suggestion } from "../../hooks/useAutocomplete";
+import { useAutocomplete, type Suggestion, type LocalSuggestion, type LiveSuggestion, type GroupSuggestion, type PublisherSuggestion } from "../../hooks/useAutocomplete";
 import { parseSearchIntent } from "../../lib/searchIntent";
 import { buildLiveGameFromRows } from "../../lib/catalog";
 import { matchFranchise } from "../../lib/companies";
@@ -87,14 +87,18 @@ export default function CommandPalette({ games, catalogStatus, onLiveGameResolve
     active?.scrollIntoView({ block: "nearest" });
   }, [activeIndex]);
 
-  const localResults = results.filter((r) => r.kind === "local");
-  const liveResults = results.filter((r) => r.kind === "live");
+  const localResults = results.filter((r): r is LocalSuggestion => r.kind === "local");
+  const liveResults = results.filter((r): r is LiveSuggestion => r.kind === "live");
+  const groupResults = results.filter((r): r is GroupSuggestion => r.kind === "group");
+  const publisherResults = results.filter((r): r is PublisherSuggestion => r.kind === "publisher");
   const assistedResults = assisted?.results ?? [];
   const flat: Array<Suggestion | { kind: "intent" } | { kind: "franchise"; name: string }> = [
     ...(intent ? [{ kind: "intent" as const }] : []),
     ...(franchiseMatch ? [{ kind: "franchise" as const, name: franchiseMatch }] : []),
     ...localResults,
     ...liveResults,
+    ...groupResults,
+    ...publisherResults,
     ...assistedResults,
   ];
 
@@ -120,6 +124,16 @@ export default function CommandPalette({ games, catalogStatus, onLiveGameResolve
   async function selectSuggestion(s: Suggestion) {
     if (s.kind === "local") {
       navigate(`/game/${s.id}`);
+      close();
+      return;
+    }
+    if (s.kind === "group") {
+      navigate(`/group/${s.key}`);
+      close();
+      return;
+    }
+    if (s.kind === "publisher") {
+      navigate(`/publisher/${s.key}`);
       close();
       return;
     }
@@ -268,6 +282,46 @@ export default function CommandPalette({ games, catalogStatus, onLiveGameResolve
                       onClick={() => selectSuggestion(s)}
                     >
                       <span className="cmdk-item-title">{s.title}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : null}
+
+            {!loading && !resolving && groupResults.length ? (
+              <div className="cmdk-group">
+                <div className="cmdk-group-label">Groups</div>
+                {groupResults.map((s) => {
+                  rowCursor += 1;
+                  const idx = rowCursor;
+                  return (
+                    <button
+                      key={s.key}
+                      className={`cmdk-item cmdk-row${idx === activeIndex ? " cmdk-row--active" : ""}`}
+                      onClick={() => selectSuggestion(s)}
+                    >
+                      <span className="cmdk-item-title">{s.name}</span>
+                      <span className="cmdk-item-year">{s.count} release{s.count === 1 ? "" : "s"}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : null}
+
+            {!loading && !resolving && publisherResults.length ? (
+              <div className="cmdk-group">
+                <div className="cmdk-group-label">Publishers</div>
+                {publisherResults.map((s) => {
+                  rowCursor += 1;
+                  const idx = rowCursor;
+                  return (
+                    <button
+                      key={s.key}
+                      className={`cmdk-item cmdk-row${idx === activeIndex ? " cmdk-row--active" : ""}`}
+                      onClick={() => selectSuggestion(s)}
+                    >
+                      <span className="cmdk-item-title">{s.name}</span>
+                      <span className="cmdk-item-year">{s.count} game{s.count === 1 ? "" : "s"}</span>
                     </button>
                   );
                 })}
