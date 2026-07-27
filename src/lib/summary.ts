@@ -16,7 +16,19 @@
 // franchises, indefinitely, with no way to notice. Group entries also
 // regenerate as a side effect of the shared prefix (harmless, that prompt
 // itself didn't change here).
-const CACHE_PREFIX = "drift.summary.v5.";
+// v6: bumped again -- confirmed live (Rockstar Games) that a small
+// publisher's "Tracked titles" fact used to repeat every title already
+// named via Franchises, producing summaries that padded out the same
+// handful of games across three near-identical sentences, and the raw
+// "AAA tier: yes/no" fact got echoed back near-verbatim ("marked as AAA
+// tier") instead of phrased as a sentence. PublisherProfile.tsx now sends
+// Tracked titles as only the non-franchise standalone titles (never
+// overlapping Franchises) plus a new real Protection stat, and the prompt
+// explicitly bans echoing a fact's raw label. Same string-array-fact
+// blind spot as v5's own note -- factsSignature won't catch this on its
+// own, so every existing cached publisher summary needs this bump to
+// actually regenerate instead of serving the padded-out version forever.
+const CACHE_PREFIX = "drift.summary.v6.";
 
 export interface SummaryResult {
   summary: string | null;

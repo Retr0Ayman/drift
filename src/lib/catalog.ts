@@ -37,9 +37,20 @@ function parseVersionFromDirname(dn?: string): string {
   // dropped the ".17" -- reading as a placeholder-looking "Update 1" on a
   // release that really is v1.17. Every branch now allows repeated
   // `.digits` groups, same as the v\d branch already did.
-  const m = dn.match(
-    /\b(v\d+(?:\.\d+)+|update\.?\d+(?:\.\d+)*|build\.?\d+(?:\.\d+)*|hotfix\.?\d+(?:\.\d+)*|patch\.?\d+(?:\.\d+)*)\b/i,
-  );
+  //
+  // FIX (confirmed live, Rockstar publisher-page report): a real dotted
+  // version number ("v2675.1.0.0") was matching the SAME v\d branch as
+  // everything else, then getting the shared `.replace(/\./g, " ")` below
+  // applied to it too -- turning "V2675.1.0.0" into "V2675 1 0 0", real
+  // dots replaced with spaces on a string where the dots are the actual,
+  // meaningful separator, not an artifact of how update/build/hotfix/patch
+  // happen to appear in a dirname (where "Build.1436.28" -> "Build 1436 28"
+  // IS the intended display style). The v\d branch is checked and returned
+  // separately now, before the shared dot-stripping replace ever runs, so
+  // a real version number keeps its dots.
+  const versionMatch = dn.match(/\bv\d+(?:\.\d+)+\b/i);
+  if (versionMatch) return versionMatch[0].replace(/^\w/, (c) => c.toUpperCase());
+  const m = dn.match(/\b(update\.?\d+(?:\.\d+)*|build\.?\d+(?:\.\d+)*|hotfix\.?\d+(?:\.\d+)*|patch\.?\d+(?:\.\d+)*)\b/i);
   return m ? m[0].replace(/\./g, " ").replace(/^\w/, (c) => c.toUpperCase()) : "";
 }
 

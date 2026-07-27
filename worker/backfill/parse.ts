@@ -19,9 +19,17 @@ export const slugify = (s: string): string =>
 
 function parseVersionFromDirname(dn?: string): string {
   if (!dn) return "";
-  const m = dn.match(
-    /\b(v\d+(?:\.\d+)+|update\.?\d+(?:\.\d+)*|build\.?\d+(?:\.\d+)*|hotfix\.?\d+(?:\.\d+)*|patch\.?\d+(?:\.\d+)*)\b/i,
-  );
+  // FIX (confirmed live, Rockstar publisher-page report; hand-synced with
+  // src/lib/catalog.ts's own copy of this function -- see that file's
+  // comment for the full story): a real dotted version number
+  // ("v2675.1.0.0") used to match the same branch as update/build/hotfix/
+  // patch and get the shared dot-to-space replace applied to it too,
+  // turning it into "V2675 1 0 0" -- real dots replaced with spaces on a
+  // string where the dots are the actual meaningful separator. Checked and
+  // returned separately now, before the shared dot-stripping replace runs.
+  const versionMatch = dn.match(/\bv\d+(?:\.\d+)+\b/i);
+  if (versionMatch) return versionMatch[0].replace(/^\w/, (c) => c.toUpperCase());
+  const m = dn.match(/\b(update\.?\d+(?:\.\d+)*|build\.?\d+(?:\.\d+)*|hotfix\.?\d+(?:\.\d+)*|patch\.?\d+(?:\.\d+)*)\b/i);
   return m ? m[0].replace(/\./g, " ").replace(/^\w/, (c) => c.toUpperCase()) : "";
 }
 
