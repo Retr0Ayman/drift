@@ -322,6 +322,30 @@ export function firstSeenTs(r: Release): number | null {
   return releaseTs(r);
 }
 
+/* BUG FIX (confirmed live, Resident Evil 4): `g.released` is Steam's
+   CURRENT listing date for this game's resolved appid -- for a title whose
+   Steam page was later replaced/reused by a remaster or remake, or whose
+   listing date reflects a much-later Origin/Uplay-to-Steam port rather
+   than the game's true original launch (confirmed live on real,
+   first_seen_verified=1 rows: Resident Evil 4 shows released="Mar 23,
+   2023" (the 2023 remake) while its own Crack Timeline carries genuine
+   RAF/Black_Box/3DM traditional cracks from 2011-2014 for the original PC
+   port; Dragon Age: Inquisition and Titanfall 2 show a 2020 Steam-
+   availability date while their real CPY/3DM/CODEX/ShadowEagle cracks date
+   to 2014-2016, when both only shipped on Origin), this produced
+   nonsensical labels like "Leaked 4177 days early" on real, live release
+   cards -- exactly the fabricated-looking-precision-from-bad-input this
+   function's own discipline already exists to avoid for unverified rows.
+   Sanity-bounded to a plausible [-90, 1095] day window for the same reason
+   worker/backfill/crackEta.ts's own MAX_PLAUSIBLE_DAYS is: a release that
+   far outside a normal launch-window race is far more likely measuring a
+   date mismatch (or, for the multi-year-late positive case, a trivial
+   re-crack of a title whose real protection was removed long before, not
+   an honest "time to crack" claim either way) than a genuine data point
+   worth stating as fact. */
+const MIN_PLAUSIBLE_TIMING_DAYS = -90;
+const MAX_PLAUSIBLE_TIMING_DAYS = 1095;
+
 /* Shared math behind crackTimingLabel/dPlusNLabel/the leaderboard: how many
    days after (positive) or before (negative, an early leak) a game's Steam
    release date a given release actually landed. Uses the release's real
@@ -329,8 +353,9 @@ export function firstSeenTs(r: Release): number | null {
    patch-update's timing gets mislabeled as if it were the original crack
    speed (confirmed live: this was measuring against the mutable `date`
    field, which an ongoing crack's every subsequent update overwrites).
-   Returns null (never a fabricated 0) when either side can't be parsed, and
-   also when r.firstSeenVerified is explicitly false -- that means this
+   Returns null (never a fabricated 0) when either side can't be parsed,
+   when the result falls outside a plausible window (see above), and also
+   when r.firstSeenVerified is explicitly false -- that means this
    release's first-seen moment is a known-flawed placeholder (a pre-
    migrations/0005 row the reconciliation pass couldn't recover a real
    original date for, see that migration's own comment), not a genuine
@@ -341,7 +366,9 @@ export function crackTimingDays(g: Game, r: Release): number | null {
   const releaseTsVal = g.released ? Date.parse(g.released) : NaN;
   const crackTsVal = firstSeenTs(r);
   if (isNaN(releaseTsVal) || crackTsVal == null) return null;
-  return Math.round((crackTsVal - releaseTsVal) / 86400000);
+  const days = Math.round((crackTsVal - releaseTsVal) / 86400000);
+  if (days < MIN_PLAUSIBLE_TIMING_DAYS || days > MAX_PLAUSIBLE_TIMING_DAYS) return null;
+  return days;
 }
 
 /* "Cracked in N day(s)" / "Leaked N day(s) early" -- a release's own timing
