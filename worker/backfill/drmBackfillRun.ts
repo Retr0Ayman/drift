@@ -76,13 +76,29 @@ const RECHECK_BATCH_SIZE = 40;
    batch, cycles the whole games table forever -- same "deliberately never
    reaches a terminal done state" discipline runEnrichmentRepairTick already
    uses, so a real DRM removal (or addition) eventually gets picked up
-   automatically instead of needing another manual one-off backfill. */
+   automatically instead of needing another manual one-off backfill.
+
+   Denuvo-removal tracker (migrations/0011): this is the ONLY place
+   denuvo_removed_at is ever written, and only via a genuine before/after
+   comparison against THIS row's own previously-stored tags -- a row whose
+   old tags already contained "Denuvo Anti-Tamper" and whose freshly-looked-
+   up tags no longer do (it moved into formerTags instead) is a real,
+   directly observed removal event, timestamped at the moment this site's
+   own pipeline caught it. COALESCE keeps whatever was stamped first --
+   first detection wins, never overwritten, same "set once" discipline
+   releases.first_seen_ts already uses. Deliberately NOT backfilled for
+   rows that already show former_tags containing Denuvo today (see
+   migrations/0011's own comment on why drm_checked_at can't stand in for a
+   real removal date) -- this only ever grows from real transitions
+   observed from this point forward. */
+const DENUVO_TAG = "Denuvo Anti-Tamper";
+
 export async function runDrmRecheckTick(env: Env): Promise<void> {
   const db = env.orlaz_catalog;
   const { results } = await db
-    .prepare("SELECT id, appid FROM games WHERE appid IS NOT NULL ORDER BY drm_checked_at ASC LIMIT ?")
+    .prepare("SELECT id, appid, tags FROM games WHERE appid IS NOT NULL ORDER BY drm_checked_at ASC LIMIT ?")
     .bind(RECHECK_BATCH_SIZE)
-    .all<{ id: string; appid: number }>();
+    .all<{ id: string; appid: number; tags: string | null }>();
   const rows = results || [];
   if (!rows.length) return;
 
@@ -90,13 +106,25 @@ export async function runDrmRecheckTick(env: Env): Promise<void> {
   const now = Date.now();
   const statements = rows.map((r) => {
     const result = drm.get(r.appid);
-    return result
+    if (!result) {
+      // no PCGamingWiki match this time either -- still stamp drm_checked_at so this row
+      // cycles to the back of the queue instead of being retried every single tick forever
+      return db.prepare("UPDATE games SET drm_checked_at = ? WHERE id = ?").bind(now, r.id);
+    }
+    let oldTags: string[] = [];
+    try {
+      oldTags = r.tags ? JSON.parse(r.tags) : [];
+    } catch {
+      oldTags = [];
+    }
+    const justRemoved = oldTags.includes(DENUVO_TAG) && !result.tags.includes(DENUVO_TAG) && result.formerTags.includes(DENUVO_TAG);
+    return justRemoved
       ? db
+          .prepare("UPDATE games SET tags = ?, former_tags = ?, drm_checked_at = ?, denuvo_removed_at = COALESCE(denuvo_removed_at, ?) WHERE id = ?")
+          .bind(JSON.stringify(result.tags), JSON.stringify(result.formerTags), now, now, r.id)
+      : db
           .prepare("UPDATE games SET tags = ?, former_tags = ?, drm_checked_at = ? WHERE id = ?")
-          .bind(JSON.stringify(result.tags), JSON.stringify(result.formerTags), now, r.id)
-      : // no PCGamingWiki match this time either -- still stamp drm_checked_at so this row
-        // cycles to the back of the queue instead of being retried every single tick forever
-        db.prepare("UPDATE games SET drm_checked_at = ? WHERE id = ?").bind(now, r.id);
+          .bind(JSON.stringify(result.tags), JSON.stringify(result.formerTags), now, r.id);
   });
   await db.batch(statements);
 }

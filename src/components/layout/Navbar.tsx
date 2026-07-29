@@ -108,6 +108,7 @@ export default function Navbar({ status, onOpenSearch, revealBrandMark }: Navbar
               <NavLink to="/groups" onClick={() => setMenuOpen(false)}>Groups</NavLink>
               <NavLink to="/digest" onClick={() => setMenuOpen(false)}>Digest</NavLink>
               <NavLink to="/publishers" onClick={() => setMenuOpen(false)}>Publishers</NavLink>
+              <NavLink to="/denuvo-tracker" onClick={() => setMenuOpen(false)}>Denuvo Tracker</NavLink>
               <NavLink to="/watchlist" onClick={() => setMenuOpen(false)}>Watchlist</NavLink>
             </div>
 

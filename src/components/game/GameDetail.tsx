@@ -10,6 +10,7 @@ import FaqSection from "./FaqSection";
 import GameFact from "./GameFact";
 import CrackOutlook from "./CrackOutlook";
 import CrackTimeline from "./CrackTimeline";
+import DenuvoRemovalNote from "./DenuvoRemovalNote";
 import GlassPanel from "../ui/GlassPanel";
 import Pill from "../ui/Pill";
 import DrmTag from "../ui/DrmTag";
@@ -315,6 +316,7 @@ export default function GameDetail() {
                       </DrmTag>
                     ))}
                   </span>
+                  <DenuvoRemovalNote game={mergedGame} />
                 </div>
               </div>
               {/* FIX (confirmed live, Watch Dogs 2): this used to also

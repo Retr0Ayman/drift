@@ -24,6 +24,7 @@ const PublisherProfile = lazy(() => import("./components/publishers/PublisherPro
 const FranchiseProfile = lazy(() => import("./components/publishers/FranchiseProfile"));
 const Watchlist = lazy(() => import("./components/watchlist/Watchlist"));
 const Digest = lazy(() => import("./components/digest/Digest"));
+const DenuvoTracker = lazy(() => import("./components/denuvo/DenuvoTracker"));
 
 function Layout() {
   const catalog = useLiveCatalog();
@@ -80,6 +81,7 @@ export default function App() {
         <Route path="/franchise/:slug" element={<FranchiseProfile />} />
         <Route path="/watchlist" element={<Watchlist />} />
         <Route path="/digest" element={<Digest />} />
+        <Route path="/denuvo-tracker" element={<DenuvoTracker />} />
       </Route>
     </Routes>
   );

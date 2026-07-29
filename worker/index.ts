@@ -34,6 +34,8 @@ import { runEnrichmentRepairTick } from "./backfill/repairEnrichment";
 import { runHeaderUpgradeTick } from "./backfill/headerUpgrade";
 import { runGroupReliabilityTick } from "./backfill/groupReliability";
 import { handleGroupReliability, handleGroupReliabilityRecompute } from "./routes/groupReliability";
+import { runDenuvoRemovalStatsTick } from "./backfill/denuvoRemoval";
+import { handleDenuvoRemoval, handleDenuvoRemovalRecompute } from "./routes/denuvoRemoval";
 import { handleAdminRefreshGame } from "./routes/adminRefreshGame";
 import { handleAdminSeedTitle } from "./routes/adminSeedTitle";
 
@@ -79,6 +81,8 @@ const ROUTES: Record<string, Handler> = {
   "/api/catalog": handleCatalog,
   "/api/group-reliability": handleGroupReliability,
   "/api/group-reliability/recompute": handleGroupReliabilityRecompute,
+  "/api/denuvo-removal": handleDenuvoRemoval,
+  "/api/denuvo-removal/recompute": handleDenuvoRemovalRecompute,
   "/api/admin/refresh-game": handleAdminRefreshGame,
   "/api/admin/seed-title": handleAdminSeedTitle,
 };
@@ -117,7 +121,10 @@ export default {
   // this slot rather than needing its own trigger (Cloudflare's 5-cron cap
   // is already fully spent, see below). Internally throttled to roughly
   // once an hour (RECOMPUTE_INTERVAL_MS) since the underlying data only
-  // shifts a little between 15-minute ticks; a separate, more frequent
+  // shifts a little between 15-minute ticks. Same reasoning covers
+  // worker/backfill/denuvoRemoval.ts's per-publisher Denuvo-removal-pattern
+  // recompute -- another pure D1 aggregate, hourly-throttled, sharing this
+  // slot rather than needing its own trigger; a separate, more frequent
   // trigger drives the resumable
   // historical backfill (worker/backfill/run.ts) until it completes, then
   // becomes a cheap no-op forever after -- see that file's own comment for
@@ -172,7 +179,13 @@ export default {
       return;
     }
     ctx.waitUntil(
-      Promise.all([runScheduledAlert(env), runSteadyStateSync(env), runStaleRefreshTick(env), runGroupReliabilityTick(env)]),
+      Promise.all([
+        runScheduledAlert(env),
+        runSteadyStateSync(env),
+        runStaleRefreshTick(env),
+        runGroupReliabilityTick(env),
+        runDenuvoRemovalStatsTick(env),
+      ]),
     );
   },
 };
