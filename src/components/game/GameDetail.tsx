@@ -9,6 +9,7 @@ import DlcRow from "./DlcRow";
 import FaqSection from "./FaqSection";
 import GameFact from "./GameFact";
 import CrackOutlook from "./CrackOutlook";
+import CrackEtaPredictor from "./CrackEtaPredictor";
 import CrackTimeline from "./CrackTimeline";
 import DenuvoRemovalNote from "./DenuvoRemovalNote";
 import GlassPanel from "../ui/GlassPanel";
@@ -173,6 +174,7 @@ export default function GameDetail() {
         <div className="detail-releases">
           <CrackOutlook game={mergedGame} />
           <CrackTimeline game={mergedGame} />
+          <CrackEtaPredictor game={mergedGame} />
           {repackReleases.length ? (
             <SegmentedControl
               ariaLabel="Cracks or repacks"
