@@ -226,7 +226,10 @@ export const handleFact: Handler = async ({ request, env }) => {
     { role: "user" as const, content: buildFacts(body, live) },
   ];
 
-  let { text, error } = await callGroq(env, messages, { maxTokens: 80, temperature: 0.75 });
+  // 300, not 80: openai/gpt-oss-120b spends reasoning tokens out of this same
+  // budget before the final one-sentence answer (see groq.ts) -- confirmed
+  // live to intermittently starve the actual content entirely at 80.
+  let { text, error } = await callGroq(env, messages, { maxTokens: 300, temperature: 0.75 });
   if (text && violatesGrounding(body, text)) {
     // One retry with the violating draft shown back and a blunt correction
     // -- cheaper and more honest than serving a fabricated franchise claim.
@@ -236,7 +239,7 @@ export const handleFact: Handler = async ({ request, env }) => {
         ...messages,
         { role: "user" as const, content: `You wrote: "${text}"\nThat invents a franchise/series that was never given. Rewrite it about the same game without naming or implying any series at all.` },
       ],
-      { maxTokens: 80, temperature: 0.5 },
+      { maxTokens: 300, temperature: 0.5 },
     ));
     if (text && violatesGrounding(body, text)) {
       return json({ error: "fact generation could not stay grounded for this title" }, 30, 502);

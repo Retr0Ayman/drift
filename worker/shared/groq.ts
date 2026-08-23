@@ -9,7 +9,7 @@ import type { Env } from "./env";
    helper doesn't add or remove any instructions, it just relays. */
 
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
-const MODEL = "llama-3.3-70b-versatile";
+const MODEL = "openai/gpt-oss-120b";
 
 export interface GroqMessage {
   role: "system" | "user";
@@ -30,8 +30,14 @@ export interface GroqResult {
 // short retry actually fixes; a 4xx like a bad request or an auth failure
 // would just fail identically again, so those return immediately instead of
 // wasting a retry attempt on something retrying can't help.
+// openai/gpt-oss-120b's on_demand tier has a noticeably tighter TPM cap than
+// llama-3.3-70b-versatile had -- confirmed live, a handful of back-to-back
+// calls (a real possibility when a page loads several AI surfaces at once)
+// returned 429s asking to retry in anywhere from ~1s to ~8s, well past what
+// the old 300/900ms backoff (tuned for the previous model's rate limits)
+// could ever cover.
 const MAX_ATTEMPTS = 3;
-const RETRY_DELAYS_MS = [300, 900];
+const RETRY_DELAYS_MS = [1000, 3000];
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -50,6 +56,16 @@ async function callGroqOnce(env: Env, messages: GroqMessage[], opts: { maxTokens
         messages,
         temperature: opts.temperature ?? 0.4,
         max_tokens: opts.maxTokens ?? 500,
+        // openai/gpt-oss-120b is a reasoning model -- unlike llama-3.3-70b-versatile,
+        // it defaults to reasoning_effort "medium" and spends chain-of-thought tokens
+        // out of the same max_tokens budget before ever emitting the final answer.
+        // Confirmed live: with this unset, every short (80-220 max_tokens) call on
+        // this site came back as message.content === "" (reasoning consumed the
+        // whole budget), surfacing as "empty response from Groq" for every AI
+        // surface. These are all short, non-analytical grounded-text tasks that
+        // don't benefit from deep reasoning, so pin it to "low" to leave the budget
+        // for the actual answer.
+        reasoning_effort: "low",
       }),
     });
     if (!r.ok) {

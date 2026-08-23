@@ -146,7 +146,10 @@ export const handleSummary: Handler = async ({ request, env }) => {
     { role: "user" as const, content: buildFacts(body) },
   ];
 
-  let { text, error } = await callGroq(env, messages, { maxTokens: 220 });
+  // 450, not 220: openai/gpt-oss-120b spends reasoning tokens out of this same
+  // budget before the final paragraph (see groq.ts) -- confirmed live to
+  // intermittently starve the actual content entirely at 220.
+  let { text, error } = await callGroq(env, messages, { maxTokens: 450 });
   if (text && violatesGrounding(body, text)) {
     // One retry with the violating draft shown back and a blunt correction
     // -- cheaper and more honest than serving a fabricated lore claim about
@@ -160,7 +163,7 @@ export const handleSummary: Handler = async ({ request, env }) => {
           content: `You wrote: "${text}"\nThat states or implies something about founding, identity, disbanding, drama, or legal history that was never given -- this site has no real data for any of that. Rewrite it about the same group using ONLY the release/method/date/reliability facts already given, without touching that topic at all.`,
         },
       ],
-      { maxTokens: 220 },
+      { maxTokens: 450 },
     ));
     if (text && violatesGrounding(body, text)) {
       return json({ error: "summary generation could not stay grounded for this group" }, 30, 502);

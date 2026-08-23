@@ -54,7 +54,11 @@ export const handleDigest: Handler = async ({ request, env }) => {
       { role: "system", content: SYSTEM_PROMPT },
       { role: "user", content: buildFacts(body.facts) },
     ],
-    { maxTokens: 220 },
+    // 450, not 220: openai/gpt-oss-120b spends reasoning tokens out of this
+    // same budget before the final paragraph (see groq.ts) -- confirmed live
+    // (other AI surfaces) to intermittently starve the actual content
+    // entirely at the old llama-3.3-tuned budget.
+    { maxTokens: 450 },
   );
   if (!text) return json({ error: error || "digest generation unavailable" }, 30, 502);
   // Cached a few hours, not a full day -- this is meant to feel like "what's

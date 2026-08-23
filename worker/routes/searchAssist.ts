@@ -40,7 +40,11 @@ export const handleSearchAssist: Handler = async ({ request, env }) => {
       { role: "system", content: SYSTEM_PROMPT },
       { role: "user", content: query },
     ],
-    { maxTokens: 40, temperature: 0.2 },
+    // 200, not 40: openai/gpt-oss-120b spends reasoning tokens out of this
+    // same budget before the final title guess (see groq.ts) -- confirmed
+    // live (other AI surfaces) to intermittently starve the actual content
+    // entirely at the old llama-3.3-tuned budget.
+    { maxTokens: 200, temperature: 0.2 },
   );
   if (!text) return json({ error: error || "search assist unavailable" }, 30, 502);
 

@@ -138,7 +138,11 @@ export const handleOutlook: Handler = async ({ request, env }) => {
     { role: "user" as const, content: buildFacts(body) },
   ];
 
-  let { text, error } = await callGroq(env, messages, { maxTokens: 100 });
+  // 350, not 100: openai/gpt-oss-120b spends reasoning tokens out of this same
+  // budget before the final 1-2 sentence answer (see groq.ts) -- 100 was tuned
+  // for llama-3.3's non-reasoning output and left too little room, confirmed
+  // live to intermittently starve the actual content entirely.
+  let { text, error } = await callGroq(env, messages, { maxTokens: 350 });
   if (text && violatesGrounding(body, text)) {
     // One retry with the violating draft shown back and a blunt correction --
     // cheaper and more honest than serving a fabricated DRM claim.
@@ -148,7 +152,7 @@ export const handleOutlook: Handler = async ({ request, env }) => {
         ...messages,
         { role: "user" as const, content: `You wrote: "${text}"\nThat names a specific DRM/anti-cheat product that was never given. Rewrite it about the same game without naming or guessing any protection.` },
       ],
-      { maxTokens: 100 },
+      { maxTokens: 350 },
     ));
     if (text && violatesGrounding(body, text)) {
       return json({ error: "outlook generation could not stay grounded for this title" }, 30, 502);
