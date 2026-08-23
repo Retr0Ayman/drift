@@ -117,6 +117,7 @@ export const FRANCHISE_SEED_TITLES: string[] = [
   "fifa 17",
   "fifa 16",
   "fifa 15",
+  "madden nfl 27",
   "madden nfl 26",
   "madden nfl 25",
   "madden nfl 24",

@@ -30,6 +30,7 @@ export default function CommandPalette({ games, catalogStatus, onLiveGameResolve
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(-1);
   const [resolving, setResolving] = useState(false);
+  const [resolveFailed, setResolveFailed] = useState(false);
   const navigate = useNavigate();
   const resultsRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -67,6 +68,7 @@ export default function CommandPalette({ games, catalogStatus, onLiveGameResolve
     if (!open) {
       setQuery("");
       setActiveIndex(-1);
+      setResolveFailed(false);
       return;
     }
     // Captured here (not read fresh in onCloseAutoFocus) since by the time
@@ -138,9 +140,19 @@ export default function CommandPalette({ games, catalogStatus, onLiveGameResolve
       return;
     }
     setResolving(true);
+    setResolveFailed(false);
     const game = await buildLiveGameFromRows(s.title);
     setResolving(false);
-    if (!game) return;
+    if (!game) {
+      // FIX (confirmed live, Madden NFL 27 report): a failed live resolve
+      // (Steam resolve/appdetails hiccup, or a title xREL tracks that Steam
+      // genuinely can't match) used to just silently do nothing -- no
+      // navigation, no error, the click looked like it didn't register at
+      // all. Surface it instead of leaving the user wondering whether they
+      // missed the click.
+      setResolveFailed(true);
+      return;
+    }
     onLiveGameResolved(game);
     navigate(`/game/${game.id}`);
     close();
@@ -215,6 +227,7 @@ export default function CommandPalette({ games, catalogStatus, onLiveGameResolve
               onChange={(e) => {
                 setQuery(e.target.value);
                 setActiveIndex(-1);
+                setResolveFailed(false);
               }}
               onKeyDown={onKeyDown}
             />
@@ -248,6 +261,9 @@ export default function CommandPalette({ games, catalogStatus, onLiveGameResolve
 
             {loading ? <div className="cmdk-status">Searching…</div> : null}
             {resolving ? <div className="cmdk-status">Opening…</div> : null}
+            {!loading && !resolving && resolveFailed ? (
+              <div className="cmdk-status">Couldn't load that title right now — try again.</div>
+            ) : null}
 
             {!loading && !resolving && localResults.length ? (
               <div className="cmdk-group">

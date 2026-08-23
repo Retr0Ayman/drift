@@ -391,6 +391,7 @@ const FRANCHISE_MAP: Record<string, string> = {
   "fifa 17": "EA Sports FC",
   "fifa 16": "EA Sports FC",
   "fifa 15": "EA Sports FC",
+  "madden nfl 27": "Madden NFL",
   "madden nfl 26": "Madden NFL",
   "madden nfl 25": "Madden NFL",
   "madden nfl 24": "Madden NFL",
