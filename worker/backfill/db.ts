@@ -172,6 +172,37 @@ async function existingGameIds(db: D1Database, ids: string[]): Promise<Set<strin
   return found;
 }
 
+/* FIX (confirmed live via direct D1 audit -- 4 real duplicate pairs found:
+   Assassin's Creed III / III Remastered, Dead Island / Definitive Edition,
+   Life is Strange / Remastered, Oblivion / Oblivion Remastered): xREL often
+   files a base game and its remaster under two distinct master_game titles
+   ("Assassin's Creed III" vs "Assassin's Creed III Remastered"), which
+   groupRowsByTitle correctly treats as two different ParsedGames with two
+   different slugified ids -- but Steam has delisted/merged the original SKU
+   in each of these confirmed cases, so BOTH titles independently resolve to
+   the exact same Steam appid via resolve.ts. Nothing before this point ever
+   compares by appid, only by id/title, so both rows got written and the
+   same real game showed up twice in the catalog with its crack history
+   split across them. appid is the one truly canonical identity Steam
+   itself guarantees is unique -- this maps each appid in the current batch
+   to whichever games.id already owns it in D1, so a second title resolving
+   to an already-claimed appid gets merged into that existing row instead of
+   spawning a duplicate. */
+async function existingAppidOwners(db: D1Database, appids: number[]): Promise<Map<number, string>> {
+  const found = new Map<number, string>();
+  const unique = [...new Set(appids)];
+  for (let i = 0; i < unique.length; i += EXISTS_CHUNK) {
+    const chunk = unique.slice(i, i + EXISTS_CHUNK);
+    const placeholders = chunk.map(() => "?").join(",");
+    const rows = await db
+      .prepare(`SELECT id, appid FROM games WHERE appid IN (${placeholders})`)
+      .bind(...chunk)
+      .all<{ id: string; appid: number }>();
+    for (const r of rows.results || []) found.set(r.appid, r.id);
+  }
+  return found;
+}
+
 /* Batches every game + release write for one backfill tick into a single
    D1 .batch() round trip, not one .run() per row -- a browse page can
    yield 60-90 distinct titles, each with 1-5 releases, and D1 (like any
@@ -220,6 +251,15 @@ export async function upsertGames(db: D1Database, games: ParsedGame[], enrichmen
   const unenrichedIds = games.filter((g) => !enrichments.has(g.title)).map((g) => g.id);
   const alreadyKnown = unenrichedIds.length ? await existingGameIds(db, unenrichedIds) : new Set<string>();
 
+  // See existingAppidOwners' own comment -- resolves the base-game/remaster
+  // duplicate-row bug both for rows D1 already has and for two titles in
+  // THIS SAME batch that happen to resolve to the same appid for the first
+  // time (appidOwners seeded from D1, then updated in-loop below as each
+  // game claims its appid, so the second one to claim an appid in one pass
+  // still merges into the first rather than racing it).
+  const enrichedAppids = games.map((g) => enrichments.get(g.title)?.appid).filter((a): a is number => a != null);
+  const appidOwners = enrichedAppids.length ? await existingAppidOwners(db, enrichedAppids) : new Map<number, string>();
+
   const statements: D1PreparedStatement[] = [];
   const now = Date.now();
 
@@ -227,10 +267,20 @@ export async function upsertGames(db: D1Database, games: ParsedGame[], enrichmen
     const enrichment = enrichments.get(game.title);
     if (!enrichment && !alreadyKnown.has(game.id)) continue;
 
+    let gameId = game.id;
+    if (enrichment) {
+      const owner = appidOwners.get(enrichment.appid);
+      if (owner) {
+        gameId = owner;
+      } else {
+        appidOwners.set(enrichment.appid, gameId);
+      }
+    }
+
     if (enrichment) {
       statements.push(
         db.prepare(UPSERT_GAME_SQL).bind(
-          game.id,
+          gameId,
           game.xrel_key,
           // FIX (confirmed live): this used to write game.title -- the raw
           // xREL-derived title (grouped by worker/backfill/parse.ts's
@@ -287,7 +337,7 @@ export async function upsertGames(db: D1Database, games: ParsedGame[], enrichmen
     for (const r of game.releases) {
       statements.push(
         db.prepare(UPSERT_RELEASE_SQL).bind(
-          game.id,
+          gameId,
           r.method,
           r.group_name,
           r.build,

@@ -125,7 +125,7 @@ export default function DenuvoTracker() {
         {rows.map(({ game, stat, day, confident }, i) => (
           <Reveal key={game.id} delay={Math.min(i, 10) * 0.03}>
             <Link to={`/game/${game.id}`} className="denuvo-tracker-row">
-              {coverImg(game) ? <img className="denuvo-tracker-row-img" src={coverImg(game)!} alt="" /> : <div className="denuvo-tracker-row-img denuvo-tracker-row-img--empty" />}
+              {coverImg(game) ? <img className="denuvo-tracker-row-img" src={coverImg(game)!} alt="" loading="lazy" /> : <div className="denuvo-tracker-row-img denuvo-tracker-row-img--empty" />}
               <div className="denuvo-tracker-row-main">
                 <div className="denuvo-tracker-row-title">{game.title}</div>
                 <div className="denuvo-tracker-row-sub">

@@ -103,23 +103,34 @@ export function useAutocomplete(query: string, games: Game[]) {
      groupsIndex is called without the starred-group `extra` param
      GroupsDirectory passes: that's a real full-history fetch this
      lightweight per-keystroke hook has no business making. */
+  // FIX (perf sweep): groupsIndex/publishersIndex each walk every release/
+  // game in the whole catalog to rebuild their map from scratch (allReleases
+  // alone is O(total releases), easily thousands of rows) -- previously
+  // rebuilt on every single keystroke since these useMemos keyed off `query`
+  // directly. Splitting the expensive index build into its own useMemo keyed
+  // only on `games` (which only changes as the catalog loads/syncs, not per
+  // keystroke) means retyping only re-runs the cheap O(groups)/O(publishers)
+  // filter below, not the full O(releases) rebuild.
+  const groupIndex = useMemo(() => groupsIndex(games), [games]);
+  const publisherIndex = useMemo(() => publishersIndex(games), [games]);
+
   const groupMatches: GroupSuggestion[] = useMemo(() => {
     const q = query.trim();
     if (q.length < 2) return [];
-    return groupsIndex(games)
+    return groupIndex
       .filter((g) => fuzzyIncludes(g.name, q))
       .slice(0, 4)
       .map((g) => ({ kind: "group" as const, key: g.key, name: g.name, count: g.count }));
-  }, [query, games]);
+  }, [query, groupIndex]);
 
   const publisherMatches: PublisherSuggestion[] = useMemo(() => {
     const q = query.trim();
     if (q.length < 2) return [];
-    return publishersIndex(games)
+    return publisherIndex
       .filter((p) => fuzzyIncludes(p.name, q))
       .slice(0, 4)
       .map((p) => ({ kind: "publisher" as const, key: p.key, name: p.name, count: p.count }));
-  }, [query, games]);
+  }, [query, publisherIndex]);
 
   useEffect(() => {
     setAssisted(null);

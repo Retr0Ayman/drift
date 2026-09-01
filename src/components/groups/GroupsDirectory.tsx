@@ -32,7 +32,12 @@ export default function GroupsDirectory() {
   const { games } = useCatalog();
   const { summaries } = useStarredGroupSummaries(games);
   const { data: reliability } = useGroupReliability();
-  const idx = groupsIndex(games, summaries);
+  // FIX (perf sweep): groupsIndex walks every release in the catalog to
+  // rebuild its map from scratch -- was a plain call in the render body, so
+  // it re-ran on every render of this page (including ones caused by
+  // unrelated local state like the category/country filter toggles below),
+  // not just when `games`/`summaries` actually changed.
+  const idx = useMemo(() => groupsIndex(games, summaries), [games, summaries]);
   usePageMeta({
     title: "Scene & P2P groups",
     description: `${idx.length || "Every"} cracking group orlaz is tracking, hypervisor and traditional alike.`,

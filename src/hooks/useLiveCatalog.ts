@@ -157,17 +157,44 @@ export function useLiveCatalog(): LiveCatalog {
       // Publishers) depend on `games` genuinely reflecting the whole
       // catalog to show real counts instead of the old "+"-suffixed
       // provisional ones.
+      //
+      // FIX (perf sweep): this used to call fetchPage (a full commit/
+      // setGames on every single page) in the loop body -- a ~2000-game
+      // catalog at PER_PAGE=200 is ~10 pages, so page 1's render was
+      // immediately followed by 9 more full top-level re-renders in quick
+      // succession, each one cascading through every useMemo'd derived list
+      // (Home's filtered/genres/years, GroupsDirectory's/PublishersDirectory's
+      // index builds) for no visible benefit -- nothing was watching this
+      // background drain closely enough to need page-by-page granularity.
+      // Buffers a few pages' worth of games and flushes them as one commit
+      // instead, so the same eager full-catalog load finishes in ~3 renders
+      // instead of ~10.
+      const FLUSH_EVERY = 3;
+      let buffer: Game[] = [];
       while (hasMoreRef.current) {
         try {
           const page = pageRef.current;
-          await fetchPage(page, false);
+          const r = await fetch(`/api/catalog?page=${page}&per_page=${PER_PAGE}`);
+          const data = (await r.json()) as CatalogResponse;
+          const list = data.games || [];
+          setTotal(data.total ?? null);
+          const more = !!data.hasMore && list.length > 0;
+          hasMoreRef.current = more;
+          setHasMore(more);
           pageRef.current = page + 1;
+          if (!list.length) break;
+          buffer.push(...list);
+          if (buffer.length >= PER_PAGE * FLUSH_EVERY || !more) {
+            commit([...gamesRef.current, ...buffer]);
+            buffer = [];
+          }
         } catch {
           break;
         }
       }
+      if (buffer.length) commit([...gamesRef.current, ...buffer]);
     })();
-  }, [fetchPage]);
+  }, [fetchPage, commit]);
 
   return {
     games,

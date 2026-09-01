@@ -12,7 +12,10 @@ import "./Publishers.css";
 export default function PublishersDirectory() {
   const navigate = useNavigate();
   const { games } = useCatalog();
-  const idx = publishersIndex(games);
+  // FIX (perf sweep): publishersIndex walks every game in the catalog to
+  // rebuild its map from scratch -- was a plain call in the render body, so
+  // it re-ran on every render of this page, not just when `games` changed.
+  const idx = useMemo(() => publishersIndex(games), [games]);
   usePageMeta({
     title: "Publishers",
     description: `${idx.length || "Every"} publisher orlaz is tracking, AAA and indie alike.`,

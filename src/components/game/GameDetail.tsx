@@ -63,7 +63,11 @@ function CarouselSlideImage({ src, index }: { src: string; index: number }) {
       </div>
     );
   }
-  return <img src={src} alt="" onError={() => setFailed(true)} />;
+  // Same eager-first/lazy-rest pattern GameCard.tsx already uses -- only the
+  // first slide is visible on mount, the rest shouldn't compete with it (or
+  // the rest of the page) for bandwidth until the user actually scrolls the
+  // carousel to them.
+  return <img src={src} alt="" loading={index === 0 ? "eager" : "lazy"} onError={() => setFailed(true)} />;
 }
 
 export default function GameDetail() {
