@@ -1,11 +1,19 @@
 import type { Env } from "../shared/env";
 import { resolveHighResHeader } from "../shared/steam";
-import { refreshHeaderOnly } from "./db";
+import { refreshHeaderOnly, getBackfillState, setBackfillState } from "./db";
 
 // Cheap per row -- at most 2 HEAD requests (resolveHighResHeader's own
 // HIGH_RES_VARIANTS list), no appdetails/accent-extraction/DRM-lookup
 // calls, so this can afford a decent-sized batch per tick.
 const PAGE_SIZE = 80;
+
+// D1 rows_read audit (2026-09-06): the WHERE clause here has no supporting
+// index, so ORDER BY RANDOM() forced a full `games` table scan every
+// 5-minute tick (confirmed live via EXPLAIN QUERY PLAN: "SCAN games") even
+// though only ~10% of rows were actually eligible. Same hourly throttle as
+// reconcileFirstSeen.ts/repairEnrichment.ts now applies -- a header upgrade
+// landing an hour later than before is inconsequential.
+const RECOMPUTE_INTERVAL_MS = 60 * 60 * 1000;
 
 const HIGH_RES_SUFFIXES = ["library_hero.jpg", "library_600x900_2x.jpg"];
 
@@ -38,8 +46,12 @@ interface Row {
    cheap enough (HEAD requests, Cloudflare-cached) that this is an
    acceptable cost for not needing a second column just to remember "we
    already confirmed this one has no upgrade." */
-export async function runHeaderUpgradeTick(env: Env): Promise<{ upgraded: number }> {
+export async function runHeaderUpgradeTick(env: Env, force = false): Promise<{ upgraded: number }> {
   const db = env.orlaz_catalog;
+  const lastRun = Number((await getBackfillState(db, "header_upgrade_ticked_at")) || "0");
+  if (!force && Date.now() - lastRun < RECOMPUTE_INTERVAL_MS) return { upgraded: 0 };
+  await setBackfillState(db, "header_upgrade_ticked_at", String(Date.now()));
+
   const { results } = await db
     .prepare(
       `SELECT id, appid, header FROM games

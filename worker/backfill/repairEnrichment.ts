@@ -1,6 +1,6 @@
 import type { Env } from "../shared/env";
 import { enrichFromSteam } from "./resolve";
-import { refreshStaleGame } from "./db";
+import { refreshStaleGame, getBackfillState, setBackfillState } from "./db";
 
 /* Reconciliation for the false-blank-metadata backlog -- confirmed live on
    Forza Horizon 6, V Rising, PowerWash Simulator 2, and roughly a quarter
@@ -31,14 +31,27 @@ import { refreshStaleGame } from "./db";
    Steam delist) can't monopolize every tick's small page. */
 const PAGE_SIZE = 12; // each row costs the same 3 external calls enrichFromSteam always does
 
+// D1 rows_read audit (2026-09-06): the WHERE clause (developer IS NULL OR
+// '') has no supporting index, so ORDER BY RANDOM() forced a full `games`
+// table scan every 5-minute tick even after the backlog fully drained (0
+// eligible rows at audit time) -- confirmed live via EXPLAIN QUERY PLAN
+// ("SCAN games"). Same hourly throttle as reconcileFirstSeen.ts/
+// headerUpgrade.ts now applies: a repaired row landing an hour later is
+// inconsequential for a backlog-drain pass like this one.
+const RECOMPUTE_INTERVAL_MS = 60 * 60 * 1000;
+
 interface CorruptRow {
   id: string;
   appid: number;
   title: string;
 }
 
-export async function runEnrichmentRepairTick(env: Env): Promise<{ processed: number; fixed: number }> {
+export async function runEnrichmentRepairTick(env: Env, force = false): Promise<{ processed: number; fixed: number }> {
   const db = env.orlaz_catalog;
+  const lastRun = Number((await getBackfillState(db, "enrichment_repair_ticked_at")) || "0");
+  if (!force && Date.now() - lastRun < RECOMPUTE_INTERVAL_MS) return { processed: 0, fixed: 0 };
+  await setBackfillState(db, "enrichment_repair_ticked_at", String(Date.now()));
+
   const { results } = await db
     .prepare(
       `SELECT id, appid, title FROM games

@@ -3,6 +3,7 @@ import type { RawXrelRelease } from "../shared/xrel";
 import { handleXrelGroup } from "../routes/xrel/group";
 import { handleXrelP2PGroup } from "../routes/xrel/p2pGroup";
 import { dateFromTs, parseBuildFromDirname } from "./parse";
+import { getBackfillState, setBackfillState } from "./db";
 
 /* Reconciliation for the false-"Cracked in N days" backlog -- confirmed
    live on Crimson Desert: it showed "Cracked in 114 days" / "First cracked
@@ -48,6 +49,17 @@ import { dateFromTs, parseBuildFromDirname } from "./parse";
    steady-state sync, not the large one-time crawls. */
 
 const PAGE_SIZE = 20; // each row needs its own 1-2 external HTTP round trips
+
+// D1 rows_read audit (2026-09-06): this query's WHERE clause (update_count,
+// first_seen_verified) has no index, so ORDER BY RANDOM() forced a full
+// `releases` table scan every 5-minute tick regardless of how few rows
+// still qualified (227 out of 3132 at audit time) -- confirmed live via
+// EXPLAIN QUERY PLAN ("SCAN r"). The backlog this exists to drain shrinks
+// on its own and was never time-critical (a reconciled row landing an hour
+// later instead of 5 minutes later has zero user-facing effect), so this
+// now shares the same hourly-throttle pattern groupReliability.ts/
+// denuvoRemoval.ts/crackEta.ts already use for their own full-table passes.
+const RECOMPUTE_INTERVAL_MS = 60 * 60 * 1000;
 
 interface AtRiskRow {
   id: number;
@@ -102,8 +114,12 @@ function earliestMatch(rows: RawXrelRelease[], xrelKey: string): Earliest | null
   return { date: dateFromTs(earliest.time), build: parseBuildFromDirname(earliest.dirname), ts: earliest.time as number };
 }
 
-export async function runFirstSeenReconcileTick(env: Env): Promise<{ processed: number; fixed: number }> {
+export async function runFirstSeenReconcileTick(env: Env, force = false): Promise<{ processed: number; fixed: number }> {
   const db = env.orlaz_catalog;
+  const lastRun = Number((await getBackfillState(db, "first_seen_reconcile_ticked_at")) || "0");
+  if (!force && Date.now() - lastRun < RECOMPUTE_INTERVAL_MS) return { processed: 0, fixed: 0 };
+  await setBackfillState(db, "first_seen_reconcile_ticked_at", String(Date.now()));
+
   const { results } = await db
     .prepare(
       `SELECT r.id as id, r.group_name as group_name, g.xrel_key as xrel_key
