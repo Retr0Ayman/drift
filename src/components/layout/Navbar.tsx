@@ -5,6 +5,7 @@ import SearchBar from "../search/SearchBar";
 import OrlazWordmark from "../ui/illustrations/OrlazWordmark";
 import Pill, { type PillTone } from "../ui/Pill";
 import type { CatalogStatus } from "../../hooks/useLiveCatalog";
+import { useTheme } from "../../hooks/useTheme";
 import "./Navbar.css";
 
 const STATUS_LABEL: Record<CatalogStatus, string> = {
@@ -62,6 +63,7 @@ export default function Navbar({ status, onOpenSearch, revealBrandMark }: Navbar
   );
 
   const [menuOpen, setMenuOpen] = useState(false);
+  const { theme, toggle: toggleTheme } = useTheme();
 
   return (
     <div className="navbar-float">
@@ -85,6 +87,23 @@ export default function Navbar({ status, onOpenSearch, revealBrandMark }: Navbar
                 phone/tablet-width viewport, not just visually cramped. Same
                 icon-button treatment as navbar-toggle/theme-toggle, only
                 shown where the full SearchBar pill isn't (see Navbar.css). */}
+            <button
+              className="navbar-theme-toggle"
+              aria-label={theme === "light" ? "Switch to dark theme" : "Switch to light theme"}
+              onClick={toggleTheme}
+            >
+              {theme === "light" ? (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <circle cx="12" cy="12" r="4.5" />
+                  <path d="M12 2.5v2.5M12 19v2.5M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2.5 12H5M19 12h2.5M4.2 19.8 6 18M18 6l1.8-1.8" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20.5 14.2a8.5 8.5 0 1 1-10.7-10.7 7 7 0 0 0 10.7 10.7z" />
+                </svg>
+              )}
+            </button>
+
             <button className="navbar-search-toggle" aria-label="Search" onClick={onOpenSearch}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="11" cy="11" r="7" />
@@ -106,6 +125,7 @@ export default function Navbar({ status, onOpenSearch, revealBrandMark }: Navbar
             <div className={`navbar-links${menuOpen ? " navbar-links--open" : ""}`}>
               <NavLink to="/" end onClick={() => setMenuOpen(false)}>Home</NavLink>
               <NavLink to="/groups" onClick={() => setMenuOpen(false)}>Groups</NavLink>
+              <NavLink to="/trending" onClick={() => setMenuOpen(false)}>Trending</NavLink>
               <NavLink to="/digest" onClick={() => setMenuOpen(false)}>Digest</NavLink>
               <NavLink to="/publishers" onClick={() => setMenuOpen(false)}>Publishers</NavLink>
               <NavLink to="/denuvo-tracker" onClick={() => setMenuOpen(false)}>Denuvo Tracker</NavLink>

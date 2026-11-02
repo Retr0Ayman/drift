@@ -86,37 +86,6 @@
   overflow: hidden;
 }
 
-/* Replaces the old isometric circuit-board glyph (DriftGlyph) -- that
-   read as generic tech clip-art, a different visual language from the
-   round soft-edged lava-lamp blobs the rest of the site is built from.
-   Two oversized, heavily-blurred radial-gradient discs in the same
-   --cosmic-a/-b hues the ambient background and every aura ring already
-   use, so this card's backdrop looks like it's catching the same light
-   as everything floating over it instead of hosting its own separate
-   illustration. Plain radial-gradient (no filter: blur -- the softness
-   comes from the gradient's own falloff), static, no animation -- same
-   "cheap, once-painted accent" discipline as .liquid-sheen's streak. */
-.hero-signal-glow {
-  position: absolute;
-  width: 60%;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.hero-signal-glow--a {
-  top: -30%;
-  right: -20%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--cosmic-a) 55%, transparent) 0%, transparent 70%);
-}
-
-.hero-signal-glow--b {
-  bottom: -35%;
-  left: -18%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--cosmic-b) 45%, transparent) 0%, transparent 70%);
-}
-
 .hero-signal-head {
   position: relative;
   z-index: 1;
@@ -254,13 +223,25 @@
   height: 30px;
 }
 
+/* Solid, single-hue bars -- was a two-stop --cosmic-a/-b gradient per bar,
+   which (stacked with the spinning aura ring and the two oversized blurred
+   glow discs this panel used to carry) read as generic AI-dashboard-mockup
+   decoration rather than a real readout. --dead is the same green the
+   navbar's own LIVE status pill already uses (Navbar.tsx's STATUS_TONE) --
+   reusing it here ties "this bar chart is live data" to the one color this
+   site already means that with, instead of an arbitrary rainbow. */
 .hero-signal-bar {
   flex: 1;
   min-width: 0;
   border-radius: 2px 2px 1px 1px;
-  background: linear-gradient(180deg, var(--cosmic-b), var(--cosmic-a));
-  opacity: 0.8;
+  background: var(--dead);
+  opacity: 0.55;
+  transform-origin: bottom;
   transition: opacity var(--dur) var(--ease);
+}
+
+.hero-signal-bar:last-child {
+  opacity: 0.85;
 }
 
 .hero-signal-bar:hover {

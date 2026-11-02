@@ -18,8 +18,8 @@
 .glass-panel {
   border-radius: var(--r-lg);
   background: var(--aura-panel-bg);
-  -webkit-backdrop-filter: blur(var(--aura-blur)) saturate(1.15);
-  backdrop-filter: blur(var(--aura-blur)) saturate(1.15);
+  -webkit-backdrop-filter: blur(var(--aura-blur)) saturate(1.25);
+  backdrop-filter: blur(var(--aura-blur)) saturate(1.25);
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-highlight), var(--glass-shadow), var(--glass-ambient);
 }
@@ -29,26 +29,20 @@
   box-shadow: var(--glass-highlight), var(--glass-shadow-lg), var(--glass-ambient);
 }
 
-.glass-panel--aura {
-  border-radius: calc(var(--aura-radius) - 1.5px);
-  background: var(--aura-panel-bg);
-  -webkit-backdrop-filter: blur(var(--aura-blur));
-  backdrop-filter: blur(var(--aura-blur));
-  border: none;
-  box-shadow: var(--glass-highlight), var(--glass-shadow-lg), var(--glass-ambient), var(--ethereal-glow);
-}
-
-/* Static counterpart to .glass-panel--aura -- same translucent fill +
-   blur, saturate() added per the Stage 3 brief, and a thin border blended
-   from the same two aura hues instead of the spinning conic-gradient ring
-   (reserved for the hero stat panel -- the search bar and AI tags moved to
-   the dedicated --ai-* palette, see tokens.css's own comment). Reuses the
-   exact --aura-* tokens, no new ones invented. */
+/* Static counterpart to the spinning conic-gradient aura ring (reserved for
+   the search bar alone now -- SearchBar.tsx builds that directly off the
+   shared .aura-ring class, not through this component; the hero "Live
+   signal" panel was the other reserved spot until a spinning rainbow
+   border there got cut for reading as generic AI-dashboard decoration, see
+   Hero.tsx's own history). Same translucent fill + blur, saturate() added
+   per the Stage 3 brief, and a thin border blended from the same two aura
+   hues instead of a spinning ring. Reuses the exact --aura-* tokens, no new
+   ones invented. */
 .glass-panel--frost {
-  background: var(--aura-panel-bg);
-  -webkit-backdrop-filter: blur(var(--aura-blur)) saturate(1.15);
-  backdrop-filter: blur(var(--aura-blur)) saturate(1.15);
-  border: 1px solid color-mix(in srgb, color-mix(in srgb, var(--aura-a), var(--aura-b)) 45%, white);
+  background: color-mix(in srgb, var(--aura-panel-bg) 80%, transparent);
+  -webkit-backdrop-filter: blur(var(--aura-blur)) saturate(1.25);
+  backdrop-filter: blur(var(--aura-blur)) saturate(1.25);
+  border: 1px solid color-mix(in srgb, color-mix(in srgb, var(--aura-a), var(--aura-b)) 45%, var(--glass-edge-tint));
   box-shadow: var(--glass-highlight), var(--glass-shadow-lg), var(--glass-ambient), var(--ethereal-glow);
 }
 
@@ -90,10 +84,10 @@
    --aura-blur (tokens.css), already pulled back from 20px to 15px for
    the same reason -- 33px here instead of the old 44px. */
 .glass-panel--frost-strong {
-  background: color-mix(in srgb, var(--aura-panel-bg) 55%, transparent);
+  background: color-mix(in srgb, var(--aura-panel-bg) 45%, transparent);
   -webkit-backdrop-filter: blur(calc(var(--aura-blur) * 2.2)) saturate(1.25);
   backdrop-filter: blur(calc(var(--aura-blur) * 2.2)) saturate(1.25);
-  border: 1px solid color-mix(in srgb, color-mix(in srgb, var(--aura-a), var(--aura-b)) 45%, white);
+  border: 1px solid color-mix(in srgb, color-mix(in srgb, var(--aura-a), var(--aura-b)) 45%, var(--glass-edge-tint));
   box-shadow: var(--glass-highlight), var(--glass-shadow-lg), var(--glass-ambient), var(--ethereal-glow);
 }
 

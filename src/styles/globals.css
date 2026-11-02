@@ -109,8 +109,12 @@ select {
   }
 }
 
-/* Aura ring: reserved for the search bar and one hero stat panel per page.
-   --aura-radius is set per call site (defaults to the card radius). */
+/* Aura ring: the spinning conic-gradient border, reserved for the search
+   bar alone -- it used to also wrap the homepage's "Live signal" hero
+   panel, cut from there for reading as generic AI-dashboard decoration on
+   a panel meant to look like a real, professional live readout (see
+   Hero.tsx's own history). --aura-radius is set per call site (defaults to
+   the card radius). */
 .aura-ring {
   --aura-radius: var(--r-lg);
   display: block;
@@ -192,6 +196,34 @@ select {
     rgba(255, 255, 255, 0.03) 84%,
     transparent 100%
   );
+}
+
+/* Completes the "cursor glint" slot Navbar.css's own comment already
+   reserved on ::after (this class only ever used ::before until now) --
+   a soft highlight that tracks the actual pointer within the surface,
+   the natural next step from the static diagonal streak above (which
+   reacts to nothing). Opt-in tracking: GameCard.tsx and Hero.tsx's Live
+   Signal panel set --glint-x/--glint-y via onPointerMove; any other
+   .liquid-sheen surface (navbar pills, search bar) that never wires that
+   up still gets a tasteful centered glow on hover instead of nothing,
+   from the 50%/50% default below -- never a moving effect it didn't ask
+   for. Deliberately no idle/always-on animation, only hover -- the
+   comment above already found that exact failure mode (an
+   always-animating sheen reading as a distracting artifact) once. */
+.liquid-sheen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s var(--ease);
+  background: radial-gradient(320px circle at var(--glint-x, 50%) var(--glint-y, 50%), rgba(255, 255, 255, 0.12), transparent 60%);
+}
+
+.liquid-sheen:hover::after {
+  opacity: 1;
 }
 
 .back-link {

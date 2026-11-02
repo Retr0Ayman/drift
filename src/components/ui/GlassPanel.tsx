@@ -4,15 +4,16 @@ import "./GlassPanel.css";
 interface GlassPanelProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode;
   strong?: boolean;
-  aura?: boolean;
   /* Static glass -- backdrop-filter blur+saturate, the same translucent
      --aura-panel-bg fill and --aura-a/--aura-b-derived border the search
-     bar's aura ring uses, but no spin. The animated conic-gradient ring
-     stays reserved for the search bar / one hero panel, per tokens.css's
-     own "reserved" rule -- this is the broader Stage 3
-     rollout (side panels, release cards, group/publisher/franchise
-     panels), which would read as gimmicky with a dozen spinning borders
-     on one page. */
+     bar's own spinning aura ring (SearchBar.tsx, a raw .aura-ring div, not
+     this component) uses, but no spin. The animated conic-gradient ring
+     stays reserved for the search bar alone now -- the hero "Live signal"
+     panel used to be the other reserved spot (via this component's own now-
+     removed `aura` prop) but a spinning rainbow border read as generic
+     AI-dashboard-mockup decoration on a panel meant to read as a real,
+     professional live readout; frost (still visibly floating glass, no
+     spin) replaced it there. */
   frost?: boolean;
   /* Stronger version of the same frost treatment -- more blur, more
      saturate, more see-through -- for surfaces that need to visibly float
@@ -23,17 +24,7 @@ interface GlassPanelProps extends HTMLAttributes<HTMLDivElement> {
   frostStrong?: boolean;
 }
 
-export default function GlassPanel({ children, className = "", strong, aura, frost, frostStrong, ...rest }: GlassPanelProps) {
-  if (aura) {
-    return (
-      <div className="aura-ring">
-        <div className={`glass-panel--aura liquid-sheen${className ? ` ${className}` : ""}`} {...rest}>
-          {children}
-        </div>
-      </div>
-    );
-  }
-
+export default function GlassPanel({ children, className = "", strong, frost, frostStrong, ...rest }: GlassPanelProps) {
   return (
     <div
       className={`glass-panel${strong ? " glass-panel--strong" : ""}${frostStrong ? " glass-panel--frost-strong liquid-sheen" : frost ? " glass-panel--frost liquid-sheen" : ""}${className ? ` ${className}` : ""}`}

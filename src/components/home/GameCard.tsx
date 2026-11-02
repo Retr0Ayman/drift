@@ -1,3 +1,4 @@
+import type { PointerEvent } from "react";
 import { Link } from "react-router-dom";
 import GlassPanel from "../ui/GlassPanel";
 import Pill from "../ui/Pill";
@@ -43,9 +44,19 @@ export default function GameCard({ game, priority }: GameCardProps) {
   const releases = genuineReleases.length ? genuineReleases : allReleases;
   const topRelease = releases[0];
 
+  // Drives the cursor-glint highlight (.liquid-sheen::after, globals.css) --
+  // plain style.setProperty on the element directly, not React state, so
+  // this never triggers a re-render on mouse move across a whole grid of
+  // these.
+  function handlePointerMove(e: PointerEvent<HTMLDivElement>) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    e.currentTarget.style.setProperty("--glint-x", `${((e.clientX - rect.left) / rect.width) * 100}%`);
+    e.currentTarget.style.setProperty("--glint-y", `${((e.clientY - rect.top) / rect.height) * 100}%`);
+  }
+
   return (
     <Link to={`/game/${game.id}`} className="game-card-link">
-      <GlassPanel className="game-card" frostStrong>
+      <GlassPanel className="game-card" frostStrong onPointerMove={handlePointerMove}>
         <div className="game-card-cover">
           {img ? (
             <img

@@ -1,21 +1,25 @@
-/* orlaz design tokens — one universal "liquid glass + lava lamp" theme.
-   Dark/light mode toggle removed entirely (see git log for the previous
-   dual-theme system this replaces) -- the ambient background
-   (AmbientBackground.css) has always been a fixed, non-theme-adaptive dark
-   scene, and GlassPanel.css's default variant is now real translucent
-   glass everywhere (not a separate opaque fallback), so a light UI mode
-   never had anywhere coherent left to apply: every surface either sits
-   directly on the colorful moving wallpaper or on a dark-tinted glass
-   panel floating over it. These are NOT simply the old dark-mode values
-   copy-pasted -- text/UI sitting on a colorful moving backdrop through a
-   translucent glass fill is a harder legibility case than a flat dark
-   background ever was (the old dark mode was tuned against solid --bg-1
-   cards), so contrast was re-checked deliberately for that harder case:
-   near-white ink at full/68%/45% alpha over a ~55-60%-opaque near-black
-   glass fill still reads reliably regardless of what color is moving
-   underneath (dark scrim + light text is a robust combination against
-   almost any backdrop hue), which is why --ink stays a true near-white
-   rather than anything warmer/dimmer. */
+/* orlaz design tokens — "liquid glass + lava lamp," now a real light/dark
+   hybrid again (a previous pass deliberately dropped the toggle -- see git
+   log -- reasoning that the fixed dark ambient background left light mode
+   "nowhere coherent to apply"; brought back at the site owner's explicit
+   request, this time with the ambient scene itself made theme-aware too --
+   see --ambient-bg-0/1/2, --ambient-mote-color and --ambient-canvas-opacity
+   below, consumed by AmbientBackground.css -- rather than only re-theming
+   the glass/text sitting on top of a background that never changed). Three
+   states, resolved in this order: an explicit choice (data-theme="light" or
+   "dark" on <html>, set by Navbar's toggle via useTheme.ts and applied
+   before first paint by index.html's own tiny inline script, to avoid a
+   flash of the wrong theme) always wins; absent that, prefers-color-scheme
+   decides; absent even that, this bare :root block (dark) is the default.
+   Dark values below are numerically the same tuned set the one-universal-
+   theme pass already validated for the "harder legibility case" of text on
+   a colorful moving backdrop through translucent glass -- untouched. Light
+   values are a fresh pass, not a mechanical inversion: status colors in
+   particular are deliberately darker/more saturated than a naive invert
+   would give (checked against a ~4.5:1 contrast floor on the light glass
+   fill below, the same rigor the dark set's own comment already applied),
+   since the light-lilac/teal/etc. tuned for a dark backdrop wash out
+   against a light one. */
 :root {
   color-scheme: dark;
 
@@ -71,10 +75,31 @@
   --ethereal-glow: 0 0 70px -14px rgba(166, 139, 219, 0.4);
 
   /* Vignette -- deepening toward the edges of the ambient background,
-     like looking into a liquid-filled vessel. Always this one value, same
-     reasoning as before the theme consolidation: the wallpaper itself was
-     never theme-adaptive to begin with. */
+     like looking into a liquid-filled vessel. */
   --ambient-vignette: rgba(2, 2, 8, 0.65);
+
+  /* The ambient scene's own base color, now theme-aware (AmbientBackground.
+     css's .ambient-bg radial-gradient stops) -- the metaball canvas on top
+     (LavaLampCanvas.tsx) draws its blobs at absolute, backdrop-independent
+     RGB values (each fill color is pre-compensated against the canvas
+     element's own fixed blur/contrast/brightness filter, not against
+     whatever's behind it), so flipping this base color to a light scene
+     needed zero changes to that carefully-tuned simulation -- only the
+     negative space between blobs changes from near-black voids to warm-
+     paper ones. */
+  --ambient-bg-0: #0c0810;
+  --ambient-bg-1: #050308;
+  --ambient-bg-2: #020103;
+  /* Drifting light motes (.ambient-mote) -- a bright glint reads as dust
+     catching light against a dark scene; the same color would be
+     invisible against a light one, hence themed rather than fixed. */
+  --ambient-mote-color: rgba(255, 255, 255, 0.95);
+  /* The metaball canvas's own opacity where it composites over .ambient-bg
+     -- blending semi-transparent saturated blob colors over a LIGHT
+     backdrop lightens/desaturates them far more than the same blend over a
+     dark one (mixing toward white vs. toward black), so light mode raises
+     this to keep blobs reading as vivid rather than washed-out pastel. */
+  --ambient-canvas-opacity: 0.62;
 
   /* Fixed plasma accents -- the drifting lava-lamp blobs
      (AmbientBackground.css) blend these with each game's own extracted
@@ -100,9 +125,15 @@
   --canvas-ink-2: rgba(245, 243, 238, 0.68);
   --canvas-ink-3: rgba(245, 243, 238, 0.45);
 
-  /* aura ring -- reserved for one hero stat panel per page. */
+  /* aura ring -- reserved for the search bar. */
   --aura-a: #a68bdb55;
   --aura-b: #4fb8a055;
+  /* What GlassPanel/Navbar's frosted borders (color-mix(...,var(--aura-a)/
+     var(--aura-b)...)) blend toward to stay visible: mixing toward WHITE
+     brightens a border enough to read against dark glass; mixing toward
+     the same color on light glass would wash it out to near-invisible, so
+     light mode mixes toward a dark ink instead. */
+  --glass-edge-tint: white;
   /* Perf pass: pulled back from 20px -- backdrop-filter blur is one of the
      single most expensive things a browser can do per-frame, and every
      glass surface (now the default GlassPanel variant too, not just
@@ -153,8 +184,160 @@
 
   --wrap: 1180px;
 
-  /* Frosted fill inside .glass-panel--aura (the aura-ringed search bar /
-     hero stat panel) and, since the theme consolidation, every other
-     GlassPanel variant's default fill too (see GlassPanel.css). */
-  --aura-panel-bg: rgba(19, 18, 16, 0.6);
+  /* Frosted fill inside the search bar's aura ring and every GlassPanel
+     variant's default fill (see GlassPanel.css). PERF/translucency pass:
+     pulled back from 0.6 --
+     more of the moving scene shows through every panel now, "liquid glass"
+     rather than a mostly-opaque card with a blur at the edges. */
+  --aura-panel-bg: rgba(19, 18, 16, 0.46);
+}
+
+/* Light theme -- explicit choice (Navbar's toggle, persisted via
+   useTheme.ts) always wins over the system preference below. Kept as its
+   own attribute selector rather than folded into the media query so an
+   explicit choice can override prefers-color-scheme in either direction
+   (see :not([data-theme="dark"]) below, which is what stops a light
+   system preference from fighting an explicit dark choice). */
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --bg-0: #f6f2ea;
+  --bg-1: #fbf9f5;
+  --bg-2: #efe9df;
+
+  --ink: #1c1a17;
+  --ink-2: rgba(28, 26, 23, 0.68);
+  --ink-3: rgba(28, 26, 23, 0.46);
+  --ink-4: rgba(28, 26, 23, 0.14);
+
+  --accent: #1c1a17;
+  --accent-ink: #f6f2ea;
+  --accent-dim: rgba(28, 26, 23, 0.08);
+  --accent-dim-2: rgba(28, 26, 23, 0.14);
+
+  --hv: #6d4fb5;
+  --trad: #157a63;
+  --dead: #1c7a43;
+  --out: #a65814;
+  --unc: #b53324;
+  --unv: #6d6553;
+  --drm: #8f6708;
+
+  --glass-bg: rgba(28, 26, 23, 0.05);
+  --glass-bg-strong: rgba(28, 26, 23, 0.09);
+  --glass-border: rgba(28, 26, 23, 0.12);
+  --glass-border-strong: rgba(28, 26, 23, 0.2);
+  --glass-shadow: 0 1px 2px rgba(60, 48, 30, 0.1);
+  --glass-shadow-lg: 0 4px 16px rgba(60, 48, 30, 0.14);
+
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  --glass-ambient: 0 20px 40px -14px rgba(90, 70, 50, 0.16);
+
+  --ethereal-glow: 0 0 70px -14px rgba(109, 79, 181, 0.25);
+
+  --ambient-vignette: rgba(150, 130, 160, 0.22);
+  --ambient-bg-0: #fdfbf7;
+  --ambient-bg-1: #f3ede2;
+  --ambient-bg-2: #e8ded0;
+  --ambient-mote-color: rgba(40, 32, 20, 0.5);
+  /* FIX (confirmed live, 2026-09-10 design pass): 0.75 was numerically
+     "raise it to compensate for wash-out," but visually that made fully-
+     saturated magenta/blue/purple blobs read as solid confetti-colored
+     circles against cream -- the exact "oversized blurred color blobs"
+     look the site owner already rejected once (see
+     design_taste_premium_not_flashy memory) when it showed up as flat
+     decoration elsewhere. It only worked in dark mode because near-black
+     negative space makes the same saturated blobs read as glowing plasma,
+     not flat shapes. Cut hard instead of compensated for -- soft diffuse
+     color at the edges, not solid pastel shapes -- and paired with
+     --ambient-core below so the actual reading area (hero copy, nav,
+     cards) sits on clean paper rather than raw blob saturation. */
+  --ambient-canvas-opacity: 0.22;
+  /* Center-protecting wash for .ambient-vault (AmbientBackground.css) --
+     dark mode leaves this transparent (its vignette only ever darkens the
+     OUTER edge, same "looking into a vessel" framing as before), but
+     light mode's blobs are vivid enough now even at the lower opacity
+     above that the content well still needs its own shield: a soft
+     paper-colored center fading to transparent by 40%, same radius the
+     outer vignette starts from, so blobs read as color bleeding in from
+     the edges/corners rather than sitting directly behind text. */
+  --ambient-core: rgba(251, 249, 245, 0.75);
+
+  --canvas-ink: #1c1a17;
+  --canvas-ink-2: rgba(28, 26, 23, 0.68);
+  --canvas-ink-3: rgba(28, 26, 23, 0.46);
+
+  --aura-a: #6d4fb555;
+  --aura-b: #157a6355;
+  --glass-edge-tint: black;
+
+  --aura-panel-bg: rgba(255, 255, 255, 0.42);
+}
+
+/* Same values as above, applied instead when there's no explicit choice
+   and the OS itself prefers light -- :not([data-theme="dark"]) is what
+   keeps an explicit dark choice from being fought by a light system
+   preference. Kept as a literal duplicate of the block above rather than a
+   shared selector list (CSS can't combine a media condition into one
+   selector) -- same "small hand-synced mirror" tradeoff this codebase
+   already accepts elsewhere (worker/shared/constants.ts mirroring
+   src/lib/constants.ts); keep the two in sync. */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
+
+    --bg-0: #f6f2ea;
+    --bg-1: #fbf9f5;
+    --bg-2: #efe9df;
+
+    --ink: #1c1a17;
+    --ink-2: rgba(28, 26, 23, 0.68);
+    --ink-3: rgba(28, 26, 23, 0.46);
+    --ink-4: rgba(28, 26, 23, 0.14);
+
+    --accent: #1c1a17;
+    --accent-ink: #f6f2ea;
+    --accent-dim: rgba(28, 26, 23, 0.08);
+    --accent-dim-2: rgba(28, 26, 23, 0.14);
+
+    --hv: #6d4fb5;
+    --trad: #157a63;
+    --dead: #1c7a43;
+    --out: #a65814;
+    --unc: #b53324;
+    --unv: #6d6553;
+    --drm: #8f6708;
+
+    --glass-bg: rgba(28, 26, 23, 0.05);
+    --glass-bg-strong: rgba(28, 26, 23, 0.09);
+    --glass-border: rgba(28, 26, 23, 0.12);
+    --glass-border-strong: rgba(28, 26, 23, 0.2);
+    --glass-shadow: 0 1px 2px rgba(60, 48, 30, 0.1);
+    --glass-shadow-lg: 0 4px 16px rgba(60, 48, 30, 0.14);
+
+    --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+    --glass-ambient: 0 20px 40px -14px rgba(90, 70, 50, 0.16);
+
+    --ethereal-glow: 0 0 70px -14px rgba(109, 79, 181, 0.25);
+
+    --ambient-vignette: rgba(150, 130, 160, 0.22);
+    --ambient-bg-0: #fdfbf7;
+    --ambient-bg-1: #f3ede2;
+    --ambient-bg-2: #e8ded0;
+    --ambient-mote-color: rgba(40, 32, 20, 0.5);
+    /* Keep in sync with the explicit :root[data-theme="light"] block above --
+       see its own comment for why this dropped from 0.75. */
+    --ambient-canvas-opacity: 0.22;
+    --ambient-core: rgba(251, 249, 245, 0.75);
+
+    --canvas-ink: #1c1a17;
+    --canvas-ink-2: rgba(28, 26, 23, 0.68);
+    --canvas-ink-3: rgba(28, 26, 23, 0.46);
+
+    --aura-a: #6d4fb555;
+    --aura-b: #157a6355;
+    --glass-edge-tint: black;
+
+    --aura-panel-bg: rgba(255, 255, 255, 0.42);
+  }
 }

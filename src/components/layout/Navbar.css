@@ -45,7 +45,7 @@
   background: var(--aura-panel-bg);
   backdrop-filter: blur(var(--aura-blur)) saturate(1.2);
   -webkit-backdrop-filter: blur(var(--aura-blur)) saturate(1.2);
-  border: 1px solid color-mix(in srgb, color-mix(in srgb, var(--aura-a), var(--aura-b)) 35%, white);
+  border: 1px solid color-mix(in srgb, color-mix(in srgb, var(--aura-a), var(--aura-b)) 35%, var(--glass-edge-tint));
   transform-origin: top center;
 }
 
@@ -153,6 +153,30 @@
 .navbar-toggle svg {
   width: 18px;
   height: 18px;
+}
+
+/* Unlike navbar-toggle/navbar-search-toggle below, this one is visible at
+   every width -- there's no separate desktop equivalent control for it the
+   way SearchBar's full pill covers search on wide screens, so it can't
+   hide behind the 860px breakpoint. Same icon-button sizing/treatment,
+   just always shown. */
+.navbar-theme-toggle {
+  display: flex;
+  border: none;
+  background: var(--glass-bg);
+  color: var(--ink);
+  width: 38px;
+  height: 38px;
+  border-radius: var(--pill);
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex: none;
+}
+
+.navbar-theme-toggle svg {
+  width: 17px;
+  height: 17px;
 }
 
 /* Hidden on desktop -- .navbar-search-slot's full SearchBar pill already

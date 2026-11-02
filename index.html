@@ -4,7 +4,26 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="color-scheme" content="dark" />
+    <meta name="color-scheme" content="dark light" />
+    <!-- Light/dark hybrid: applies a stored explicit theme choice (Navbar's
+         toggle, src/hooks/useTheme.ts) to <html> synchronously, before the
+         first stylesheet paints -- without this, a visitor who explicitly
+         chose a theme that disagrees with their OS preference would see one
+         frame (or more, on a slow connection) of the wrong theme before
+         React mounts and useTheme's own effect corrects it. Tiny and
+         inline on purpose: a separate script file would itself be a
+         render-blocking network request, defeating the point. Silently
+         does nothing if localStorage is unavailable (private browsing) --
+         tokens.css's prefers-color-scheme fallback still applies either
+         way. */
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem("drift.theme");
+          if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+        } catch (e) {}
+      })();
+    </script>
     <!-- Perf pass (confirmed live via Lighthouse's own network-dependency-
          tree-insight): the variable body font was only ever discovered via
          globals.css's @font-face, a 3-deep critical chain (HTML -> CSS ->
@@ -17,7 +36,21 @@
          preload shortens how long that fallback-to-real-font swap takes to
          actually happen. -->
     <link rel="preload" href="/fonts/Geist-Variable.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="alternate" type="application/rss+xml" title="orlaz — new cracks" href="/api/feed.xml" />
     <title>orlaz · by DaRealAyman</title>
+    <!-- Sitewide structured data: real, static facts about the site itself
+         (name/URL/what it is), never a per-game claim -- those are injected
+         per-route by usePageStructuredData (see GameDetail.tsx) since they
+         depend on data that isn't known at build time. -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "orlaz",
+        "url": "https://drift.orlaz.workers.dev/",
+        "description": "Live crack, build and version status for PC games — hypervisor and traditional cracks side by side, flagged the moment either falls behind the latest patch."
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

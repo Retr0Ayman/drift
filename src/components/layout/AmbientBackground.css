@@ -11,15 +11,22 @@
    children; this filters exactly one fixed-size canvas element).
 
    Everything else from the geometry-fix pass that was never the actual
-   problem stays as-is: true near-black base, the vignette, the static
-   grain texture, the drifting motes. */
+   problem stays as-is: the base gradient, the vignette, the static
+   grain texture, the drifting motes.
+
+   Light/dark hybrid pass: the base gradient's three stops, the vignette
+   (--ambient-vignette, used below), the mote glow color and the metaball
+   canvas's own opacity are now theme tokens (tokens.css) rather than fixed
+   values -- LavaLampCanvas.tsx's blob simulation itself needed no changes
+   (see tokens.css's --ambient-bg-0 comment for why the blob colors are
+   backdrop-independent). */
 .ambient-bg {
   position: fixed;
   inset: 0;
   z-index: 0;
   overflow: hidden;
   pointer-events: none;
-  background: radial-gradient(ellipse 130% 85% at 50% -6%, #0c0810 0%, #050308 55%, #020103 100%);
+  background: radial-gradient(ellipse 130% 85% at 50% -6%, var(--ambient-bg-0) 0%, var(--ambient-bg-1) 55%, var(--ambient-bg-2) 100%);
 }
 
 /* Everything that drifts with the pointer (AmbientBackground.tsx) lives in
@@ -68,16 +75,26 @@
   height: 100%;
   display: block;
   filter: blur(13px) contrast(9) brightness(1.05);
-  opacity: 0.62;
+  opacity: var(--ambient-canvas-opacity);
 }
 
 /* Vignette -- a soft depth cue, deepening toward the edges like looking
    into a liquid-filled vessel rather than at a flat backdrop. Static
-   radial-gradient, no animation, no filter -- cheapest possible layer. */
+   radial-gradient, no animation, no filter -- cheapest possible layer.
+   The new leading stop (--ambient-core, tokens.css) is a light-mode-only
+   addition -- dark mode leaves it transparent (unset, falls through to the
+   var()'s own default) so its vessel framing is unchanged; light mode uses
+   it to shield the actual content well from the blob canvas underneath,
+   see tokens.css's --ambient-core comment for why. */
 .ambient-vault {
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse 80% 70% at 50% 40%, transparent 40%, var(--ambient-vignette, rgba(2, 2, 8, 0.7)) 100%);
+  background: radial-gradient(
+    ellipse 80% 70% at 50% 40%,
+    var(--ambient-core, transparent) 0%,
+    transparent 40%,
+    var(--ambient-vignette, rgba(2, 2, 8, 0.7)) 100%
+  );
 }
 
 /* Static pre-rendered noise (an SVG feTurbulence baked into a data-URI
@@ -101,7 +118,7 @@
 .ambient-mote {
   position: absolute;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.95) 0%, transparent 72%);
+  background: radial-gradient(circle, var(--ambient-mote-color) 0%, transparent 72%);
   opacity: 0;
   animation-name: ambient-mote-rise;
   animation-timing-function: ease-in-out;
