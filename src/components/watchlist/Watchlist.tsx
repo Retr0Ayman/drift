@@ -5,6 +5,7 @@ import GameCard from "../home/GameCard";
 import Reveal from "../ui/Reveal";
 import WishlistImport from "./WishlistImport";
 import ShareWatchlistButton from "./ShareWatchlistButton";
+import WatchlistSync from "./WatchlistSync";
 import { usePageMeta } from "../../hooks/usePageMeta";
 import { anyOutdated, driftDelta, outdatedDays } from "../../lib/format";
 import "./Watchlist.css";
@@ -92,6 +93,10 @@ export default function Watchlist() {
       ) : null}
 
       <Reveal delay={0.05}>
+        <WatchlistSync />
+      </Reveal>
+
+      <Reveal delay={0.08}>
         <WishlistImport />
       </Reveal>
 
