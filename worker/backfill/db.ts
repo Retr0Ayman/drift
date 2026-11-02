@@ -262,6 +262,11 @@ export async function upsertGames(db: D1Database, games: ParsedGame[], enrichmen
 
   const statements: D1PreparedStatement[] = [];
   const now = Date.now();
+  // Games whose releases this batch actually wrote -- each needs its
+  // denormalised games.last_release_ts recomputed once, after the release
+  // upserts below have landed (see migrations/0014 for why the catalog grid
+  // orders on that column instead of a MAX(ts) subquery or updated_at).
+  const touchedReleaseIds = new Set<string>();
 
   for (const game of games) {
     const enrichment = enrichments.get(game.title);
@@ -334,6 +339,11 @@ export async function upsertGames(db: D1Database, games: ParsedGame[], enrichmen
       );
     }
 
+    // gameId, not game.id -- a title that merged into an existing appid
+    // owner above writes its releases under the OWNER's row, so that's the
+    // row whose last_release_ts has to be recomputed.
+    if (game.releases.length) touchedReleaseIds.add(gameId);
+
     for (const r of game.releases) {
       statements.push(
         db.prepare(UPSERT_RELEASE_SQL).bind(
@@ -356,6 +366,20 @@ export async function upsertGames(db: D1Database, games: ParsedGame[], enrichmen
         ),
       );
     }
+  }
+
+  // Appended last so these run after every release upsert above has been
+  // applied -- db.batch() executes in order, so recomputing straight from
+  // the releases table here always sees this tick's own writes. Reads only
+  // the one game's rows via idx_releases_game, and only for games whose
+  // releases actually changed, so this stays cheap on the write path and
+  // adds nothing at all to the read path.
+  for (const id of touchedReleaseIds) {
+    statements.push(
+      db
+        .prepare("UPDATE games SET last_release_ts = (SELECT MAX(ts) FROM releases WHERE game_id = ?) WHERE id = ?")
+        .bind(id, id),
+    );
   }
 
   if (statements.length) await db.batch(statements);
