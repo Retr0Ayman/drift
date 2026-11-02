@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import type { Game } from "../../types/game";
 import { useCatalog } from "../../hooks/useCatalog";
@@ -20,6 +20,7 @@ import WatchToggle from "../ui/WatchToggle";
 import Tabs, { type TabDef } from "../ui/Tabs";
 import SegmentedControl from "../ui/SegmentedControl";
 import { usePageMeta } from "../../hooks/usePageMeta";
+import { usePageStructuredData } from "../../hooks/usePageStructuredData";
 import { usePlatformP2PIndex } from "../../hooks/usePlatformP2PIndex";
 import { useGameScreenshots } from "../../hooks/useGameScreenshots";
 import { useAmbientAccent } from "../../hooks/useAmbientAccent";
@@ -73,7 +74,7 @@ function CarouselSlideImage({ src, index }: { src: string; index: number }) {
 export default function GameDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { games } = useCatalog();
+  const { games, mergeOne } = useCatalog();
   const game = games.find((g) => g.id === id);
   const { index: p2pIndex } = usePlatformP2PIndex();
 
@@ -90,6 +91,27 @@ export default function GameDetail() {
     const merged = mergeP2PReleases(game.releases, game.title, p2pIndex);
     return merged === game.releases ? game : { ...game, releases: merged };
   }, [game, p2pIndex]);
+
+  // PERF: worker/routes/catalog.ts's bulk sync deliberately omits desc (an
+  // avg ~690 chars * ~2000 games nothing on any grid/list page ever reads)
+  // -- undefined here means "not fetched yet" (never "genuinely blank",
+  // which the bulk payload still represents as ""), so this fetches it
+  // exactly once, only for the one game actually being viewed, and patches
+  // it onto the shared catalog via mergeOne so revisiting this game later
+  // in the same session doesn't refetch it.
+  useEffect(() => {
+    if (!game || game.desc !== undefined) return;
+    let cancelled = false;
+    fetch(`/api/catalog/game?id=${encodeURIComponent(game.id)}`)
+      .then((r) => r.json())
+      .then((data: { desc?: string }) => {
+        if (!cancelled) mergeOne({ id: game.id, desc: data.desc ?? "" });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [game, mergeOne]);
 
   const screenshots = useGameScreenshots(game?.appid);
   useAmbientAccent(mergedGame?.accentColorPrimary, mergedGame?.accentColorSecondary);
@@ -117,6 +139,38 @@ export default function GameDetail() {
     description: game?.desc || undefined,
     image: game ? coverImg(game) || undefined : undefined,
   });
+
+  // Real, sourced facts only -- datePublished only when mergedGame.released
+  // actually parses (Steam's own string, same Date.parse() lib/format.ts's
+  // survivalHrs already relies on), and a Metacritic-sourced Review rather
+  // than a fabricated aggregateRating: schema.org expects a real reviewCount
+  // alongside any aggregateRating, which this app doesn't have, so citing
+  // one real critic score with its real source is the honest structured-data
+  // equivalent instead of inventing a count to satisfy the schema.
+  const releaseMs = mergedGame?.released ? Date.parse(mergedGame.released) : NaN;
+  usePageStructuredData(
+    mergedGame
+      ? {
+          "@context": "https://schema.org",
+          "@type": "VideoGame",
+          name: mergedGame.title,
+          url: `https://drift.orlaz.workers.dev/game/${mergedGame.id}`,
+          description: mergedGame.desc || undefined,
+          image: coverImg(mergedGame) || undefined,
+          genre: mergedGame.genres?.length ? mergedGame.genres : undefined,
+          publisher: mergedGame.publisher ? { "@type": "Organization", name: mergedGame.publisher } : undefined,
+          author: mergedGame.developer ? { "@type": "Organization", name: mergedGame.developer } : undefined,
+          datePublished: !isNaN(releaseMs) ? new Date(releaseMs).toISOString().slice(0, 10) : undefined,
+          review: mergedGame.metacritic
+            ? {
+                "@type": "Review",
+                author: { "@type": "Organization", name: "Metacritic" },
+                reviewRating: { "@type": "Rating", ratingValue: mergedGame.metacritic, bestRating: 100, worstRating: 0 },
+              }
+            : undefined,
+        }
+      : null,
+  );
 
   if (!mergedGame) {
     return (
@@ -230,7 +284,7 @@ export default function GameDetail() {
       content: (
         <div className="detail-overview">
           <div className="detail-about">
-            <p>{mergedGame.desc}</p>
+            <p>{mergedGame.desc === undefined ? "Loading description…" : mergedGame.desc || "No description available."}</p>
           </div>
         </div>
       ),

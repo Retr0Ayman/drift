@@ -5,7 +5,28 @@ import type { Game } from "../types/game";
 // D1 reads are cheap -- no need for the small per-page sizes the old
 // client-side xREL crawl used to keep Steam-resolve costs down (that cost
 // no longer exists at read time, it's already paid once during backfill).
-const PER_PAGE = 200;
+// PERF: 500 (worker/routes/catalog.ts's own MAX_PER_PAGE cap) rather than a
+// smaller page -- syncing the ~2000-game catalog is ~4 requests instead of
+// ~10 at the same total bytes, less per-request overhead (headers, D1
+// connection setup) for no downside at this catalog's scale.
+const PER_PAGE = 500;
+
+// PERF: lets the browser finish whatever it's already busy with (parsing the
+// first route chunk, fetching the preloaded font, painting the first
+// GameCard image) before this hook starts pulling down the rest of the
+// catalog in the background -- confirmed-live Lighthouse passes on this app
+// have repeatedly found that competing for bandwidth/main-thread time right
+// after initial load hurts LCP (see GameCard.tsx's own fetchPriority
+// history). Safari has no requestIdleCallback, hence the timeout fallback.
+function idle(): Promise<void> {
+  return new Promise((resolve) => {
+    if (typeof requestIdleCallback === "function") {
+      requestIdleCallback(() => resolve(), { timeout: 2000 });
+    } else {
+      setTimeout(resolve, 200);
+    }
+  });
+}
 
 export type CatalogStatus = "seeded" | "syncing" | "live";
 
@@ -16,7 +37,11 @@ export interface LiveCatalog {
   hasMore: boolean;
   totalPages: number | null;
   loadMore: () => Promise<void>;
-  mergeOne: (game: Game) => void;
+  // Accepts a partial patch (id required) as well as a full Game -- used
+  // both for a freshly live-resolved title (CommandPalette, full object)
+  // and for backfilling one lazily-fetched field onto an already-loaded
+  // game (GameDetail's desc fetch, see that file's own comment).
+  mergeOne: (game: Partial<Game> & Pick<Game, "id">) => void;
   archiveMonth: string | null;
   archiveDepthMonths: number;
 }
@@ -122,10 +147,18 @@ export function useLiveCatalog(): LiveCatalog {
      carry (D1-only enrichment) exactly as the fuller existing record had
      it -- same in the `!exists` branch below there's nothing to preserve. */
   const mergeOne = useCallback(
-    (game: Game) => {
+    (game: Partial<Game> & Pick<Game, "id">) => {
       const exists = gamesRef.current.some((g) => g.id === game.id);
       commit(
-        exists ? gamesRef.current.map((g) => (g.id === game.id ? { ...g, ...game } : g)) : [...gamesRef.current, game],
+        exists
+          ? gamesRef.current.map((g) => (g.id === game.id ? { ...g, ...game } : g))
+          : // The add-new-game branch only ever runs for a genuinely complete
+            // live-resolved Game (CommandPalette's search path) -- a partial
+            // field patch (GameDetail's desc backfill) only ever targets an
+            // id already in gamesRef.current, so it always takes the exists
+            // branch above instead. The cast reflects that real invariant,
+            // not a type-safety gap.
+            [...gamesRef.current, game as Game],
       );
     },
     [commit],
@@ -156,7 +189,9 @@ export function useLiveCatalog(): LiveCatalog {
       // archive-walker's session-long trickle. Directory pages (Groups,
       // Publishers) depend on `games` genuinely reflecting the whole
       // catalog to show real counts instead of the old "+"-suffixed
-      // provisional ones.
+      // provisional ones. Deferred to the next idle window (see idle()
+      // above) so it starts after, not competing with, the current page's
+      // own critical first paint.
       //
       // FIX (perf sweep): this used to call fetchPage (a full commit/
       // setGames on every single page) in the loop body -- a ~2000-game
@@ -168,7 +203,10 @@ export function useLiveCatalog(): LiveCatalog {
       // background drain closely enough to need page-by-page granularity.
       // Buffers a few pages' worth of games and flushes them as one commit
       // instead, so the same eager full-catalog load finishes in ~3 renders
-      // instead of ~10.
+      // instead of ~10. Orthogonal to the idle() deferral above: that
+      // controls WHEN this drain starts, this controls how many renders it
+      // costs once running.
+      await idle();
       const FLUSH_EVERY = 3;
       let buffer: Game[] = [];
       while (hasMoreRef.current) {

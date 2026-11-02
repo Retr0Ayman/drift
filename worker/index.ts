@@ -23,6 +23,10 @@ import { handleBadge } from "./routes/badge";
 import { handleWishlist } from "./routes/wishlist";
 import { handleFeed } from "./routes/feed";
 import { handleCatalog } from "./routes/catalog";
+import { handleCatalogGame } from "./routes/catalogGame";
+import { handleWatchlistTrack } from "./routes/watchlistTrack";
+import { handleTrending } from "./routes/trending";
+import { handleWatchlistSync } from "./routes/watchlistSync";
 import { runScheduledAlert, runSteadyStateSync } from "./scheduled";
 import { runBackfillTick } from "./backfill/run";
 import { runDeepBackfillTick } from "./backfill/deepRun";
@@ -81,6 +85,7 @@ const ROUTES: Record<string, Handler> = {
   "/api/feed.xml": handleFeed,
   "/api/search-assist": handleSearchAssist,
   "/api/catalog": handleCatalog,
+  "/api/catalog/game": handleCatalogGame,
   "/api/group-reliability": handleGroupReliability,
   "/api/group-reliability/recompute": handleGroupReliabilityRecompute,
   "/api/denuvo-removal": handleDenuvoRemoval,
@@ -89,6 +94,9 @@ const ROUTES: Record<string, Handler> = {
   "/api/crack-eta/recompute": handleCrackEtaRecompute,
   "/api/admin/refresh-game": handleAdminRefreshGame,
   "/api/admin/seed-title": handleAdminSeedTitle,
+  "/api/watchlist/track": handleWatchlistTrack,
+  "/api/trending": handleTrending,
+  "/api/watchlist/sync": handleWatchlistSync,
 };
 
 export default {

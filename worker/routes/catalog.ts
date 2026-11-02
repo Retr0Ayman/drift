@@ -127,7 +127,15 @@ export const handleCatalog: Handler = async ({ request, env }) => {
         formerTags: g.former_tags ? JSON.parse(g.former_tags) : [],
         currentBuild: g.current_build ?? 0,
         currentBuildUpdatedAt: g.current_build_updated_at ?? null,
-        desc: g.desc || "",
+        // desc deliberately omitted here (PERF: confirmed live, ~690 chars
+        // average per game -- across the ~2000-game full background sync
+        // useLiveCatalog.ts does on every page load, that's over a megabyte
+        // of description text nothing on any grid/list/directory page
+        // actually reads, only GameDetail's single active Overview tab
+        // does. Left undefined (not "") so GameDetail can tell "not fetched
+        // yet" apart from "genuinely no description" and lazy-fetch it once,
+        // for just that one game, via /api/catalog/game -- see
+        // worker/routes/catalogGame.ts and GameDetail.tsx's own comment.
         fact: g.fact || "",
         dlc: [],
         metacritic: g.metacritic ?? undefined,

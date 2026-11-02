@@ -9,7 +9,7 @@ export interface CatalogContextValue {
   hasMore: boolean;
   totalPages: number | null;
   loadMore: () => Promise<void>;
-  mergeOne: (game: Game) => void;
+  mergeOne: (game: Partial<Game> & Pick<Game, "id">) => void;
   archiveMonth: string | null;
   archiveDepthMonths: number;
 }
