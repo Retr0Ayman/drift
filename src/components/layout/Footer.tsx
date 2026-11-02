@@ -4,6 +4,7 @@ import "./Footer.css";
 
 const EXPLORE_LINKS = [
   { to: "/", label: "Home" },
+  { to: "/trending", label: "Trending" },
   { to: "/groups", label: "Groups" },
   { to: "/digest", label: "Digest" },
   { to: "/publishers", label: "Publishers" },
@@ -47,6 +48,9 @@ export default function Footer() {
                 <Link to={l.to}>{l.label}</Link>
               </li>
             ))}
+            <li>
+              <a href="/api/feed.xml">RSS feed</a>
+            </li>
           </ul>
         </div>
 

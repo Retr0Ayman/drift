@@ -3,7 +3,7 @@ import { handleXrelBrowse } from "./xrel/browse";
 import type { RawXrelRelease } from "../shared/xrel";
 
 const BASE_URL = "https://drift.orlaz.workers.dev";
-const STATIC_ROUTES = ["/", "/groups", "/digest", "/publishers", "/watchlist"];
+const STATIC_ROUTES = ["/", "/groups", "/digest", "/publishers", "/watchlist", "/trending"];
 
 const slugify = (s: string): string =>
   (s || "")
