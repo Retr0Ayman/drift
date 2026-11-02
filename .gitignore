@@ -25,3 +25,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local secrets -- wrangler reads .dev.vars for `wrangler dev`, and nothing
+# here was ignoring it (or .env) before, so a stray `git add -A` would have
+# committed a real GROQ_API_KEY/ADMIN_TOKEN straight to a public repo.
+.dev.vars*
+!.dev.vars.example
+.env*
+!.env.example
