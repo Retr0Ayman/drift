@@ -1,0 +1,65 @@
+# Quality gate. Cloudflare Workers Builds deploys every push to main on its own,
+# with no typecheck, build or test in front of it -- so this is the only place a
+# broken commit gets noticed. It runs in parallel with that deploy, which means
+# it reports a problem rather than preventing it; protecting main with a
+# required status check (Settings -> Branches) is what would make it a gate.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npx tsc -b
+
+      - name: Tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Lint
+        run: npm run lint
+
+      # A migration is not applied by deploying. If code that reads a new
+      # column ships before `wrangler d1 migrations apply --remote` has run,
+      # the query throws -- on 2026-11-02 that made /api/catalog return an
+      # empty catalog for ~25 minutes. This can't know whether the migration
+      # has been applied, so it only makes sure nobody forgets to check.
+      - name: Flag new migrations
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE="${{ github.event.before }}"
+          fi
+          case "$BASE" in ""|0000000000000000000000000000000000000000) exit 0;; esac
+          NEW=$(git diff --name-only --diff-filter=A "$BASE" HEAD -- 'migrations/*.sql' || true)
+          if [ -n "$NEW" ]; then
+            for f in $NEW; do
+              echo "::warning file=$f::New migration. Apply it BEFORE the code that depends on it deploys: npx wrangler d1 migrations apply orlaz-catalog --remote"
+            done
+          fi
