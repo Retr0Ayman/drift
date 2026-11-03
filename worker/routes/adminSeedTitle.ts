@@ -115,6 +115,39 @@ export const handleAdminSeedTitle: Handler = async ({ request, env }) => {
   const alreadySeeded = [...enrichments.values()].some((e) => e.appid === requested.appid);
   if (alreadySeeded) return json({ seeded, statementsWritten: written }, 5);
 
+  /* Never assert "uncracked" for a game xREL clearly DOES carry but whose
+     title merely failed to resolve against Steam. Confirmed live on this
+     exact route: xREL files Modern Warfare 4's 7 real releases under "Call
+     of Duty: Modern Warfare 4 (2026)", which Steam's storesearch can't
+     match, so those rows came back resolved:false, the appid check above
+     couldn't see them (an unresolved row has no appid to compare), and
+     this route inserted a Steam-only row claiming zero releases -- i.e. it
+     published "Uncracked" for a genuinely cracked game. Honest absence is
+     fine here; a confident false negative is not, and that's precisely the
+     fabrication this project's whole discipline exists to prevent.
+
+     So compare by slug as well as by appid: if any xREL group's title
+     looks like the requested one (equal, or one a dash-prefixed extension
+     of the other, which is what a "(2026)"-style disambiguator produces),
+     treat the game as present-but-unresolved and report it instead of
+     writing a claim. The fix for that state is an XREL_TITLE_ALIASES entry
+     in worker/backfill/resolve.ts, which is what the note points at. */
+  const requestedSlug = slugify(title);
+  const unresolvedXrelMatch = [...grouped.values()].find((g) => {
+    const s = slugify(g.title);
+    return s === requestedSlug || s.startsWith(`${requestedSlug}-`) || requestedSlug.startsWith(`${s}-`);
+  });
+  if (unresolvedXrelMatch) {
+    return json(
+      {
+        seeded,
+        statementsWritten: written,
+        note: `xREL has ${unresolvedXrelMatch.releases.length} release(s) for "${unresolvedXrelMatch.title}" but it did not resolve against Steam, so it was not written. Not adding an uncracked row, which would be false. Add an XREL_TITLE_ALIASES entry mapping it to "${requested.title || title}".`,
+      },
+      5,
+    );
+  }
+
   const game: ParsedGame = {
     id: slugify(requested.title || title),
     xrel_key: "",
