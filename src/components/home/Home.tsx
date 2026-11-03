@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import Hero from "./Hero";
 import GameGrid from "./GameGrid";
 import FilterBar from "./FilterBar";
 import Pagination from "../ui/Pagination";
@@ -8,6 +7,7 @@ import { useCatalog } from "../../hooks/useCatalog";
 import { usePageSize } from "../../hooks/usePageSize";
 import { usePageMeta } from "../../hooks/usePageMeta";
 import { availableGenres, availableYears, passesFilters, sortGames, type SortKey, type StatusFilter } from "../../lib/filters";
+import { gTimestamp } from "../../lib/catalog";
 
 const VALID_STATUS: StatusFilter[] = ["all", "outdated", "hv", "trad", "uncracked", "unreleased"];
 
@@ -54,6 +54,21 @@ export default function Home() {
     [games, status, genre, year, sort],
   );
 
+  /* The masthead's one quiet line of real context, replacing the old hero's
+     "Live signal" card of stat tiles. Same honesty rule as everywhere else:
+     both figures are counted from the loaded catalog, never estimated, and
+     each is simply omitted while there's nothing real to show yet rather
+     than rendering a zero or a placeholder. */
+  const catalogueMeta = useMemo(() => {
+    if (!games.length) return null;
+    const lastTs = games.reduce((mx, g) => Math.max(mx, gTimestamp(g)), 0);
+    const parts = [`${games.length.toLocaleString()} titles tracked`];
+    if (lastTs) {
+      parts.push(`latest crack ${new Date(lastTs).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`);
+    }
+    return parts.join(" · ");
+  }, [games]);
+
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const clampedPage = Math.min(page, totalPages);
   const pageItems = filtered.slice((clampedPage - 1) * pageSize, clampedPage * pageSize);
@@ -88,23 +103,12 @@ export default function Home() {
     }
   }
 
-  // Hero's Live Signal stats jump straight to the matching filtered
-  // catalogue view -- a real status change on Home's own state, not a
-  // ?status= link. Home only reads that query param on first mount (see
-  // the comment above), so a same-route Link would silently do nothing
-  // the vast majority of the time this gets clicked (Hero only ever
-  // renders here, meaning whoever clicks it is already on this page).
-  function jumpToStatus(next: StatusFilter) {
-    setStatus(next);
-    document.querySelector(".catalogue")?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
-
   return (
     <>
-      <Hero games={games} onJumpToStatus={jumpToStatus} />
       <GameGrid
         games={pageItems}
         initialLoading={loading && games.length === 0}
+        meta={catalogueMeta}
         filters={
           <FilterBar
             status={status}

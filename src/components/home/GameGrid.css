@@ -1,27 +1,55 @@
+/* Content-first masthead. This section used to sit BELOW a full-viewport
+   hero (giant wordmark + a "Live signal" card of stat tiles), so landing on
+   the site showed no games at all until you scrolled -- and the hero
+   repeated the wordmark the navbar already shows, then announced "The
+   catalogue" immediately above this heading saying the same thing again.
+   The hero is gone and this is the page's own masthead now: enough top room
+   to breathe under the floating navbar, then straight into the grid, so the
+   first row of real games is above the fold on a laptop viewport.
+   border-top is gone with it -- it was the seam against the hero, and
+   directly under the navbar it just read as a stray rule. */
 .catalogue {
-  padding: 40px 24px 96px;
-  border-top: 1px solid var(--glass-border);
+  padding: 68px 24px 96px;
 }
 
 .catalogue-head {
-  margin-bottom: 28px;
+  margin-bottom: 30px;
 }
 
 .catalogue-eyebrow {
   display: block;
-  font-size: var(--fs-xs);
+  font-size: var(--fs-2xs);
   font-weight: 700;
-  letter-spacing: 0.5px;
-  color: var(--canvas-ink);
+  /* Wider tracking and a dimmer ink than the title -- this is a label for
+     the heading, not a competing second heading, which is what it read as
+     at the previous size/weight/full-strength colour. */
+  letter-spacing: 1.4px;
+  color: var(--canvas-ink-3);
   text-transform: uppercase;
-  margin-bottom: 8px;
+  margin-bottom: 14px;
 }
 
+/* The display serif the hero wordmark used, at real headline size -- the
+   page's one typographic statement now that the wordmark isn't repeated
+   here. Optical sizing only; no gradient fills, no glow. */
 .catalogue-title {
-  font-size: var(--fs-h1);
-  font-weight: 800;
-  letter-spacing: -1.5px;
+  font-family: var(--font-display);
+  font-size: clamp(2.1rem, 1.5rem + 2.4vw, 3.4rem);
+  font-weight: 600;
+  line-height: 1.04;
+  letter-spacing: -0.02em;
   color: var(--canvas-ink);
+  max-width: 18ch;
+}
+
+/* Replaces the "Live signal" tile grid: the same real figures stated as a
+   single quiet line instead of a dashboard card. */
+.catalogue-meta {
+  margin-top: 14px;
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: var(--canvas-ink-3);
+  font-variant-numeric: tabular-nums;
 }
 
 .catalogue-grid {

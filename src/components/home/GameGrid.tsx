@@ -14,16 +14,21 @@ interface GameGridProps {
      every cold load, which is simply false: nothing had loaded yet, no
      filter had excluded anything. */
   initialLoading?: boolean;
+  /* One quiet line of real catalogue context under the title (Home.tsx's
+     catalogueMeta). Optional because every other page that renders a grid
+     has no such figure to state. */
+  meta?: ReactNode;
 }
 
 const SKELETON_COUNT = 8;
 
-export default function GameGrid({ games, filters, initialLoading }: GameGridProps) {
+export default function GameGrid({ games, filters, initialLoading, meta }: GameGridProps) {
   return (
     <section className="catalogue wrap">
       <Reveal className="catalogue-head">
         <span className="catalogue-eyebrow">The catalogue</span>
         <h2 className="catalogue-title">Every title orlaz is tracking</h2>
+        {meta ? <p className="catalogue-meta">{meta}</p> : null}
       </Reveal>
       {filters}
       {games.length ? (
