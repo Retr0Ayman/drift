@@ -18,8 +18,13 @@ const EXPLORE_LINKS = [
    footer -- the no-mirror disclaimer and the real data-source attribution
    -- stays, just organized into real labeled sections instead of two
    run-together sentences. */
+// Evaluated once at load rather than inside render, where an impure call gives
+// a different answer on re-render. A copyright year only goes stale if a tab
+// stays open across New Year's Eve.
+const YEAR = new Date().getFullYear();
+
 export default function Footer() {
-  const year = new Date().getFullYear();
+  const year = YEAR;
 
   return (
     <footer className="site-footer">

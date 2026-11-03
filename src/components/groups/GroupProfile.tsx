@@ -165,6 +165,11 @@ export default function GroupProfile() {
   // this group actually has, so the effective view falls back to repacks
   // for that case regardless of the toggle's own state.
   const [showRepacks, setShowRepacks] = useState(false);
+  // "Now" for the days-since-last-release figure below, read once per mount.
+  // Calling Date.now() directly in render gave a different answer on every
+  // re-render and made React Compiler skip optimising this component; a
+  // days-granularity figure doesn't need to tick while the page sits open.
+  const [now] = useState(() => Date.now());
   const effectiveShowRepacks = showRepacks || (crackRows.length === 0 && repackRows.length > 0);
   const visibleRows = effectiveShowRepacks ? repackRows : crackRows;
   const months = useMemo(() => groupByMonth(visibleRows), [visibleRows]);
@@ -217,7 +222,7 @@ export default function GroupProfile() {
   const out = seedMatches.filter(({ g, r }) => relOutdated(g, r)).length;
   const leaning = isRepackGroupProfile ? "Repack" : hv >= trad ? "Hypervisor" : "Traditional";
   const lastTs = rows.reduce((mx, r) => (r.ts > mx ? r.ts : mx), 0);
-  const daysSince = lastTs ? Math.max(0, Math.floor((Date.now() - lastTs) / 86400000)) : null;
+  const daysSince = lastTs ? Math.max(0, Math.floor((now - lastTs) / 86400000)) : null;
   // Earliest tracked activity -- real, derivable straight from this same
   // rows list (no separate fetch), and one of the "mini wiki" writeup's
   // real grounding points (worker/routes/summary.ts's group prompt).
