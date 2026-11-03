@@ -5,12 +5,13 @@
    classify a release the same honest way the frontend does) rather than a
    cross-directory import that would couple the two build boundaries. Keep
    both files in sync by hand if either list ever changes. */
-export const STARRED_GROUPS = ["voices38", "DenuvOwO"];
+export const STARRED_GROUPS = ["voices38", "DenuvOwO", "ARTiFACT"];
 
 const normGroup = (g: string): string => (g || "").toLowerCase().replace(/[^a-z0-9]/g, "");
 
 const GROUP_METHOD: Record<string, "hv" | "trad"> = {
   denuvowo: "hv",
+  artifact: "hv",
   "0xzeon": "hv",
   "0xze0n": "hv",
   voices38: "trad",

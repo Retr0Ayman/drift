@@ -1,5 +1,6 @@
 import type { Handler } from "../shared/types";
 import { json } from "../shared/http";
+import { methodForGroup } from "../shared/constants";
 
 interface JoinedRow {
   id: string;
@@ -141,7 +142,14 @@ export const handleCatalog: Handler = async ({ request, env }) => {
         metacritic: g.metacritic ?? undefined,
         source: { name: g.source_name || "xREL", url: g.source_url || "https://www.xrel.to/" },
         releases: releases.map((r) => ({
-          method: r.rel_method as "hv" | "trad",
+          // Derived from the group, not trusted from the stored column: that
+          // column is frozen at first insert (UPSERT_RELEASE_SQL only rewrites
+          // a row when its ts advances), so reclassifying a group -- ARTiFACT
+          // was added as hypervisor after its first release had already been
+          // written as "trad" -- would otherwise never reach existing rows.
+          // methodForGroup is what wrote the column in the first place, so
+          // this changes nothing for any group whose classification hasn't.
+          method: r.rel_group_name ? methodForGroup(r.rel_group_name) : (r.rel_method as "hv" | "trad"),
           label: r.rel_method === "hv" ? "Hypervisor" : "Traditional",
           group: r.rel_group_name as string,
           build: r.rel_build,

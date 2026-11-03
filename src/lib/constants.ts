@@ -3,12 +3,13 @@
    DenuvOwO per the P2P-groups fix (see worker/routes/xrel/group.ts): these
    two never show up via the main Windows browse feed at all, only through
    the targeted per-group lookup, so they're the groups most worth pinning. */
-export const STARRED_GROUPS = ["voices38", "denuvowo"];
+export const STARRED_GROUPS = ["voices38", "denuvowo", "artifact"];
 
 const normGroup = (g: string): string => (g || "").toLowerCase().replace(/[^a-z0-9]/g, "");
 
 const GROUP_METHOD: Record<string, "hv" | "trad"> = {
   denuvowo: "hv",
+  artifact: "hv",
   "0xzeon": "hv",
   "0xze0n": "hv",
   voices38: "trad",
