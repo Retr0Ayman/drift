@@ -116,6 +116,9 @@ const XREL_TITLE_ALIASES: Record<string, string> = {
   // Modern Warfare 2 (appid 10180), which is why this stays an alias rather
   // than a rule that strips years.
   "call of duty: modern warfare ii (2022)": "Call of Duty: Modern Warfare II",
+  // Third confirmed case of the same pattern, found while seeding MW2:
+  // un-suffixed resolves to appid 3595270 (the 2011 Modern Warfare 3 is 42680).
+  "call of duty: modern warfare iii (2023)": "Call of Duty: Modern Warfare III",
   "lego batman: das vermächtnis des dunklen ritters": "LEGO Batman: Legacy of the Dark Knight",
   // Confirmed live during the Dishonored franchise-gap sweep -- same German-
   // xREL-title failure mode as LEGO Batman above, real releases exist but
