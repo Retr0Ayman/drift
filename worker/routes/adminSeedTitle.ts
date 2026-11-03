@@ -1,7 +1,7 @@
 import type { Handler } from "../shared/types";
 import { json } from "../shared/http";
 import { handleXrelSearch } from "./xrel/index";
-import { groupRowsByTitle } from "../backfill/parse";
+import { groupRowsByTitle, slugify, type ParsedGame } from "../backfill/parse";
 import { resolveAndEnrichBatch } from "../backfill/resolve";
 import { upsertGames } from "../backfill/db";
 import type { RawXrelRelease } from "../shared/xrel";
@@ -42,7 +42,59 @@ export const handleAdminSeedTitle: Handler = async ({ request, env }) => {
   if (!searchRes.ok) return json({ error: "xREL search failed" }, 5, 502);
   const data = (await searchRes.json()) as SearchResponse;
   const grouped = groupRowsByTitle(data.list || []);
-  if (!grouped.size) return json({ seeded: [], note: "no real Windows master_game releases found for that title" }, 5);
+
+  /* FIX (reported live: "games like the new MW4 and Phantom Blade 0 aren't
+     there at all"): every path that creates a games row -- the browse-feed
+     backfill, starred groups, the franchise-seeded deep backfill, the
+     archive crawl, steady-state sync, and this route's own normal path
+     above -- derives that row from an xREL RELEASE. So a real, highly
+     anticipated game simply cannot exist in this catalog until somebody
+     cracks it: confirmed live, xREL has zero releases for Phantom Blade
+     Zero and none for Modern Warfare 4, while Steam resolves both cleanly
+     (appid 4115450 and 4435490).
+
+     That's backwards for this site specifically. The UI already has real
+     "Unreleased"/"Uncracked" states, and the Crack ETA Predictor, the
+     Denuvo tracker and the watchlist are all most useful for exactly the
+     titles nobody has cracked yet -- someone arriving to ask "is MW4
+     cracked?" currently gets nothing at all, which reads as the site being
+     broken rather than as an honest "not yet."
+
+     So when xREL genuinely returns nothing, fall back to a Steam-only
+     insert: a real resolved appid with real Steam metadata and an empty
+     release list, which gStatus/statusMeta already render honestly as
+     Unreleased/Uncracked. No fabricated crack data is involved -- the game
+     is added with zero releases precisely because there are zero.
+
+     Deliberately only when the xREL search SUCCEEDED and found nothing
+     (a non-ok response already returned 502 above): if xREL is merely
+     unreachable, a game that does have cracks must not be written as a
+     crackless row. And if a crack later appears, upsertGames' own
+     appid-canonical identity merges it into THIS row rather than spawning
+     a duplicate, so seeding early is safe. */
+  if (!grouped.size) {
+    const enrichments = await resolveAndEnrichBatch(env, [title]);
+    const enrichment = enrichments.get(title);
+    if (!enrichment) {
+      return json({ seeded: [], note: "no xREL releases, and no Steam match for that title either" }, 5);
+    }
+    const game: ParsedGame = {
+      id: slugify(enrichment.title || title),
+      xrel_key: "",
+      title,
+      year: enrichment.year ?? null,
+      releases: [],
+    };
+    const written = await upsertGames(env.orlaz_catalog, [game], enrichments);
+    return json(
+      {
+        seeded: [{ id: game.id, title: enrichment.title || title, releaseCount: 0, resolved: true, appid: enrichment.appid, tags: enrichment.tags }],
+        statementsWritten: written,
+        note: "no xREL releases yet -- added from Steam as an uncracked title",
+      },
+      5,
+    );
+  }
 
   const titles = [...grouped.values()].map((g) => g.title);
   const enrichments = await resolveAndEnrichBatch(env, titles);
