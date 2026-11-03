@@ -17,7 +17,7 @@ export const slugify = (s: string): string =>
     .replace(/(^-|-$)/g, "")
     .slice(0, 60);
 
-function parseVersionFromDirname(dn?: string): string {
+export function parseVersionFromDirname(dn?: string): string {
   if (!dn) return "";
   // FIX (confirmed live, Rockstar publisher-page report; hand-synced with
   // src/lib/catalog.ts's own copy of this function -- see that file's
