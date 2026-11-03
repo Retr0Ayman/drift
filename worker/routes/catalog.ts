@@ -72,6 +72,11 @@ const MAXAGE = 30;
    many releases a page's games have between them) sidesteps the limit
    entirely instead of needing a lower page-size cap that could break
    again the next time a game accumulates enough releases. */
+/* Ordered by last_release_ts (real crack recency), NOT updated_at -- see
+   migrations/0014 for the confirmed-live bug that caused: updated_at is a
+   cron bookkeeping timestamp, and refreshStale.ts bumping the oldest rows
+   was promoting 2018-era cracks above yesterday's releases on the homepage.
+   Indexed, so this ORDER BY still reads only the LIMIT'd rows. */
 const QUERY = `
   SELECT g.*, r.method as rel_method, r.group_name as rel_group_name, r.build as rel_build,
     r.version as rel_version, r.date as rel_date, r.ts as rel_ts, r.note as rel_note,
@@ -79,9 +84,9 @@ const QUERY = `
     r.is_anonymous as rel_is_anonymous, r.update_count as rel_update_count,
     r.first_seen_date as rel_first_seen_date, r.first_seen_build as rel_first_seen_build,
     r.first_seen_ts as rel_first_seen_ts, r.first_seen_verified as rel_first_seen_verified
-  FROM (SELECT * FROM games ORDER BY updated_at DESC LIMIT ? OFFSET ?) g
+  FROM (SELECT * FROM games ORDER BY last_release_ts DESC LIMIT ? OFFSET ?) g
   LEFT JOIN releases r ON r.game_id = g.id
-  ORDER BY g.updated_at DESC, r.ts DESC
+  ORDER BY g.last_release_ts DESC, r.ts DESC
 `;
 
 export const handleCatalog: Handler = async ({ request, env }) => {
