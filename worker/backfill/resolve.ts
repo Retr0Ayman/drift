@@ -109,6 +109,13 @@ const XREL_TITLE_ALIASES: Record<string, string> = {
      row -- the Prey 2006/2017 hazard worker/backfill/db.ts already
      documents. One confirmed case, one entry. */
   "call of duty: modern warfare 4 (2026)": "Call of Duty: Modern Warfare 4",
+  // Same year-disambiguator failure as MW4 above, found by the same sweep
+  // (2026-11-03): xREL files Modern Warfare II's releases (ElAmigos, RIDDICK)
+  // as "... II (2022)", Steam returns nothing for that string, and the
+  // un-suffixed title resolves to appid 3595230 -- distinct from the 2009
+  // Modern Warfare 2 (appid 10180), which is why this stays an alias rather
+  // than a rule that strips years.
+  "call of duty: modern warfare ii (2022)": "Call of Duty: Modern Warfare II",
   "lego batman: das vermächtnis des dunklen ritters": "LEGO Batman: Legacy of the Dark Knight",
   // Confirmed live during the Dishonored franchise-gap sweep -- same German-
   // xREL-title failure mode as LEGO Batman above, real releases exist but
