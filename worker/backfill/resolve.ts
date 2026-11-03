@@ -90,6 +90,25 @@ export interface Enrichment {
    (found real xREL releases via search, never resolves) -- don't guess
    ahead of a confirmed case. */
 const XREL_TITLE_ALIASES: Record<string, string> = {
+  /* Confirmed live (reported as "the new MW4 isn't there at all"): xREL
+     files this game's 7 real Windows releases (ElAmigos, PULS3, r4v3n's
+     Crack Only, x.X.RIDDICK.X.x, P2P, dfHD) under the master_game title
+     "Call of Duty: Modern Warfare 4 (2026)", and Steam's storesearch
+     returns nothing at all for that exact string -- the year suffix is
+     xREL's own disambiguator, not part of Steam's listing ("Call of
+     Duty(R): Modern Warfare(R) 4", appid 4435490, which resolves fine
+     without it). So the whole game resolved to null and upsertGames
+     dropped it along with every one of those releases, which is why a
+     genuinely cracked, highly anticipated title was missing entirely.
+
+     Deliberately an alias rather than a generic "strip a trailing (YYYY)
+     and retry" rule, per this map's own policy above: several older Call
+     of Duty entries DO carry a real year in their Steam names ("Call of
+     Duty 4: Modern Warfare (2007)" resolves as-is), and blanket-stripping
+     the year is exactly how a reboot gets merged into its predecessor's
+     row -- the Prey 2006/2017 hazard worker/backfill/db.ts already
+     documents. One confirmed case, one entry. */
+  "call of duty: modern warfare 4 (2026)": "Call of Duty: Modern Warfare 4",
   "lego batman: das vermächtnis des dunklen ritters": "LEGO Batman: Legacy of the Dark Knight",
   // Confirmed live during the Dishonored franchise-gap sweep -- same German-
   // xREL-title failure mode as LEGO Batman above, real releases exist but
