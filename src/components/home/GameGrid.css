@@ -39,7 +39,7 @@
   line-height: 1.04;
   letter-spacing: -0.02em;
   color: var(--canvas-ink);
-  max-width: 18ch;
+  max-width: 32ch;
 }
 
 /* Replaces the "Live signal" tile grid: the same real figures stated as a
