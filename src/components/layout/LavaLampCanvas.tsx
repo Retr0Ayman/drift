@@ -108,11 +108,10 @@ const BLOB_COUNT = 13;
 
 // Atmosphere pass: the field should sit behind the UI, not be the subject.
 // MOTION_SCALE scales every velocity/jitter/speed-cap below (0.45 = a bit
-// under half the previous pace); RADIUS_SCALE shrinks blobs slightly so
-// more near-black gap survives between fused clusters. Intensity (opacity/
-// saturation) is tuned in tokens.css / AmbientBackground.css, not here.
+// under half the previous pace). RADIUS_SCALE is back at 1 (original size);
+// intensity lives in tokens.css (--ambient-canvas-opacity).
 const MOTION_SCALE = 0.45;
-const RADIUS_SCALE = 0.9;
+const RADIUS_SCALE = 1;
 
 function makeBlobs(): Blob[] {
   const blobs: Blob[] = [];
@@ -230,9 +229,6 @@ export default function LavaLampCanvas() {
       hasAccent = !!(p || s);
       accentPrimary = p || FALLBACK_PRIMARY;
       accentSecondary = s || FALLBACK_SECONDARY;
-      // List pages stay calm; a game page keeps its per-game color at fuller
-      // strength (see .ambient-canvas[data-accent] in AmbientBackground.css).
-      canvas!.dataset.accent = hasAccent ? "1" : "0";
     }
     readAccent();
 

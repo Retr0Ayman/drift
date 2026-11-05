@@ -74,17 +74,8 @@
   width: 100%;
   height: 100%;
   display: block;
-  filter: blur(13px) contrast(9) brightness(1.05) saturate(var(--ambient-canvas-saturate));
+  filter: blur(13px) contrast(9) brightness(1.05);
   opacity: var(--ambient-canvas-opacity);
-  transition: opacity 900ms var(--ease), filter 900ms var(--ease);
-}
-
-/* Per-game colour is the point of a game page, so it keeps (most of) its
-   strength; every list page runs calmer. saturate() is applied AFTER the
-   contrast(9) stage, so LavaLampCanvas's pre-compensation is unaffected. */
-.ambient-canvas[data-accent="1"] {
-  opacity: var(--ambient-canvas-opacity-game);
-  filter: blur(13px) contrast(9) brightness(1.05) saturate(1);
 }
 
 /* Vignette -- a soft depth cue, deepening toward the edges like looking
