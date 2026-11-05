@@ -85,6 +85,14 @@ const STOREFRONT_NOISE = new Set(
 );
 const isNoise = (v: string) => STOREFRONT_NOISE.has(v.toLowerCase());
 
+/* Cleans an already-stored tag list with the current naming rules: aliases
+   normalised (Origin -> EA app, Uplay -> Ubisoft Connect), storefront
+   shorthands / debris dropped, duplicates removed. Not a "page no longer lists
+   it" judgement -- these names were never protection schemes. */
+export function normalizeTags(tags: string[]): string[] {
+  return [...new Set(tags.map(canon).filter((t) => t && !isNoise(t) && !isDebris(t)))];
+}
+
 /* Same classification the Cargo-era code applied to Uses_DRM / Removed_DRM /
    Anticheat / Steam_DRM, now fed from the page wikitext. Anything in the
    removed list is excluded from current tags. */

@@ -190,3 +190,11 @@ describe("non-Denuvo tags from the same wikitext", () => {
     expect(p.sets.tags).toBeUndefined();
   });
 });
+
+describe("stored tag hygiene", () => {
+  it("cleans stored junk even when the page parse is incomplete (names that were never protection schemes)", () => {
+    const stored = row({ tags: JSON.stringify(["Origin", "MacApp", "Unknown", "8.13.0066", "Steam DRM", "Always online"]), denuvo_watch: 0 });
+    const p = planRowUpdate(stored, pcgwMatch({ tags: [], complete: false }), steamOk(null), NOW)!;
+    expect(JSON.parse(p.sets.tags as string).sort()).toEqual(["Always online", "EA app", "Steam DRM"]);
+  });
+});

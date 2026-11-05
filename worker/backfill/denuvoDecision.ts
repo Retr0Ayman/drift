@@ -1,4 +1,4 @@
-import type { PcgwOutcome } from "./pcgamingwiki";
+import { normalizeTags, type PcgwOutcome } from "./pcgamingwiki";
 import { noticeListsDenuvo, type SteamNotice } from "./steamDrm";
 
 export const DENUVO_TAG = "Denuvo Anti-Tamper";
@@ -168,7 +168,7 @@ export function planRowUpdate(
   // request). A stored tag drops only when a COMPLETE page parse (Availability
   // table + anticheat field both present) no longer lists it; otherwise the
   // page can only add. A failed / unmatched / deferred lookup never touches them.
-  const storedOther = tags.filter((t) => t !== DENUVO_TAG);
+  const storedOther = normalizeTags(tags.filter((t) => t !== DENUVO_TAG));
   let other = storedOther;
   let formerOther = former.filter((t) => t !== DENUVO_TAG);
   if (pcgw?.status === "match") {
