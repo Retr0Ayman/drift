@@ -218,3 +218,17 @@ describe("subrequest budget: deferral is neither an answer nor a failure", () =>
     expect(r.outcomes.get("b")).toEqual({ status: "deferred" });
   });
 });
+
+describe("tag hygiene (names seen live in the first production pass)", () => {
+  it("template shorthands and old names are normalised or dropped; markup debris never becomes a tag", () => {
+    const wt = `|steam appid = 9
+|anticheat =
+{{Availability|
+{{Availability/row| Epic Games Store | x | EGS | | | Windows }}
+{{Availability/row| Mac | y | MacApp, GOG, Disc | | | OS X }}
+{{Availability/row| Steam | 9 | Steam | | | Windows }}
+}}
+{{ii}} Requires {{DRM|Uplay|Origin|Enigma|3=Steam|8.13.0066}}.`;
+    expect(parsePcgwPage(wt).tags.sort()).toEqual(["EA app", "Enigma Protector", "Steam DRM", "Ubisoft Connect"]);
+  });
+});

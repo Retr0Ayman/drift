@@ -79,6 +79,8 @@ const STOREFRONT_NOISE = new Set(
     "Zoom Platform", "Viveport", "Humble Store", "itch.io", "DRM-free", "Physical", "Unknown", "Account",
     "CD key", "Online activation", "Activation", "Activation limit", "Disc check", "Floppy check", "Dongle",
     "PCjr cartridge", "Retail", "Key",
+    // template shorthands seen live in the DRM cells
+    "EGS", "MacApp", "GOG", "Disc", "Online",
   ].map((v) => v.toLowerCase()),
 );
 const isNoise = (v: string) => STOREFRONT_NOISE.has(v.toLowerCase());
@@ -160,13 +162,26 @@ const stripMarkup = (v: string) =>
 
 /* PCGamingWiki writes the anti-tamper product as "Denuvo", "Denuvo Anti-Tamper"
    or "Denuvo Antitamper"; one canonical tag (Denuvo Anti-Cheat stays its own). */
-const canon = (v: string): string => (/^denuvo(\s+anti-?tamper)?$/i.test(v.trim()) ? "Denuvo Anti-Tamper" : v.trim());
+const ALIASES: Record<string, string> = {
+  uplay: "Ubisoft Connect",
+  origin: "EA app",
+  "ea app": "EA app",
+  enigma: "Enigma Protector",
+};
+const canon = (v: string): string => {
+  const t = v.trim();
+  if (/^denuvo(\s+anti-?tamper)?$/i.test(t)) return "Denuvo Anti-Tamper";
+  return ALIASES[t.toLowerCase()] ?? t;
+};
+/* Named template params ("3=Steam"), bare version numbers and digits are
+   markup debris, not protection names. */
+const isDebris = (v: string): boolean => /=/.test(v) || /^\d+(\.\d+)*$/.test(v);
 
 const namesIn = (v: string | undefined): string[] =>
   stripMarkup(v || "")
     .split(",")
     .map((x) => canon(x))
-    .filter(Boolean);
+    .filter((x) => x && !isDebris(x));
 
 export function parsePcgwPage(wikitext: string): ParsedPcgw {
   const appidField = wikitext.match(/\|\s*steam appid\s*=\s*([^\n|]*)/i);
@@ -194,11 +209,11 @@ export function parsePcgwPage(wikitext: string): ParsedPcgw {
   const rows = extractTemplates(wikitext, "Availability/row").map((b) => splitTopLevel(b).map((x) => x.trim()));
   // {{DRM|A||B}} templates in the prose list schemes the table doesn't (VMProtect,
   // Denuvo, a closed launcher...); the Cargo-era Uses_DRM field included them.
-  const drmTemplateNames = extractTemplates(wikitext, "DRM").flatMap((b) => splitTopLevel(b).map((x) => canon(stripMarkup(x))).filter((x) => x && !/=/.test(x)));
+  const drmTemplateNames = extractTemplates(wikitext, "DRM").flatMap((b) => splitTopLevel(b).map((x) => canon(stripMarkup(x))).filter((x) => x && !isDebris(x)));
   const usesDrm = [...rows.flatMap((r) => namesIn(r[2])), ...drmTemplateNames];
   const steamRow = rows.find((r) => /^steam$/i.test(stripMarkup(r[0] || "")));
   const steamDrm = steamRow ? namesIn(steamRow[2]) : [];
-  const removedDrm = extractTemplates(wikitext, "Removed DRM").flatMap((b) => splitTopLevel(b).map((x) => canon(stripMarkup(x))).filter((x) => x && !/=/.test(x)));
+  const removedDrm = extractTemplates(wikitext, "Removed DRM").flatMap((b) => splitTopLevel(b).map((x) => canon(stripMarkup(x))).filter((x) => x && !isDebris(x)));
   const acField = wikitext.match(/\|\s*anticheat\s*=([^\n]*)/i);
   const anticheat = acField ? namesIn(acField[1].replace(/\|.*$/, "")) : [];
   const { tags, formerTags } = classifyDrm(usesDrm, removedDrm, anticheat, steamDrm);
