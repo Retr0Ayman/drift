@@ -50,7 +50,7 @@
 
 .intro-sub {
   margin-top: 18px;
-  font-size: 0.78rem;
+  font-size: var(--text-sm);
   font-weight: 700;
   letter-spacing: 3px;
   color: var(--ink-3);
@@ -61,7 +61,7 @@
   bottom: 28px;
   right: 28px;
   font: inherit;
-  font-size: 0.74rem;
+  font-size: var(--text-xs);
   font-weight: 600;
   letter-spacing: 0.4px;
   color: var(--ink-3);

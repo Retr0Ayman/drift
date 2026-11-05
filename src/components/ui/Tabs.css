@@ -17,7 +17,7 @@
   background: none;
   padding: 9px 18px;
   border-radius: var(--pill);
-  font-size: 0.86rem;
+  font-size: var(--text-base);
   font-weight: 650;
   color: var(--ink-3);
   cursor: pointer;

@@ -1,21 +1,10 @@
 @import "./tokens.css";
 
-/* Self-hosted (not a Google Fonts/CDN <link>, which this project's own
-   standing preference is to avoid depending on for anything load-bearing
-   -- an external font host going down or getting blocked shouldn't make
-   the site's own body text disappear). Geist-Variable.woff2 is the
-   official variable-weight build (Vercel's `geist` npm package, MIT
-   licensed), covering the full 100-900 weight axis in one file -- this
-   codebase's UI already spans a wide range of font-weight values (500
-   through 900 across pills, headings, buttons), so a variable font is a
-   better fit than shipping five-plus separate static weight files.
-   font-display: swap so text renders in the system-font fallback
-   immediately rather than staying invisible while this loads. Only Geist
-   Sans (the body/UI face) is here -- --font-display (the serif title
-   font) is untouched, and Geist Mono was never requested for --mono. */
+/* Inter (variable, latin subset) is the self-hosted fallback behind the
+   system stack in --font; Apple devices use SF via -apple-system. */
 @font-face {
-  font-family: "Geist";
-  src: url("/fonts/Geist-Variable.woff2") format("woff2");
+  font-family: "Inter";
+  src: url("/fonts/Inter-Variable.woff2") format("woff2");
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
@@ -49,14 +38,28 @@ body {
   background: var(--bg-0);
   color: var(--ink);
   font-family: var(--font);
+  font-size: var(--text-base);
   line-height: 1.5;
+  letter-spacing: var(--tracking-body);
+  font-feature-settings: "cv11", "ss01";
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
   overflow-x: hidden;
 }
 
 h1,
-h2 {
+h2,
+h3 {
   font-family: var(--font-display);
+  font-weight: 650;
+  letter-spacing: var(--tracking-heading);
+  line-height: 1.1;
+}
+
+h1 {
+  letter-spacing: var(--tracking-display);
+  line-height: 1.05;
 }
 
 a {
@@ -231,7 +234,7 @@ select {
   align-items: center;
   gap: 5px;
   font-weight: 600;
-  font-size: 0.92rem;
+  font-size: var(--text-base);
   color: var(--canvas-ink);
   cursor: pointer;
   background: none;
@@ -247,7 +250,7 @@ select {
 
 .catalogue-loading {
   text-align: center;
-  font-size: 0.78rem;
+  font-size: var(--text-sm);
   color: var(--canvas-ink-3);
   font-weight: 600;
   padding-bottom: 24px;

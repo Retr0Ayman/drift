@@ -33,7 +33,7 @@
 .carousel-placeholder {
   text-align: center;
   color: var(--ink-3);
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   padding: 20px;
 }
@@ -69,7 +69,7 @@
   display: grid;
   place-items: center;
   backdrop-filter: blur(14px);
-  font-size: 1.1rem;
+  font-size: var(--text-md);
   z-index: 3;
   transition: transform var(--dur) var(--ease);
 }

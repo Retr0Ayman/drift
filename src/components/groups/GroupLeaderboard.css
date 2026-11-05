@@ -9,7 +9,7 @@
 
 .leaderboard-title {
   display: block;
-  font-size: 0.86rem;
+  font-size: var(--text-base);
   font-weight: 800;
   color: var(--ink);
   letter-spacing: -0.1px;
@@ -18,7 +18,7 @@
 .leaderboard-sub {
   display: block;
   margin-top: 3px;
-  font-size: 0.66rem;
+  font-size: var(--text-xs);
   color: var(--ink-3);
   font-weight: 500;
 }
@@ -28,11 +28,9 @@
 }
 
 .leaderboard-tier-label {
-  font-size: 0.64rem;
+  font-size: var(--text-xs);
   font-weight: 800;
-  letter-spacing: 0.4px;
   color: var(--ink-3);
-  text-transform: uppercase;
   padding: 0 4px 4px;
 }
 
@@ -63,13 +61,13 @@
   display: grid;
   place-items: center;
   font-weight: 800;
-  font-size: 0.54rem;
+  font-size: var(--text-xs);
   color: #0a0a0c;
   flex: none;
 }
 
 .leaderboard-name {
-  font-size: 0.76rem;
+  font-size: var(--text-xs);
   font-weight: 700;
   color: var(--ink);
   display: flex;
@@ -82,7 +80,7 @@
 }
 
 .leaderboard-name .group-star {
-  font-size: 0.66rem;
+  font-size: var(--text-xs);
 }
 
 .leaderboard-bar-track {
@@ -100,7 +98,7 @@
 }
 
 .leaderboard-pct {
-  font-size: 0.64rem;
+  font-size: var(--text-xs);
   font-weight: 700;
   color: var(--ink-2);
   text-align: right;

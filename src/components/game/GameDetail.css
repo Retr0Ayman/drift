@@ -34,7 +34,7 @@
 }
 
 .detail-code {
-  font-size: 0.72rem;
+  font-size: var(--text-xs);
   font-weight: 700;
   color: var(--canvas-ink-3);
   letter-spacing: 0.5px;
@@ -66,16 +66,14 @@
 
 .detail-meta .k {
   display: block;
-  font-size: 0.6rem;
+  font-size: var(--text-xs);
   font-weight: 700;
   color: var(--canvas-ink-3);
-  letter-spacing: 0.6px;
-  text-transform: uppercase;
 }
 
 .detail-meta .v {
   display: block;
-  font-size: 0.92rem;
+  font-size: var(--text-base);
   color: var(--canvas-ink);
   margin-top: 5px;
   font-weight: 600;
@@ -124,21 +122,19 @@
   display: grid;
   place-items: center;
   font-weight: 800;
-  font-size: 0.82rem;
+  font-size: var(--text-sm);
   background: var(--accent);
   color: var(--accent-ink);
 }
 
 .detail-stat-l {
-  font-size: 0.6rem;
+  font-size: var(--text-xs);
   font-weight: 700;
   color: var(--ink-3);
-  letter-spacing: 0.4px;
-  text-transform: uppercase;
 }
 
 .detail-stat-v {
-  font-size: 0.86rem;
+  font-size: var(--text-base);
   font-weight: 700;
   color: var(--ink);
   margin-top: 2px;
@@ -152,7 +148,7 @@
 
 .detail-about p {
   color: var(--ink-2);
-  font-size: 0.96rem;
+  font-size: var(--text-base);
   line-height: 1.75;
   font-weight: 450;
 }
@@ -162,16 +158,14 @@
 }
 
 .detail-factbox-h {
-  font-size: 0.6rem;
+  font-size: var(--text-xs);
   font-weight: 800;
-  letter-spacing: 0.8px;
   color: var(--out);
-  text-transform: uppercase;
 }
 
 .detail-factbox p {
   color: var(--ink);
-  font-size: 0.92rem;
+  font-size: var(--text-base);
   line-height: 1.6;
   margin-top: 8px;
   font-weight: 500;
@@ -185,7 +179,7 @@
 
 .detail-release-empty {
   color: var(--ink-3);
-  font-size: 0.88rem;
+  font-size: var(--text-base);
   text-align: center;
   padding: 24px;
   font-weight: 500;
@@ -196,7 +190,7 @@
   gap: 18px;
   flex-wrap: wrap;
   margin-top: 16px;
-  font-size: 0.72rem;
+  font-size: var(--text-xs);
   color: var(--ink-3);
   font-weight: 500;
 }
@@ -238,7 +232,7 @@
   justify-content: space-between;
   padding: 14px 18px;
   border-bottom: 1px solid var(--glass-border);
-  font-size: 0.9rem;
+  font-size: var(--text-base);
   font-weight: 500;
   color: var(--ink);
 }
@@ -250,7 +244,7 @@
 .detail-dlc-price {
   color: var(--ink-3);
   font-family: var(--mono);
-  font-size: 0.82rem;
+  font-size: var(--text-sm);
 }
 
 .detail-side {
@@ -278,20 +272,20 @@
   border-radius: var(--r-badge);
   display: grid;
   place-items: center;
-  font-size: 0.72rem;
+  font-size: var(--text-xs);
   font-weight: 800;
   color: #06110d;
 }
 
 .status-label {
   font-weight: 800;
-  font-size: 1.06rem;
+  font-size: var(--text-md);
   letter-spacing: -0.2px;
   color: var(--ink);
 }
 
 .status-sub {
-  font-size: 0.74rem;
+  font-size: var(--text-xs);
   color: var(--ink-2);
   margin-top: 3px;
   font-weight: 500;
@@ -311,13 +305,13 @@
 }
 
 .build-row .k {
-  font-size: 0.74rem;
+  font-size: var(--text-xs);
   color: var(--ink-2);
   font-weight: 500;
 }
 
 .build-row .v {
-  font-size: 0.9rem;
+  font-size: var(--text-base);
   font-weight: 700;
   font-family: var(--mono);
   color: var(--ink);
@@ -336,7 +330,7 @@
   gap: 8px;
   width: 100%;
   font-weight: 700;
-  font-size: 0.9rem;
+  font-size: var(--text-base);
   padding: 14px;
   border-radius: var(--pill);
   border: none;

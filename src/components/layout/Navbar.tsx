@@ -73,7 +73,7 @@ export default function Navbar({ status, onOpenSearch, revealBrandMark }: Navbar
           <Link to="/" className="navbar-logo" onClick={() => setMenuOpen(false)}>
             <span className="navbar-word">
               <OrlazWordmark layoutId={revealBrandMark ? "brand-mark" : undefined} className="navbar-title" />
-              <span className="navbar-sub">BY DAREALAYMAN</span>
+              <span className="navbar-sub">by DaRealAyman</span>
             </span>
           </Link>
         </motion.div>

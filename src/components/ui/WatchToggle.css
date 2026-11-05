@@ -3,7 +3,7 @@
   align-items: center;
   gap: 5px;
   font-weight: 700;
-  font-size: 0.72rem;
+  font-size: var(--text-xs);
   color: var(--ink-2);
   background: var(--glass-bg-strong);
   border: 1px solid var(--glass-border);
@@ -30,6 +30,6 @@
 }
 
 .watch-toggle--lg {
-  font-size: 0.84rem;
+  font-size: var(--text-sm);
   padding: 8px 15px;
 }

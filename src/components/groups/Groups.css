@@ -22,9 +22,7 @@
   display: block;
   font-size: var(--fs-xs);
   font-weight: 700;
-  letter-spacing: 0.5px;
   color: var(--canvas-ink);
-  text-transform: uppercase;
 }
 
 .groups-hero-main h1 {
@@ -38,7 +36,7 @@
 .groups-lede {
   color: var(--canvas-ink-2);
   font-weight: 450;
-  font-size: 0.96rem;
+  font-size: var(--text-base);
   line-height: 1.6;
 }
 
@@ -47,10 +45,8 @@
 }
 
 .groups-signal-head {
-  font-size: 0.66rem;
+  font-size: var(--text-xs);
   font-weight: 800;
-  letter-spacing: 1px;
-  text-transform: uppercase;
   color: var(--ink-3);
   margin-bottom: 16px;
 }
@@ -68,7 +64,7 @@
 }
 
 .groups-signal-n {
-  font-size: 1.6rem;
+  font-size: var(--text-xl);
   font-weight: 800;
   letter-spacing: -0.5px;
   color: var(--ink);
@@ -76,7 +72,7 @@
 }
 
 .groups-signal-l {
-  font-size: 0.66rem;
+  font-size: var(--text-xs);
   font-weight: 600;
   color: var(--ink-3);
 }
@@ -85,7 +81,7 @@
   margin-top: 18px;
   padding-top: 16px;
   border-top: 1px solid var(--glass-border);
-  font-size: 0.78rem;
+  font-size: var(--text-sm);
   color: var(--ink-2);
 }
 
@@ -102,7 +98,7 @@
 .groups-leaderboard-link {
   display: inline-block;
   margin-top: 14px;
-  font-size: 0.82rem;
+  font-size: var(--text-sm);
   font-weight: 700;
   color: var(--accent);
 }
@@ -120,7 +116,7 @@
 }
 
 .groups-filter-note {
-  font-size: 0.76rem;
+  font-size: var(--text-xs);
   color: var(--ink-3);
   font-weight: 500;
 }
@@ -172,15 +168,13 @@
 }
 
 .groups-tier-label {
-  font-size: 0.82rem;
+  font-size: var(--text-sm);
   font-weight: 800;
-  letter-spacing: 0.3px;
   color: var(--ink-2);
-  text-transform: uppercase;
 }
 
 .groups-tier-count {
-  font-size: 0.72rem;
+  font-size: var(--text-xs);
   font-weight: 700;
   color: var(--ink-3);
   background: var(--glass-bg-strong);
@@ -190,7 +184,7 @@
 
 .groups-tier-note {
   display: block;
-  font-size: 0.74rem;
+  font-size: var(--text-xs);
   color: var(--ink-3);
   font-weight: 500;
   margin: -2px 0 14px;
@@ -236,14 +230,14 @@
   display: grid;
   place-items: center;
   font-weight: 800;
-  font-size: 0.76rem;
+  font-size: var(--text-xs);
   color: #0a0a0c;
   flex: none;
 }
 
 .group-name {
   font-weight: 800;
-  font-size: 1.02rem;
+  font-size: var(--text-md);
   color: var(--ink);
   display: flex;
   align-items: center;
@@ -252,16 +246,16 @@
 
 .group-star {
   color: var(--accent);
-  font-size: 0.86rem;
+  font-size: var(--text-base);
 }
 
 .group-p2p-tag {
-  font-size: 0.58rem;
+  font-size: var(--text-xs);
   padding: 2px 7px;
 }
 
 .group-count {
-  font-size: 0.74rem;
+  font-size: var(--text-xs);
   color: var(--ink-2);
   margin-top: 3px;
   font-weight: 600;
@@ -294,7 +288,7 @@
 }
 
 .group-last {
-  font-size: 0.68rem;
+  font-size: var(--text-xs);
   color: var(--ink-3);
   font-weight: 500;
 }
@@ -315,14 +309,14 @@
   display: grid;
   place-items: center;
   font-weight: 800;
-  font-size: 1.3rem;
+  font-size: var(--text-lg);
   color: #0a0a0c;
   flex: none;
 }
 
 .grouphead-tag {
   display: inline-block;
-  font-size: 0.6rem;
+  font-size: var(--text-xs);
   font-weight: 800;
   letter-spacing: 0.6px;
   text-transform: uppercase;
@@ -334,7 +328,7 @@
 }
 
 .grouphead h1 {
-  font-size: 1.9rem;
+  font-size: var(--text-2xl);
   line-height: 1.1;
   font-weight: 800;
   letter-spacing: -1px;
@@ -342,14 +336,14 @@
 }
 
 .grouphead-meta {
-  font-size: 0.82rem;
+  font-size: var(--text-sm);
   color: var(--canvas-ink-2);
   margin-top: 4px;
   font-weight: 500;
 }
 
 .grouphead-caveat {
-  font-size: 0.74rem;
+  font-size: var(--text-xs);
   color: var(--canvas-ink-3);
   margin-top: 8px;
   font-weight: 450;
@@ -369,18 +363,18 @@
 }
 
 .group-stat-n {
-  font-size: 1.6rem;
+  font-size: var(--text-xl);
   font-weight: 800;
   letter-spacing: -0.5px;
   color: var(--ink);
 }
 
 .group-stat-n--sm {
-  font-size: 1.1rem;
+  font-size: var(--text-md);
 }
 
 .group-stat-l {
-  font-size: 0.68rem;
+  font-size: var(--text-xs);
   font-weight: 600;
   color: var(--ink-2);
   margin-top: 4px;
@@ -404,11 +398,9 @@
 }
 
 .group-releases h4 {
-  font-size: 0.72rem;
+  font-size: var(--text-xs);
   font-weight: 700;
   color: var(--ink-3);
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
   margin-bottom: 12px;
 }
 
@@ -429,7 +421,7 @@
 }
 
 .group-month-label {
-  font-size: 0.9rem;
+  font-size: var(--text-base);
   font-weight: 700;
   color: var(--ink);
 }
@@ -441,7 +433,7 @@
 }
 
 .group-month-count {
-  font-size: 0.72rem;
+  font-size: var(--text-xs);
   font-weight: 700;
   color: var(--ink-3);
   background: var(--glass-bg-strong);
@@ -450,7 +442,7 @@
 }
 
 .group-month-chev {
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   color: var(--ink-3);
   transition: transform var(--dur) var(--ease);
 }
@@ -520,17 +512,15 @@
   inset: 0;
   display: grid;
   place-items: center;
-  font-size: 1.1rem;
+  font-size: var(--text-md);
   font-weight: 800;
   color: var(--ink-2);
   letter-spacing: 1px;
 }
 
 .group-rel-card-title {
-  font-size: 0.68rem;
+  font-size: var(--text-xs);
   font-weight: 800;
-  letter-spacing: 0.3px;
-  text-transform: uppercase;
   color: var(--ink-3);
   margin-bottom: 6px;
 }

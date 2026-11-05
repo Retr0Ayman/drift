@@ -23,9 +23,7 @@
   /* Wider tracking and a dimmer ink than the title -- this is a label for
      the heading, not a competing second heading, which is what it read as
      at the previous size/weight/full-strength colour. */
-  letter-spacing: 1.4px;
   color: var(--canvas-ink-3);
-  text-transform: uppercase;
   margin-bottom: 14px;
 }
 
@@ -34,10 +32,10 @@
    here. Optical sizing only; no gradient fills, no glow. */
 .catalogue-title {
   font-family: var(--font-display);
-  font-size: clamp(2.1rem, 1.5rem + 2.4vw, 3.4rem);
+  font-size: var(--text-4xl);
   font-weight: 600;
   line-height: 1.04;
-  letter-spacing: -0.02em;
+  letter-spacing: var(--tracking-display);
   color: var(--canvas-ink);
   max-width: 32ch;
 }
@@ -62,7 +60,7 @@
   padding: 48px 24px;
   text-align: center;
   color: var(--ink-3);
-  font-size: 0.92rem;
+  font-size: var(--text-base);
   font-weight: 500;
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
