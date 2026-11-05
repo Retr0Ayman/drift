@@ -125,22 +125,15 @@
   --canvas-ink-2: rgba(245, 243, 238, 0.68);
   --canvas-ink-3: rgba(245, 243, 238, 0.45);
 
-  /* aura ring -- reserved for the search bar. */
-  --aura-a: #a68bdb55;
-  --aura-b: #4fb8a055;
-  /* What GlassPanel/Navbar's frosted borders (color-mix(...,var(--aura-a)/
-     var(--aura-b)...)) blend toward to stay visible: mixing toward WHITE
-     brightens a border enough to read against dark glass; mixing toward
-     the same color on light glass would wash it out to near-invisible, so
-     light mode mixes toward a dark ink instead. */
-  --glass-edge-tint: white;
+  /* One neutral hairline for every frosted edge (navbar, panels, search). */
+  --hairline: rgba(255, 255, 255, 0.16);
   /* Perf pass: pulled back from 20px -- backdrop-filter blur is one of the
      single most expensive things a browser can do per-frame, and every
      glass surface (now the default GlassPanel variant too, not just
      frost/frost-strong/aura) sits directly over the ambient background's
      own continuously-animating layers. 15px keeps a clearly-frosted look
      at meaningfully lower GPU cost than 20px. */
-  --aura-blur: 15px;
+  --glass-blur: 15px;
 
   /* "Apple Intelligence" glow palette -- reserved for AI-generated-content
      markers and the search bar only, see AiTag.tsx/GlassPanel.css. Same
@@ -211,7 +204,7 @@
      pulled back from 0.6 --
      more of the moving scene shows through every panel now, "liquid glass"
      rather than a mostly-opaque card with a blur at the edges. */
-  --aura-panel-bg: rgba(19, 18, 16, 0.46);
+  --panel-bg: rgba(19, 18, 16, 0.46);
 }
 
 /* Light theme -- explicit choice (Navbar's toggle, persisted via
@@ -289,11 +282,9 @@
   --canvas-ink-2: rgba(28, 26, 23, 0.68);
   --canvas-ink-3: rgba(28, 26, 23, 0.46);
 
-  --aura-a: #6d4fb555;
-  --aura-b: #157a6355;
-  --glass-edge-tint: black;
+  --hairline: rgba(0, 0, 0, 0.1);
 
-  --aura-panel-bg: rgba(255, 255, 255, 0.42);
+  --panel-bg: rgba(255, 255, 255, 0.42);
 }
 
 /* Same values as above, applied instead when there's no explicit choice
@@ -356,10 +347,8 @@
     --canvas-ink-2: rgba(28, 26, 23, 0.68);
     --canvas-ink-3: rgba(28, 26, 23, 0.46);
 
-    --aura-a: #6d4fb555;
-    --aura-b: #157a6355;
-    --glass-edge-tint: black;
+    --hairline: rgba(0, 0, 0, 0.1);
 
-    --aura-panel-bg: rgba(255, 255, 255, 0.42);
+    --panel-bg: rgba(255, 255, 255, 0.42);
   }
 }

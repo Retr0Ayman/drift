@@ -50,7 +50,7 @@
    whole site this codebase doesn't get to pick the colors of). Measured
    live on 007 First Light: the near-white arrow icon against this cover's
    own warm tan tones came out to ~3.25:1, under WCAG AA's 4.5:1 floor.
-   --aura-panel-bg is the same dark, ~60%-opaque scrim tokens.css's own
+   --panel-bg is the same dark, ~60%-opaque scrim tokens.css's own
    comment already establishes as "robust against almost any backdrop hue"
    for every other panel -- this control needed that exact same treatment,
    not a lighter one, given it's the single most backdrop-unpredictable
@@ -62,7 +62,7 @@
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  background: var(--aura-panel-bg);
+  background: var(--panel-bg);
   border: 1px solid var(--glass-border-strong);
   color: var(--ink);
   cursor: pointer;

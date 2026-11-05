@@ -9,7 +9,7 @@
    the background was never actually hidden site-wide, it was just being
    painted over locally by this component's own default fill on most of
    the pages that use it. Now the default IS real liquid glass (the same
-   translucent --aura-panel-bg fill + blur+saturate backdrop-filter
+   translucent --panel-bg fill + blur+saturate backdrop-filter
    .glass-panel--frost already used) instead of a separate opaque variant
    callers had to opt out of -- "every card/tile/panel" reads as glass by
    default now, frost/frostStrong stay as intentional stronger-blur/more-
@@ -17,9 +17,9 @@
    as the only way to get glass at all. */
 .glass-panel {
   border-radius: var(--r-lg);
-  background: var(--aura-panel-bg);
-  -webkit-backdrop-filter: blur(var(--aura-blur)) saturate(1.25);
-  backdrop-filter: blur(var(--aura-blur)) saturate(1.25);
+  background: var(--panel-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.25);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.25);
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-highlight), var(--glass-shadow), var(--glass-ambient);
 }
@@ -31,7 +31,7 @@
 
 /* Static counterpart to the spinning conic-gradient aura ring (reserved for
    the search bar alone now -- SearchBar.tsx builds that directly off the
-   shared .aura-ring class, not through this component; the hero "Live
+   the search bar; the hero "Live
    signal" panel was the other reserved spot until a spinning rainbow
    border there got cut for reading as generic AI-dashboard decoration, see
    Hero.tsx's own history). Same translucent fill + blur, saturate() added
@@ -39,10 +39,10 @@
    hues instead of a spinning ring. Reuses the exact --aura-* tokens, no new
    ones invented. */
 .glass-panel--frost {
-  background: color-mix(in srgb, var(--aura-panel-bg) 80%, transparent);
-  -webkit-backdrop-filter: blur(var(--aura-blur)) saturate(1.25);
-  backdrop-filter: blur(var(--aura-blur)) saturate(1.25);
-  border: 1px solid color-mix(in srgb, color-mix(in srgb, var(--aura-a), var(--aura-b)) 45%, var(--glass-edge-tint));
+  background: color-mix(in srgb, var(--panel-bg) 80%, transparent);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.25);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.25);
+  border: 1px solid var(--hairline);
   box-shadow: var(--glass-highlight), var(--glass-shadow-lg), var(--glass-ambient), var(--ethereal-glow);
 }
 
@@ -52,7 +52,7 @@
    read as a plain card with a faint tint. Same tokens as .glass-panel--
    frost, just pushed further: more blur, more saturate, and the fill
    itself blended down toward transparent (via color-mix on the existing
-   --aura-panel-bg, not a new hardcoded rgba) so real background color
+   --panel-bg, not a new hardcoded rgba) so real background color
    shows through instead of mostly opaque white/near-black with a hint of
    blur at the edges.
 
@@ -81,13 +81,13 @@
    trim backdrop-filter cost for anyone on weaker/integrated graphics,
    even though the comment above already found this fine on a real
    discrete-GPU desktop specifically. blur radius itself now comes from
-   --aura-blur (tokens.css), already pulled back from 20px to 15px for
+   --glass-blur (tokens.css), already pulled back from 20px to 15px for
    the same reason -- 33px here instead of the old 44px. */
 .glass-panel--frost-strong {
-  background: color-mix(in srgb, var(--aura-panel-bg) 45%, transparent);
-  -webkit-backdrop-filter: blur(calc(var(--aura-blur) * 2.2)) saturate(1.25);
-  backdrop-filter: blur(calc(var(--aura-blur) * 2.2)) saturate(1.25);
-  border: 1px solid color-mix(in srgb, color-mix(in srgb, var(--aura-a), var(--aura-b)) 45%, var(--glass-edge-tint));
+  background: color-mix(in srgb, var(--panel-bg) 45%, transparent);
+  -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 2.2)) saturate(1.25);
+  backdrop-filter: blur(calc(var(--glass-blur) * 2.2)) saturate(1.25);
+  border: 1px solid var(--hairline);
   box-shadow: var(--glass-highlight), var(--glass-shadow-lg), var(--glass-ambient), var(--ethereal-glow);
 }
 

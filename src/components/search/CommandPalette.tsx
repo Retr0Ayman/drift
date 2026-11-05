@@ -222,7 +222,7 @@ export default function CommandPalette({ games, catalogStatus, onLiveGameResolve
             </svg>
             <input
               ref={inputRef}
-              placeholder="Search titles, groups, publishers…"
+              placeholder="Search games, groups, publishers"
               value={query}
               onChange={(e) => {
                 setQuery(e.target.value);

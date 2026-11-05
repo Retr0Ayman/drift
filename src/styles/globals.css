@@ -112,40 +112,6 @@ select {
   }
 }
 
-/* Aura ring: the spinning conic-gradient border, reserved for the search
-   bar alone -- it used to also wrap the homepage's "Live signal" hero
-   panel, cut from there for reading as generic AI-dashboard decoration on
-   a panel meant to look like a real, professional live readout (see
-   Hero.tsx's own history). --aura-radius is set per call site (defaults to
-   the card radius). */
-.aura-ring {
-  --aura-radius: var(--r-lg);
-  display: block;
-  width: 100%;
-  border-radius: var(--aura-radius);
-  padding: 1.5px;
-  background: conic-gradient(from var(--aura-angle, 0deg), var(--aura-a), transparent 35%, var(--aura-b), transparent 75%);
-  animation: aura-spin 26s linear infinite;
-}
-
-@property --aura-angle {
-  syntax: "<angle>";
-  initial-value: 0deg;
-  inherits: false;
-}
-
-@keyframes aura-spin {
-  to {
-    --aura-angle: 360deg;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .aura-ring {
-    animation: none;
-  }
-}
-
 /* Liquid-glass specular highlight -- a single static diagonal catch-light
    band, the cue that reads as "glass with real depth" rather than just "a
    blurred panel with a border" (every Apple frosted-glass surface carries

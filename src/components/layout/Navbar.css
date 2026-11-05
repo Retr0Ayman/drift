@@ -42,10 +42,10 @@
 .navbar-main {
   pointer-events: auto;
   border-radius: var(--pill);
-  background: var(--aura-panel-bg);
-  backdrop-filter: blur(var(--aura-blur)) saturate(1.2);
-  -webkit-backdrop-filter: blur(var(--aura-blur)) saturate(1.2);
-  border: 1px solid color-mix(in srgb, color-mix(in srgb, var(--aura-a), var(--aura-b)) 35%, var(--glass-edge-tint));
+  background: var(--panel-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.2);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.2);
+  border: 1px solid var(--hairline);
   transform-origin: top center;
 }
 
@@ -256,23 +256,6 @@
   flex: 0 1 309px;
   min-width: 150px;
 }
-
-/* The slot shrinking isn't enough on its own: SearchBar.css sizes the bar
-   (and its aura ring) as fit-content around a hard-coded 220px placeholder, so
-   at a 212px slot the bar still rendered 306px wide and hung out of it. Scoped
-   here, not changed in SearchBar.css, so the same component is untouched
-   wherever else it renders. The placeholder already truncates with an ellipsis. */
-.navbar-search-slot .searchbar-aura,
-.navbar-search-slot .searchbar {
-  width: 100%;
-}
-
-.navbar-search-slot .searchbar-placeholder {
-  flex: 1 1 auto;
-  width: auto;
-  min-width: 0;
-}
-
 
 /* Groups the beta indicator with the live-sync status pill so they read as
    one related cluster (tighter gap than navbar-inner's own 22px) rather
