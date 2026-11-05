@@ -232,3 +232,17 @@ select {
     scroll-behavior: auto !important;
   }
 }
+
+/* Global reduced-motion fallback: nothing animates or transitions; state
+   changes are instant. (Reveal/PageTransition/HeroHeadline also skip their
+   Framer Motion animation entirely under this setting.) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

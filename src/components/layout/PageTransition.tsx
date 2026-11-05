@@ -2,6 +2,7 @@ import { useEffect, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 import { motion } from "motion/react";
 import { useLenis } from "lenis/react";
+import { DUR, EASE } from "../../lib/motion";
 import { usePrefersReducedMotion } from "../../hooks/usePrefersReducedMotion";
 
 /* Fade+rise on every route change, same [0.16, 1, 0.3, 1] ease and transform-
@@ -44,9 +45,9 @@ export default function PageTransition({ children }: { children: ReactNode }) {
   return (
     <motion.div
       key={location.pathname}
-      initial={{ opacity: 0, y: 14 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+      initial={{ opacity: 0, y: 8, scale: 0.997 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: DUR.ui + 0.03, ease: EASE }}
     >
       {children}
     </motion.div>

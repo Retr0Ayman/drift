@@ -6,7 +6,7 @@
 .game-card {
   cursor: pointer;
   border-radius: var(--r-2xl);
-  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease),
     border-color var(--dur) var(--ease);
 }
 
@@ -15,13 +15,13 @@
    glow to sell the depth on a dark ground, instead of a faint outline
    changing color. */
 .game-card:hover {
-  transform: translateY(-4px);
+  transform: translateY(-2px);
   border-color: var(--glass-border-strong);
-  box-shadow: 0 16px 28px -12px rgba(23, 21, 15, 0.14), var(--glass-shadow-lg);
+  box-shadow: 0 10px 24px -12px rgba(23, 21, 15, 0.22), var(--glass-shadow-lg);
 }
 
 .game-card:active {
-  transform: translateY(-2px);
+  transform: translateY(0) scale(0.99);
 }
 
 .game-card-cover {
@@ -38,11 +38,11 @@
   height: 100%;
   object-fit: cover;
   display: block;
-  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform var(--dur-slow) var(--ease);
 }
 
 .game-card:hover .game-card-thumb {
-  transform: scale(1.08);
+  transform: scale(1.03);
 }
 
 .game-card-code {

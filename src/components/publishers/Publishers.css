@@ -104,12 +104,12 @@
   padding: 18px 20px;
   border-radius: var(--r-2xl);
   cursor: pointer;
-  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease),
     border-color var(--dur) var(--ease);
 }
 
 .publisher-card:hover {
-  transform: translateY(-4px);
+  transform: translateY(-2px);
   border-color: var(--glass-border-strong);
   box-shadow: 0 14px 24px -10px rgba(23, 21, 15, 0.14), var(--glass-shadow-lg);
 }

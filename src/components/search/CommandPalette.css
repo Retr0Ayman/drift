@@ -9,7 +9,7 @@
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   z-index: 200;
-  animation: cmdk-overlay-in 0.15s ease;
+  animation: cmdk-overlay-in var(--dur-fast) var(--ease);
 }
 
 /* Spotlight-style panel: translucent fill, neutral hairline, one soft drop
@@ -50,7 +50,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  animation: cmdk-content-in 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: cmdk-content-in var(--dur) var(--ease);
 }
 
 /* Wins over .liquid-sheen's position: relative via specificity (0,2,0 vs

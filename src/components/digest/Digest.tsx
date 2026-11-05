@@ -64,9 +64,6 @@ export default function Digest() {
         <GlassPanel strong className="digest-panel">
           {loading ? (
             <div className="digest-status">
-              <span className="digest-thinking-dot" />
-              <span className="digest-thinking-dot" />
-              <span className="digest-thinking-dot" />
               Reading the catalogue…
             </div>
           ) : text ? (

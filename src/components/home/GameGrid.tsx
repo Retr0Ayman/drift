@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 import Reveal from "../ui/Reveal";
+import HeroHeadline from "../ui/HeroHeadline";
+import { stagger } from "../../lib/motion";
 import GameCard from "./GameCard";
 import type { Game } from "../../types/game";
 import "./GameGrid.css";
@@ -27,14 +29,14 @@ export default function GameGrid({ games, filters, initialLoading, meta }: GameG
     <section className="catalogue wrap">
       <Reveal className="catalogue-head">
         <span className="catalogue-eyebrow">The catalogue</span>
-        <h2 className="catalogue-title">Every title orlaz is tracking</h2>
+        <HeroHeadline className="catalogue-title">Every title orlaz is tracking</HeroHeadline>
         {meta ? <p className="catalogue-meta">{meta}</p> : null}
       </Reveal>
       {filters}
       {games.length ? (
         <div className="catalogue-grid">
           {games.map((g, i) => (
-            <Reveal key={g.id} as="div" delay={Math.min(i, 8) * 0.045}>
+            <Reveal key={g.id} as="div" delay={stagger(i)}>
               <GameCard game={g} priority={i === 0} />
             </Reveal>
           ))}
