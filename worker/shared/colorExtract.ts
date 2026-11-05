@@ -118,7 +118,7 @@ const SWATCH_PRIORITY = ["Vibrant", "LightVibrant", "DarkVibrant", "Muted", "Dar
    the enrichment it's attached to. */
 export async function extractAccentColors(imageUrl: string): Promise<AccentColors> {
   try {
-    const res = await fetch(imageUrl);
+    const res = await fetch(imageUrl, withUserAgent());
     if (!res.ok) return { primary: FALLBACK_PRIMARY, secondary: FALLBACK_SECONDARY, extracted: false };
     const buf = await res.arrayBuffer();
     const palette = await Vibrant.from(Buffer.from(buf)).getPalette();

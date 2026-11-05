@@ -1,4 +1,5 @@
 import { fetchWithRetry } from "./fetchRetry";
+import { USER_AGENT } from "./userAgent";
 
 interface SteamCmdInfo {
   data?: Record<
@@ -84,7 +85,7 @@ export async function resolveHighResHeader(appid: number, fallbackHeader: string
       // this per candidate per game during enrichment (not per pageview)
       // shouldn't also pay for downloading image bytes it might throw
       // away on a miss.
-      const r = await fetch(url, { method: "HEAD", cf: { cacheTtlByStatus: { "200-299": 86400, "300-599": 60 } } } as RequestInit);
+      const r = await fetch(url, { method: "HEAD", headers: { "User-Agent": USER_AGENT }, cf: { cacheTtlByStatus: { "200-299": 86400, "300-599": 60 } } } as RequestInit);
       if (r.ok) return url;
     } catch {
       // network blip on this one candidate -- try the next, same
