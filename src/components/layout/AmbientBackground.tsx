@@ -16,10 +16,10 @@ const PARALLAX_MAX = 18;
 // animating compositor layer, and 4 staggered ones still read as
 // continuous drift, just with less always-on layer overhead than 6.
 const MOTES = [
-  { left: "10%", top: "72%", size: 5, delay: 0, duration: 15 },
-  { left: "47%", top: "82%", size: 6, delay: 8, duration: 16 },
-  { left: "64%", top: "30%", size: 4, delay: 2, duration: 20 },
-  { left: "81%", top: "64%", size: 5, delay: 11, duration: 17 },
+  { left: "10%", top: "72%", size: 5, delay: 0, duration: 24 },
+  { left: "47%", top: "82%", size: 6, delay: 8, duration: 26 },
+  { left: "64%", top: "30%", size: 4, delay: 2, duration: 32 },
+  { left: "81%", top: "64%", size: 5, delay: 11, duration: 27 },
 ];
 
 /* EIGHTH pass -- replaced the entire DOM/CSS blob field (20 divs, each a

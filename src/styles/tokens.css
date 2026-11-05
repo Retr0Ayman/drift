@@ -29,7 +29,7 @@
 
   --ink: #f5f3ee;
   --ink-2: rgba(245, 243, 238, 0.74);
-  --ink-3: rgba(245, 243, 238, 0.62);
+  --ink-3: rgba(245, 243, 238, 0.7);
   --ink-4: rgba(245, 243, 238, 0.14);
 
   --accent: #f5f3ee;
@@ -75,7 +75,7 @@
 
   /* Vignette -- deepening toward the edges of the ambient background,
      like looking into a liquid-filled vessel. */
-  --ambient-vignette: rgba(2, 2, 8, 0.65);
+  --ambient-vignette: rgba(2, 2, 8, 0.8);
 
   /* The ambient scene's own base color, now theme-aware (AmbientBackground.
      css's .ambient-bg radial-gradient stops) -- the metaball canvas on top
@@ -98,7 +98,9 @@
      backdrop lightens/desaturates them far more than the same blend over a
      dark one (mixing toward white vs. toward black), so light mode raises
      this to keep blobs reading as vivid rather than washed-out pastel. */
-  --ambient-canvas-opacity: 0.62;
+  --ambient-canvas-opacity: 0.28; /* list pages: atmosphere, ~45% of the old 0.62 */
+  --ambient-canvas-opacity-game: 0.5; /* game pages keep per-game colour */
+  --ambient-canvas-saturate: 0.8;
 
   /* Fixed plasma accents -- the drifting lava-lamp blobs
      (AmbientBackground.css) blend these with each game's own extracted
@@ -122,7 +124,7 @@
      only churn every one of those call sites for nothing. */
   --canvas-ink: #f5f3ee;
   --canvas-ink-2: rgba(245, 243, 238, 0.74);
-  --canvas-ink-3: rgba(245, 243, 238, 0.62);
+  --canvas-ink-3: rgba(245, 243, 238, 0.7);
 
   /* One neutral hairline for every frosted edge (navbar, panels, search). */
   --hairline: rgba(255, 255, 255, 0.16);
@@ -215,7 +217,7 @@
 
   --ink: #1c1a17;
   --ink-2: rgba(28, 26, 23, 0.76);
-  --ink-3: rgba(28, 26, 23, 0.66);
+  --ink-3: rgba(28, 26, 23, 0.73);
   --ink-4: rgba(28, 26, 23, 0.14);
 
   --accent: #1c1a17;
@@ -259,7 +261,9 @@
      color at the edges, not solid pastel shapes -- and paired with
      --ambient-core below so the actual reading area (hero copy, nav,
      cards) sits on clean paper rather than raw blob saturation. */
-  --ambient-canvas-opacity: 0.22;
+  --ambient-canvas-opacity: 0.1;
+  --ambient-canvas-opacity-game: 0.18;
+  --ambient-canvas-saturate: 0.85;
   /* Center-protecting wash for .ambient-vault (AmbientBackground.css) --
      dark mode leaves this transparent (its vignette only ever darkens the
      OUTER edge, same "looking into a vessel" framing as before), but
@@ -272,7 +276,7 @@
 
   --canvas-ink: #1c1a17;
   --canvas-ink-2: rgba(28, 26, 23, 0.76);
-  --canvas-ink-3: rgba(28, 26, 23, 0.66);
+  --canvas-ink-3: rgba(28, 26, 23, 0.73);
 
   --hairline: rgba(0, 0, 0, 0.1);
   --overlay-bg: rgba(255, 255, 255, 0.94);
@@ -301,7 +305,7 @@
 
     --ink: #1c1a17;
     --ink-2: rgba(28, 26, 23, 0.76);
-    --ink-3: rgba(28, 26, 23, 0.66);
+    --ink-3: rgba(28, 26, 23, 0.73);
     --ink-4: rgba(28, 26, 23, 0.14);
 
     --accent: #1c1a17;
@@ -335,12 +339,14 @@
     --ambient-mote-color: rgba(40, 32, 20, 0.5);
     /* Keep in sync with the explicit :root[data-theme="light"] block above --
        see its own comment for why this dropped from 0.75. */
-    --ambient-canvas-opacity: 0.22;
+    --ambient-canvas-opacity: 0.1;
+  --ambient-canvas-opacity-game: 0.18;
+  --ambient-canvas-saturate: 0.85;
     --ambient-core: rgba(251, 249, 245, 0.75);
 
     --canvas-ink: #1c1a17;
     --canvas-ink-2: rgba(28, 26, 23, 0.76);
-    --canvas-ink-3: rgba(28, 26, 23, 0.66);
+    --canvas-ink-3: rgba(28, 26, 23, 0.73);
 
     --hairline: rgba(0, 0, 0, 0.1);
   --overlay-bg: rgba(255, 255, 255, 0.94);

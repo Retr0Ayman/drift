@@ -106,6 +106,14 @@ interface Blob {
 // clusters instead of the whole viewport reading as two colors.
 const BLOB_COUNT = 13;
 
+// Atmosphere pass: the field should sit behind the UI, not be the subject.
+// MOTION_SCALE scales every velocity/jitter/speed-cap below (0.45 = a bit
+// under half the previous pace); RADIUS_SCALE shrinks blobs slightly so
+// more near-black gap survives between fused clusters. Intensity (opacity/
+// saturation) is tuned in tokens.css / AmbientBackground.css, not here.
+const MOTION_SCALE = 0.45;
+const RADIUS_SCALE = 0.9;
+
 function makeBlobs(): Blob[] {
   const blobs: Blob[] = [];
   for (let i = 0; i < BLOB_COUNT; i++) {
@@ -113,9 +121,9 @@ function makeBlobs(): Blob[] {
     blobs.push({
       x: 0.08 + Math.random() * 0.84,
       y: 0.08 + Math.random() * 0.84,
-      vx: (Math.random() - 0.5) * 0.0007,
-      vy: (Math.random() - 0.5) * 0.0007,
-      r: big ? 0.1 + Math.random() * 0.06 : 0.04 + Math.random() * 0.055,
+      vx: (Math.random() - 0.5) * 0.0007 * MOTION_SCALE,
+      vy: (Math.random() - 0.5) * 0.0007 * MOTION_SCALE,
+      r: (big ? 0.1 + Math.random() * 0.06 : 0.04 + Math.random() * 0.055) * RADIUS_SCALE,
       hue: i % BASE_HUES.length,
       accentSlot: i % 2 === 0 ? 0 : 1,
     });
@@ -222,6 +230,9 @@ export default function LavaLampCanvas() {
       hasAccent = !!(p || s);
       accentPrimary = p || FALLBACK_PRIMARY;
       accentSecondary = s || FALLBACK_SECONDARY;
+      // List pages stay calm; a game page keeps its per-game color at fuller
+      // strength (see .ambient-canvas[data-accent] in AmbientBackground.css).
+      canvas!.dataset.accent = hasAccent ? "1" : "0";
     }
     readAccent();
 
@@ -242,8 +253,8 @@ export default function LavaLampCanvas() {
         // Gentle continuous random drift on velocity itself (not just
         // position) -- keeps the motion organic over long timescales
         // instead of settling into a perfectly periodic bounce loop.
-        b.vx += (Math.random() - 0.5) * 0.00005;
-        b.vy += (Math.random() - 0.5) * 0.00005;
+        b.vx += (Math.random() - 0.5) * 0.00005 * MOTION_SCALE;
+        b.vy += (Math.random() - 0.5) * 0.00005 * MOTION_SCALE;
         // FIX (confirmed live): the whole simulation read as too fast/
         // busy for a lava lamp, which drifts on the order of tens of
         // seconds per crossing, not a few seconds. Initial velocity and
@@ -251,7 +262,7 @@ export default function LavaLampCanvas() {
         // magnitude, and the speed cap follows proportionally -- motion
         // is still continuous and real (still genuinely merges/splits
         // over time), just unfolding much more slowly.
-        const maxSpeed = 0.0008;
+        const maxSpeed = 0.0008 * MOTION_SCALE;
         const speed = Math.hypot(b.vx, b.vy);
         if (speed > maxSpeed) {
           b.vx = (b.vx / speed) * maxSpeed;
