@@ -42,6 +42,7 @@ import { runDenuvoRemovalStatsTick } from "./backfill/denuvoRemoval";
 import { handleDenuvoRemoval, handleDenuvoRemovalRecompute } from "./routes/denuvoRemoval";
 import { runCrackEtaStatsTick } from "./backfill/crackEta";
 import { handleCrackEta, handleCrackEtaRecompute } from "./routes/crackEta";
+import { handleDenuvoStatus } from "./routes/denuvoStatus";
 import { handleAdminRefreshGame } from "./routes/adminRefreshGame";
 import { handleAdminSeedTitle } from "./routes/adminSeedTitle";
 
@@ -90,6 +91,7 @@ const ROUTES: Record<string, Handler> = {
   "/api/group-reliability/recompute": handleGroupReliabilityRecompute,
   "/api/denuvo-removal": handleDenuvoRemoval,
   "/api/denuvo-removal/recompute": handleDenuvoRemovalRecompute,
+  "/api/denuvo-status": handleDenuvoStatus,
   "/api/crack-eta": handleCrackEta,
   "/api/crack-eta/recompute": handleCrackEtaRecompute,
   "/api/admin/refresh-game": handleAdminRefreshGame,

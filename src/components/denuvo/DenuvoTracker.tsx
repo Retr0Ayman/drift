@@ -2,7 +2,9 @@ import { useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCatalog } from "../../hooks/useCatalog";
 import { useDenuvoRemovalStats, type DenuvoRemovalStat } from "../../hooks/useDenuvoRemovalStats";
-import { hasDenuvoNow, daysSinceRelease } from "../../lib/denuvoRemoval";
+import { useDenuvoStatus } from "../../hooks/useDenuvoStatus";
+import { describeSources } from "../../lib/denuvoStatus";
+import { hasDenuvoNow, daysSinceRelease, DENUVO_TAG } from "../../lib/denuvoRemoval";
 import { slugify, coverImg } from "../../lib/format";
 import GlassPanel from "../ui/GlassPanel";
 import Reveal from "../ui/Reveal";
@@ -29,6 +31,7 @@ export default function DenuvoTracker() {
   const navigate = useNavigate();
   const { games } = useCatalog();
   const { data: stats, loading } = useDenuvoRemovalStats();
+  const statusLine = describeSources(useDenuvoStatus());
 
   usePageMeta({
     title: "Denuvo Removal Tracker",
@@ -59,6 +62,18 @@ export default function DenuvoTracker() {
 
   const confidentCount = rows.filter((r) => r.confident).length;
 
+  // Removals with a real date (sourced from PCGamingWiki's dated ref, or the
+  // moment this site detected it), newest first.
+  const removed = useMemo(
+    () => games.filter((g) => g.denuvoRemovedAt).sort((a, b) => (b.denuvoRemovedAt ?? 0) - (a.denuvoRemovedAt ?? 0)),
+    [games],
+  );
+  // Known to have had Denuvo removed, but no source gives a date: never guessed.
+  const removedUndated = useMemo(
+    () => games.filter((g) => !g.denuvoRemovedAt && (g.formerTags || []).includes(DENUVO_TAG) && !hasDenuvoNow(g)),
+    [games],
+  );
+
   return (
     <div className="wrap denuvo-tracker">
       <button className="back-link" onClick={() => navigate(-1)}>
@@ -71,12 +86,19 @@ export default function DenuvoTracker() {
           <h1>Which Denuvo'd titles are closest to their publisher's own removal window</h1>
           <p className="denuvo-tracker-lede">
             Publishers routinely remove Denuvo months after launch once the early-sales window has passed. This is
-            computed entirely from this catalog's own confirmed removal history — real dates this site's own DRM
-            recheck cycle has directly observed, never a guess. A publisher needs at least 2 confirmed removals
-            before a median is shown; below that, it's marked as not enough data instead of a fabricated number.
+            computed entirely from confirmed removals — dated by a primary-source reference (PCGamingWiki, with its
+            cited patch note) or, when there isn't one, by when this site's own recheck first detected it and
+            labelled as such. Never a guess. A publisher needs at least 2 confirmed removals before a median is
+            shown; below that, it's marked as not enough data instead of a fabricated number.
           </p>
         </div>
       </Reveal>
+
+      {statusLine ? (
+        <p className={`denuvo-tracker-source-status${statusLine.allFailing ? " denuvo-tracker-source-status--bad" : ""}`} role="status">
+          {statusLine.text}
+        </p>
+      ) : null}
 
       <GlassPanel className="denuvo-tracker-methodology" frost>
         <div className="denuvo-tracker-methodology-h">Publisher removal patterns ({publisherStats.length || 0})</div>
@@ -144,6 +166,48 @@ export default function DenuvoTracker() {
         ))}
         {!rows.length ? <GlassPanel className="denuvo-tracker-empty">No currently Denuvo-protected titles tracked.</GlassPanel> : null}
       </div>
+
+      <div className="denuvo-tracker-list-head">
+        <span>Denuvo removed ({removed.length})</span>
+        <span className="denuvo-tracker-list-sub">dated by a cited source, or by when this site detected it</span>
+      </div>
+      <div className="denuvo-tracker-list">
+        {removed.map((g) => (
+          <Link key={g.id} to={`/game/${g.id}`} className="denuvo-tracker-row">
+            {coverImg(g) ? <img className="denuvo-tracker-row-img" src={coverImg(g)!} alt="" loading="lazy" /> : <div className="denuvo-tracker-row-img denuvo-tracker-row-img--empty" />}
+            <div className="denuvo-tracker-row-main">
+              <div className="denuvo-tracker-row-title">{g.title}</div>
+              <div className="denuvo-tracker-row-sub">
+                {g.publisher || "Unknown publisher"}
+                {g.denuvoConflict ? " · Steam store page still lists Denuvo" : ""}
+              </div>
+            </div>
+            <div className="denuvo-tracker-row-stat">
+              {g.denuvoRemovedKind === "sourced" ? "Removed " : "Detected "}
+              {new Date(g.denuvoRemovedAt!).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })}
+              {g.denuvoRemovedKind === "sourced" ? " (sourced)" : ""}
+            </div>
+          </Link>
+        ))}
+        {!removed.length ? <GlassPanel className="denuvo-tracker-empty">No dated removals yet.</GlassPanel> : null}
+      </div>
+
+      {removedUndated.length ? (
+        <details className="denuvo-tracker-undated">
+          <summary>Denuvo removed, date not observed ({removedUndated.length})</summary>
+          <p className="denuvo-tracker-status">
+            These titles are recorded as having had Denuvo removed, but no source gives a date, so none is shown and
+            they don't count toward the publisher medians.
+          </p>
+          <ul>
+            {removedUndated.map((g) => (
+              <li key={g.id}>
+                <Link to={`/game/${g.id}`}>{g.title}</Link>
+              </li>
+            ))}
+          </ul>
+        </details>
+      ) : null}
     </div>
   );
 }

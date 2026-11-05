@@ -14,6 +14,11 @@ interface JoinedRow {
   genres: string | null;
   tags: string | null;
   former_tags: string | null;
+  denuvo_removed_at: number | null;
+  denuvo_removed_kind: string | null;
+  denuvo_removed_source: string | null;
+  denuvo_removed_url: string | null;
+  denuvo_conflict: number | null;
   current_build: number | null;
   current_build_updated_at: number | null;
   desc: string | null;
@@ -131,6 +136,13 @@ export const handleCatalog: Handler = async ({ request, env }) => {
         genres: g.genres ? JSON.parse(g.genres) : [],
         tags: g.tags ? JSON.parse(g.tags) : [],
         formerTags: g.former_tags ? JSON.parse(g.former_tags) : [],
+        // Denuvo removal facts (worker/backfill/denuvoDecision.ts) -- only set when a real
+        // source decided it; absent otherwise, never a guessed date.
+        denuvoRemovedAt: g.denuvo_removed_at ?? null,
+        denuvoRemovedKind: g.denuvo_removed_kind === "sourced" || g.denuvo_removed_kind === "detected" ? g.denuvo_removed_kind : null,
+        denuvoRemovedSource: g.denuvo_removed_source ?? null,
+        denuvoRemovedUrl: g.denuvo_removed_url ?? null,
+        denuvoConflict: !!g.denuvo_conflict,
         currentBuild: g.current_build ?? 0,
         currentBuildUpdatedAt: g.current_build_updated_at ?? null,
         // desc deliberately omitted here (PERF: confirmed live, ~690 chars

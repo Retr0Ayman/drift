@@ -85,6 +85,16 @@ export interface Game {
      Denuvo. Empty/undefined means "nothing on record as removed", never
      "confirmed DRM-free historically". */
   formerTags?: string[];
+  /* Denuvo removal facts, only when a real source decided them
+     (worker/backfill/denuvoDecision.ts). denuvoRemovedAt is ms; kind
+     "sourced" = a dated PCGamingWiki ref, "detected" = our own observation
+     time. denuvoConflict = PCGamingWiki says removed while Steam's store
+     page still lists Denuvo. */
+  denuvoRemovedAt?: number | null;
+  denuvoRemovedKind?: "sourced" | "detected" | null;
+  denuvoRemovedSource?: string | null;
+  denuvoRemovedUrl?: string | null;
+  denuvoConflict?: boolean;
   currentBuild: number;
   /* Real Steam-side unix-seconds timestamp of when currentBuild was last
      actually published (steamcmd.net's own timebuildupdated field, see

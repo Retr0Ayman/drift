@@ -177,3 +177,37 @@
     width: 100%;
   }
 }
+
+.denuvo-tracker-source-status {
+  margin: 0 0 16px;
+  font-size: var(--text-sm);
+  color: var(--ink-2);
+}
+
+.denuvo-tracker-source-status--bad {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.denuvo-tracker-undated {
+  margin-top: 24px;
+  font-size: var(--text-sm);
+  color: var(--ink-2);
+}
+
+.denuvo-tracker-undated summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.denuvo-tracker-undated ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  columns: 2;
+  column-gap: 24px;
+}
+
+.denuvo-tracker-undated a:hover {
+  text-decoration: underline;
+}
