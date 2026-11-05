@@ -3,7 +3,6 @@ import { handleResolve } from "../routes/resolve";
 import { handleAppdetails } from "../routes/appdetails";
 import { extractAccentColors, FALLBACK_PRIMARY, FALLBACK_SECONDARY } from "../shared/colorExtract";
 import { resolveHighResHeader } from "../shared/steam";
-import { lookupDrmForAppids } from "./pcgamingwiki";
 
 // Same cap src/hooks/useLiveCatalog.ts already uses client-side -- confirmed
 // live there that firing more concurrent /resolve calls at once measurably
@@ -213,7 +212,6 @@ export async function enrichFromSteam(env: Env, appid: number): Promise<Enrichme
   // enrichment tick for no real accuracy gain this app has confirmed it
   // needs. Only the STORED/displayed header changes.
   const accent = d.header ? await extractAccentColors(d.header) : null;
-  const drm = await lookupDrmForAppids([d.appid]);
   const header = await resolveHighResHeader(d.appid, d.header || null);
   return {
     appid: d.appid,
@@ -230,8 +228,9 @@ export async function enrichFromSteam(env: Env, appid: number): Promise<Enrichme
     header,
     accentColorPrimary: accent?.primary ?? FALLBACK_PRIMARY,
     accentColorSecondary: accent?.secondary ?? FALLBACK_SECONDARY,
-    tags: drm.get(d.appid)?.tags ?? [],
-    formerTags: drm.get(d.appid)?.formerTags ?? [],
+    // DRM tags are owned by the recheck tick (drmBackfillRun.ts), not enrichment.
+    tags: [],
+    formerTags: [],
   };
 }
 

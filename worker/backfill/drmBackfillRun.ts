@@ -1,130 +1,99 @@
 import type { Env } from "../shared/env";
-import { getBackfillState, setBackfillState } from "./db";
-import { lookupDrmForAppids } from "./pcgamingwiki";
+import { planRowUpdate, type StoredRow } from "./denuvoDecision";
+import { resolvePcgwBatch, type PcgwOutcome } from "./pcgamingwiki";
+import { recordSourceResult } from "./sourceHealth";
+import { fetchSteamNotice, type SteamNotice } from "./steamDrm";
 
-/* One-time reconciliation pass for the false-Denuvo backlog (see db.ts's
-   own fix comment): every game already written to D1 before that fix got
-   tags = ["Denuvo"] baked in at INSERT time, and normal sync ticks won't
-   revisit most of them on their own -- steady-state sync only re-touches
-   whatever's currently near the top of the browse feed, and the deep/
-   archive backfills only ever visit a title once, so an already-fully-
-   processed historical game would otherwise carry the false tag
-   indefinitely. This walks every row in `games` exactly once, ordered by
-   id, tracking a resumable cursor in backfill_state the same way
-   run.ts's browse-page backfill does -- a real per-appid lookup, not
-   another guess, replaces tags for every row it can find a match for; a
-   row with no resolved appid or no PCGamingWiki match is left as the
-   empty array the code fix already gives it.
+/* Ongoing DRM recheck (shares the 5-minute cron slot, see worker/index.ts).
 
-   Deliberately its own cron cadence, not folded into the existing browse/
-   archive backfills -- this touches every row regardless of xREL recency,
-   which is a different traversal than either of those already do. */
-const PAGE_SIZE = 100;
+   Rebuilt 2026-11-05 after PCGamingWiki's Cargo API was switched off: the
+   old tick got `permissiondenied`, skipped it, and stamped drm_checked_at
+   anyway -- 0 removals ever detected. Now:
+     - titles that have ever carried Denuvo ("denuvo_watch") are checked
+       against BOTH sources every cycle (PCGamingWiki page wikitext + the
+       Steam store's drm_notice), oldest-checked first;
+     - everything else only gets the cheap Steam notice sweep, which can
+       flag a newly Denuvo'd title;
+     - a lookup that FAILED never stamps drm_checked_at, never changes
+       tags, and is recorded in per-source health (surfaced on the tracker
+       page and in `wrangler tail`).
+   This is the only writer of tags / former_tags / denuvo_removed_* (the
+   Steam enrichment path no longer overwrites them). Decision logic lives in
+   denuvoDecision.ts. denuvo_removed_at is set only from a real removal
+   evidence -- a dated PCGamingWiki ref, or our own observed Steam
+   transition -- never guessed. */
 
-interface GameRow {
+const WATCH_BATCH = 8;
+const SWEEP_BATCH = 4;
+const STEAM_GAP_MS = 300;
+
+interface Row extends StoredRow {
   id: string;
-  appid: number | null;
+  appid: number;
+  title: string;
 }
 
-export async function runDrmBackfillTick(env: Env): Promise<void> {
-  const db = env.orlaz_catalog;
-  if ((await getBackfillState(db, "drm_backfill_phase")) === "done") {
-    await runDrmRecheckTick(env);
-    return;
-  }
-
-  const cursor = (await getBackfillState(db, "drm_backfill_cursor")) || "";
-  const { results } = await db
-    .prepare("SELECT id, appid FROM games WHERE id > ? ORDER BY id LIMIT ?")
-    .bind(cursor, PAGE_SIZE)
-    .all<GameRow>();
-  const rows = results || [];
-
-  if (!rows.length) {
-    await setBackfillState(db, "drm_backfill_phase", "done");
-    return;
-  }
-
-  const withAppid = rows.filter((r): r is GameRow & { appid: number } => r.appid != null);
-  const drm = await lookupDrmForAppids(withAppid.map((r) => r.appid));
-
-  const statements = withAppid
-    .filter((r) => drm.has(r.appid)) // no match found -- leave the row's existing (already-blanked) tags alone
-    .map((r) => {
-      const result = drm.get(r.appid)!;
-      return db
-        .prepare("UPDATE games SET tags = ?, former_tags = ? WHERE id = ?")
-        .bind(JSON.stringify(result.tags), JSON.stringify(result.formerTags), r.id);
-    });
-  if (statements.length) await db.batch(statements);
-
-  await setBackfillState(db, "drm_backfill_cursor", rows[rows.length - 1].id);
-}
-
-// Small and cheap, shares the DRM_BACKFILL_CRON slot (runs every 5
-// minutes, see worker/index.ts) alongside the one-time backlog pass above.
-const RECHECK_BATCH_SIZE = 40;
-
-/* FIX (confirmed gap, 2026-07-24): the one-time pass above walks every row
-   exactly once, then permanently stops (drm_backfill_phase = "done") --
-   nothing ever re-queries an already-visited row after that, so a real,
-   later DRM change on PCGamingWiki's side (e.g. 007: First Light having
-   its Denuvo removed post-launch) had no path to ever reach this site's
-   tags column; it would show the stale "Denuvo" tag forever. This is the
-   ongoing side: oldest-checked-first (drm_checked_at, migrations/0009 --
-   NULL/never-checked rows sort first in SQLite's default ASC order), small
-   batch, cycles the whole games table forever -- same "deliberately never
-   reaches a terminal done state" discipline runEnrichmentRepairTick already
-   uses, so a real DRM removal (or addition) eventually gets picked up
-   automatically instead of needing another manual one-off backfill.
-
-   Denuvo-removal tracker (migrations/0011): this is the ONLY place
-   denuvo_removed_at is ever written, and only via a genuine before/after
-   comparison against THIS row's own previously-stored tags -- a row whose
-   old tags already contained "Denuvo Anti-Tamper" and whose freshly-looked-
-   up tags no longer do (it moved into formerTags instead) is a real,
-   directly observed removal event, timestamped at the moment this site's
-   own pipeline caught it. COALESCE keeps whatever was stamped first --
-   first detection wins, never overwritten, same "set once" discipline
-   releases.first_seen_ts already uses. Deliberately NOT backfilled for
-   rows that already show former_tags containing Denuvo today (see
-   migrations/0011's own comment on why drm_checked_at can't stand in for a
-   real removal date) -- this only ever grows from real transitions
-   observed from this point forward. */
-const DENUVO_TAG = "Denuvo Anti-Tamper";
+const COLS = "id, appid, title, tags, former_tags, steam_drm_notice, pcgw_page, denuvo_watch, denuvo_removed_at, denuvo_removed_kind";
 
 export async function runDrmRecheckTick(env: Env): Promise<void> {
   const db = env.orlaz_catalog;
-  const { results } = await db
-    .prepare("SELECT id, appid, tags FROM games WHERE appid IS NOT NULL ORDER BY drm_checked_at ASC LIMIT ?")
-    .bind(RECHECK_BATCH_SIZE)
-    .all<{ id: string; appid: number; tags: string | null }>();
-  const rows = results || [];
-  if (!rows.length) return;
+  const { results: watch } = await db
+    .prepare(`SELECT ${COLS} FROM games WHERE appid IS NOT NULL AND denuvo_watch = 1 ORDER BY drm_checked_at ASC LIMIT ?`)
+    .bind(WATCH_BATCH)
+    .all<Row>();
+  const { results: sweep } = await db
+    .prepare(`SELECT ${COLS} FROM games WHERE appid IS NOT NULL AND denuvo_watch = 0 ORDER BY steam_drm_checked_at ASC LIMIT ?`)
+    .bind(SWEEP_BATCH)
+    .all<Row>();
+  const watchRows = watch || [];
+  const sweepRows = sweep || [];
+  if (!watchRows.length && !sweepRows.length) return;
 
-  const drm = await lookupDrmForAppids(rows.map((r) => r.appid));
+  // Steam notices for every row this tick (sequential, small gap).
+  const steam = new Map<string, SteamNotice>();
+  let steamFailure: { status: number | null; reason: string } | null = null;
+  let steamAttempted = 0;
+  for (const r of [...watchRows, ...sweepRows]) {
+    if (steamFailure) break; // first failure aborts the rest: no hammering
+    if (steamAttempted++) await new Promise((res) => setTimeout(res, STEAM_GAP_MS));
+    const n = await fetchSteamNotice(r.appid);
+    steam.set(r.id, n);
+    if (n.status === "failed") steamFailure = { status: n.httpStatus, reason: n.reason };
+  }
+  if (steamAttempted) {
+    if (steamFailure) await recordSourceResult(db, "steam", false, { status: steamFailure.status, error: steamFailure.reason });
+    else await recordSourceResult(db, "steam", true);
+  }
+
+  // PCGamingWiki pages for the watch rows only.
+  let pcgw = new Map<string, PcgwOutcome>();
+  if (watchRows.length) {
+    const res = await resolvePcgwBatch(watchRows.map((r) => ({ id: r.id, appid: r.appid, title: r.title, knownPage: r.pcgw_page })));
+    pcgw = res.outcomes;
+    if (res.failure) await recordSourceResult(db, "pcgamingwiki", false, { status: res.failure.status, error: res.failure.reason });
+    else await recordSourceResult(db, "pcgamingwiki", true);
+  }
+
   const now = Date.now();
-  const statements = rows.map((r) => {
-    const result = drm.get(r.appid);
-    if (!result) {
-      // no PCGamingWiki match this time either -- still stamp drm_checked_at so this row
-      // cycles to the back of the queue instead of being retried every single tick forever
-      return db.prepare("UPDATE games SET drm_checked_at = ? WHERE id = ?").bind(now, r.id);
-    }
-    let oldTags: string[] = [];
-    try {
-      oldTags = r.tags ? JSON.parse(r.tags) : [];
-    } catch {
-      oldTags = [];
-    }
-    const justRemoved = oldTags.includes(DENUVO_TAG) && !result.tags.includes(DENUVO_TAG) && result.formerTags.includes(DENUVO_TAG);
-    return justRemoved
-      ? db
-          .prepare("UPDATE games SET tags = ?, former_tags = ?, drm_checked_at = ?, denuvo_removed_at = COALESCE(denuvo_removed_at, ?) WHERE id = ?")
-          .bind(JSON.stringify(result.tags), JSON.stringify(result.formerTags), now, now, r.id)
-      : db
-          .prepare("UPDATE games SET tags = ?, former_tags = ?, drm_checked_at = ? WHERE id = ?")
-          .bind(JSON.stringify(result.tags), JSON.stringify(result.formerTags), now, r.id);
-  });
-  await db.batch(statements);
+  const statements: D1PreparedStatement[] = [];
+  for (const r of [...watchRows, ...sweepRows]) {
+    const plan = planRowUpdate(r, pcgw.get(r.id), steam.get(r.id), now);
+    if (!plan) continue; // failed lookup(s): write nothing, stamp nothing
+    if (plan.decision.conflict) console.warn(`[drm] conflict on "${r.title}" (${r.appid}): ${plan.decision.note}`);
+    if (plan.decision.state === "removed" && plan.decision.removal && r.denuvo_removed_at == null)
+      console.log(`[drm] denuvo removal recorded for "${r.title}" (${r.appid}): ${plan.decision.removal.kind} via ${plan.decision.removal.source}`);
+    const keys = Object.keys(plan.sets);
+    statements.push(
+      db
+        .prepare(`UPDATE games SET ${keys.map((k) => `${k} = ?`).join(", ")} WHERE id = ?`)
+        .bind(...keys.map((k) => plan.sets[k]), r.id),
+    );
+  }
+  if (statements.length) await db.batch(statements);
+}
+
+/* Kept as the cron entry point's name; the old one-time Cargo backfill pass
+   is gone (its data source no longer exists). */
+export async function runDrmBackfillTick(env: Env): Promise<void> {
+  await runDrmRecheckTick(env);
 }

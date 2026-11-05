@@ -1,234 +1,240 @@
-/* Real per-game DRM/protection lookup against PCGamingWiki's Cargo query
-   API -- replaces the hardcoded ["Denuvo"] every game used to get (see
-   db.ts's own fix). Schema confirmed live against the real API, not
-   assumed: `cargotables`/`cargofields` were queried directly to find where
-   DRM data actually lives (it's NOT a single obvious field -- Middleware's
-   "Anticheat" field covers EAC/BattlEye but was null for known-Denuvo
-   titles; the real field is Availability.Uses_DRM, joined off
-   Infobox_game).
+/* PCGamingWiki as a DRM source, via plain MediaWiki page wikitext.
 
-   Matching by title was tried first and rejected: PCGamingWiki's own page
-   titles don't reliably match Steam's (confirmed live -- "Dragon's Dogma
-   2" on Steam is titled "Dragon's Dogma II" here, a roman-numeral
-   mismatch that would silently no-match a naive title lookup). Matching
-   by Steam AppID via Infobox_game.Steam_AppID instead sidesteps every
-   title-formatting difference -- every game this site tracks already has
-   a real resolved appid by the time this runs. */
+   History: this file used to query PCGamingWiki's Cargo API. On 2026-11-05
+   that was confirmed dead -- every cargoquery (join, single table, GET,
+   POST, with or without a User-Agent, from the Worker runtime and from a
+   laptop) returns HTTP 200 + {"error":{"code":"permissiondenied",...,"info":
+   "You don't have permission to run arbitrary Cargo queries."}}. Not a
+   Cloudflare challenge, not a UA problem: a server-side permission change.
+   The old code treated `data.error` as "skip" and then stamped the row as
+   checked, so the outage looked like "nothing changed" for months.
+
+   What still works, and is normal permitted API use: action=query with
+   prop=revisions. The page wikitext carries what we need:
+     |steam appid = 668580
+     {{DRM|Denuvo Anti-Tamper}}                      (currently used)
+     {{Removed DRM|Denuvo}} was removed on July 24, 2026.<ref>{{Refurl|url=...|date=2026-07-24}}</ref>
+   We deliberately do NOT use /api/appid.php (Cloudflare-challenged) and do
+   not try to get around any bot protection.
+
+   Matching is by page title, but a page is trusted ONLY if its own
+   steam appid equals ours. A mismatch or an ambiguous result is "no
+   match", never a guess. */
 
 import { fetchWithRetry } from "../shared/fetchRetry";
 
-const CARGO_URL = "https://www.pcgamingwiki.com/w/api.php";
+const API = "https://www.pcgamingwiki.com/w/api.php";
 
-// Confirmed live via a 500-row group_by=Uses_DRM sample of the real
-// Availability table: this field mixes genuine anti-tamper/protection
-// schemes (Denuvo Anti-Tamper, VMProtect, StarForce, ...) in with plain
-// storefront/launcher names. "Steam" specifically is ambiguous HERE
-// (confirmed live: Stardew Valley and Baba Is You -- both genuinely
-// DRM-free on Steam -- still list "Steam" once in this field, because
-// Uses_DRM rolls every storefront's own Availability row into one
-// comma list; a game on N storefronts gets N entries, and the Steam
-// row's entry doesn't distinguish "has real Steam DRM" from "this row
-// is just the Steam listing"). That ambiguity is why "Steam" stays
-// filtered out of Uses_DRM's own real-tag list below -- but it's NOT why
-// every Steam game shows "None confirmed" for Steam's own DRM: see
-// Availability.Steam_DRM below, a separate dedicated field that resolves
-// this precisely. Everything else in this set is genuine noise
-// (storefront/launcher names, non-blocking markers) to filter out.
-/* FIX (confirmed live, Rockstar/Arxan coverage gap): Rockstar Games
-   Launcher, Ubisoft Connect, Battle.net, and EA app used to live in this
-   set, filtered out identically to genuinely ambiguous OPEN storefronts
-   like Steam/GOG/Epic. But those four are structurally different --
-   they're each a single publisher's own closed launcher (RGL only ever
-   distributes Rockstar's catalog, Ubisoft Connect only Ubisoft's, etc.),
-   so unlike "this game is also listed on Steam" telling you nothing about
-   real DRM, "this game requires Rockstar Games Launcher" can only ever
-   mean one thing: the release is genuinely gated behind that launcher.
-   Confirmed live across four real titles (GTA V/RDR2 + Rockstar Games
-   Launcher, Assassin's Creed Valhalla + Ubisoft Connect, Diablo IV +
-   Battle.net, Star Wars Jedi: Survivor + EA app) that PCGamingWiki's own
-   dedicated Availability.Steam_DRM field pairs each of these with "Steam"
-   as an equally real DRM requirement on the Steam release specifically --
-   the same tier of signal this field already trusts "Steam" itself from
-   (see classifyDrm's own comment). Bethesda.net stays in this set: unlike
-   the four above, a real counter-example (DOOM Eternal) confirmed live
-   that its Steam release's Steam_DRM does NOT include Bethesda.net even
-   though Uses_DRM's noisy aggregate lists it -- Bethesda's launcher
-   requirement isn't reliably tied to every one of its games the way the
-   other four are to theirs, so it stays treated as ambiguous. */
-const STOREFRONT_NOISE = new Set([
-  "Steam",
-  "GOG.com",
-  "GOG Galaxy",
-  "Epic Games Launcher",
-  "Epic Online Services",
-  "Microsoft Store",
-  "Bethesda.net",
-  "Discord",
-  "Twitch",
-  "Twitch Desktop App",
-  "Meta Store",
-  "Mac App Store",
-  "Games for Windows - LIVE",
-  "Playfire Client",
-  "Amazon",
-  "Green Man Gaming",
-  "Gamesplanet",
-  "GamersGate",
-  "Zoom Platform",
-  "Viveport",
-  "Humble Store",
-  "itch.io",
-  "DRM-free",
-  "Physical",
-  "Unknown",
-  "Account",
-  "CD key",
-  "Online activation",
-  "Activation limit",
-  "Disc check",
-  "Floppy check",
-  "Dongle",
-  "PCjr cartridge",
-]);
-
-function splitList(v: string | null | undefined): string[] {
-  return (v || "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
+export interface ParsedPcgw {
+  appids: number[];
+  /* A {{DRM|...Denuvo...}} entry that is not marked removed. */
+  usesDenuvo: boolean;
+  /* An explicit {{Removed DRM|...Denuvo...}} entry. */
+  removedDenuvo: { hasRef: boolean; dateMs: number | null; url: string | null } | null;
 }
 
-/* Uses_DRM is PCGamingWiki's current-state field, but "current" there means
-   "as of whenever the page was last edited" -- it can still list a scheme
-   that was later removed (confirmed live: Resident Evil Village's Denuvo
-   shows up in Removed_DRM, not Uses_DRM, since Capcom patched it out --
-   but the reverse ordering isn't guaranteed for every page, so anything
-   present in Removed_DRM is excluded here regardless of which list it also
-   appears in). Anticheat (Middleware table) is a separate concern from DRM
-   entirely (EAC/BattlEye govern online play, not the executable's own
-   anti-tamper) but is exactly the kind of "protection" info this site's
-   field is for, so it's folded in too.
+const MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
 
-   steamDrm is Availability.Steam_DRM -- PCGamingWiki's dedicated field for
-   the Steam release specifically, not the general storefront-rolled-up
-   Uses_DRM above. Confirmed live against real pairs: Portal 2, Braid,
-   Celeste, and Resident Evil Village (Denuvo already removed, per above)
-   all show Steam_DRM: "Steam", a real Steamworks CEG wrapper; Stardew
-   Valley, Baba Is You, and Hollow Knight -- all genuinely DRM-free even on
-   Steam -- show Steam_DRM: "DRM-free". This is the actual signal Uses_DRM
-   can't give reliably for "Steam" specifically (see this file's own
-   STOREFRONT_NOISE comment), so it's trusted directly rather than inferred
-   from the noisy aggregate.
-
-   FIX (confirmed live, Rockstar/Arxan coverage gap): steamDrm used to be
-   read ONLY for the literal string "Steam" (steamHasDrm below), discarding
-   every other value the field can genuinely hold -- confirmed live that
-   RDR2/GTA V's own Steam_DRM is "Steam,Rockstar Games Launcher", not just
-   "Steam", and the second value was silently thrown away. Now every entry
-   in this field is treated as real (it's the precise per-Steam-release
-   field, not the ambiguous storefront-rolled-up Uses_DRM), still passed
-   through STOREFRONT_NOISE/removed same as Uses_DRM's own entries, with
-   "Steam" itself specially relabeled to "Steam DRM" (a bare "Steam" tag
-   would read as a storefront name, not a protection scheme) while any
-   other real value (Rockstar Games Launcher, Ubisoft Connect, Battle.net,
-   EA app, or a scheme this code has never seen before) passes through
-   under its own real name -- no fixed allowlist of recognized DRM names.
-
-   BUG FIX (confirmed live, 007 First Light): Removed_DRM used to be read
-   ONLY to exclude its entries from the current-tags list above, then
-   thrown away entirely -- but it's real, dated-by-PCGamingWiki-edit
-   historical fact ("this game used to have Denuvo, since removed"), not
-   noise. Discarding it left the site with no way to explain a hypervisor
-   crack (a technique that exists specifically to bypass Denuvo Anti-
-   Tamper) showing up in a game's Crack Timeline when current tags show
-   only "Steam DRM" -- confirmed live via PCGamingWiki's own Cargo API that
-   007 First Light's Removed_DRM genuinely lists "Denuvo Anti-Tamper".
-   formerTags surfaces that fact instead of dropping it. */
-export function classifyDrm(
-  usesDrm: string | null,
-  removedDrm: string | null,
-  anticheat: string | null,
-  steamDrm: string | null,
-): { tags: string[]; formerTags: string[] } {
-  const removed = new Set(splitList(removedDrm));
-  const real = splitList(usesDrm).filter((v) => !STOREFRONT_NOISE.has(v) && !removed.has(v));
-  const ac = splitList(anticheat);
-  const steamDrmReal = splitList(steamDrm)
-    .filter((v) => !removed.has(v) && (v === "Steam" || !STOREFRONT_NOISE.has(v)))
-    .map((v) => (v === "Steam" ? "Steam DRM" : v));
-  const tags = [...new Set([...real, ...ac, ...steamDrmReal])];
-  const formerTags = [...removed].filter((v) => !STOREFRONT_NOISE.has(v) && !tags.includes(v));
-  return { tags, formerTags };
+function monthIndex(name: string): number {
+  const n = name.toLowerCase();
+  return MONTHS.findIndex((m) => m === n || m.slice(0, 3) === n.slice(0, 3));
 }
 
-interface CargoRow {
-  title: {
-    AppID?: string | null;
-    "Uses DRM"?: string | null;
-    "Removed DRM"?: string | null;
-    Anticheat?: string | null;
-    "Steam DRM"?: string | null;
-  };
+/* Full dates only (a year-month or bare year isn't a removal date). UTC midnight. */
+export function parseRemovalDate(segment: string): number | null {
+  const iso = segment.match(/\bdate\s*=\s*(\d{4})-(\d{2})-(\d{2})\b/);
+  if (iso) return Date.UTC(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]));
+  const mdy = segment.match(/removed on ([A-Za-z]+)\.? (\d{1,2}),? (\d{4})/i);
+  if (mdy && monthIndex(mdy[1]) >= 0) return Date.UTC(Number(mdy[3]), monthIndex(mdy[1]), Number(mdy[2]));
+  const dmy = segment.match(/removed on (\d{1,2}) ([A-Za-z]+)\.? (\d{4})/i);
+  if (dmy && monthIndex(dmy[2]) >= 0) return Date.UTC(Number(dmy[3]), monthIndex(dmy[2]), Number(dmy[1]));
+  return null;
 }
 
-interface CargoResponse {
-  cargoquery?: CargoRow[];
-  error?: { info?: string };
-}
+export function parsePcgwPage(wikitext: string): ParsedPcgw {
+  const appidField = wikitext.match(/\|\s*steam appid\s*=\s*([^\n|]*)/i);
+  const appids = appidField ? (appidField[1].match(/\d+/g) || []).map(Number) : [];
 
-// Conservative batch size -- PCGamingWiki is a community wiki with no
-// documented rate-limit contract, not a dedicated API service. Each OR
-// clause is short (~40 chars), so even a much larger batch would stay well
-// under any URL/body limit; this is about being a considerate caller, not
-// a technical ceiling.
-const BATCH_SIZE = 25;
-
-/* Looks up real DRM/protection tags for a batch of Steam appids in as few
-   Cargo queries as possible (one query per BATCH_SIZE appids via chained
-   OR HOLDS clauses -- Cargo's own "HOLDS ONE OF (...)" syntax doesn't
-   exist, confirmed live it 500s with an "OF() not allowed" error).
-   Appids with no PCGamingWiki page, or where the query itself fails, are
-   simply absent from the returned map -- same honesty rule as the rest of
-   this codebase: no match or a failed call means the caller gets nothing
-   back for that appid, never a fabricated guess. */
-export interface DrmLookupResult {
-  tags: string[];
-  formerTags: string[];
-}
-
-export async function lookupDrmForAppids(appids: number[]): Promise<Map<number, DrmLookupResult>> {
-  const out = new Map<number, DrmLookupResult>();
-  for (let i = 0; i < appids.length; i += BATCH_SIZE) {
-    const chunk = appids.slice(i, i + BATCH_SIZE);
-    const where = chunk.map((id) => `Infobox_game.Steam_AppID HOLDS "${id}"`).join(" OR ");
-    try {
-      const r = await fetchWithRetry(CARGO_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({
-          action: "cargoquery",
-          tables: "Infobox_game,Availability,Middleware",
-          join_on: "Infobox_game._pageName=Availability._pageName,Infobox_game._pageName=Middleware._pageName",
-          fields: "Infobox_game.Steam_AppID=AppID,Availability.Uses_DRM,Availability.Removed_DRM,Middleware.Anticheat,Availability.Steam_DRM",
-          where,
-          limit: String(BATCH_SIZE * 2), // a page can legitimately list >1 appid (bundles/demos), headroom not a hard cap assumption
-          format: "json",
-        }),
-      });
-      if (!r.ok) continue;
-      const data = (await r.json()) as CargoResponse;
-      if (data.error) continue;
-      for (const row of data.cargoquery || []) {
-        const result = classifyDrm(row.title["Uses DRM"] ?? null, row.title["Removed DRM"] ?? null, row.title.Anticheat ?? null, row.title["Steam DRM"] ?? null);
-        for (const idStr of splitList(row.title.AppID)) {
-          const id = Number(idStr);
-          if (chunk.includes(id)) out.set(id, result);
-        }
+  const lines = wikitext.split("\n");
+  let usesDenuvo = false;
+  let removed: ParsedPcgw["removedDenuvo"] = null;
+  for (let i = 0; i < lines.length; i++) {
+    let seg = lines[i];
+    // A <ref> can wrap onto following lines; join until it closes.
+    for (let j = i + 1; j < lines.length && /<ref\b/.test(seg) && !/<\/ref>|<ref[^>]*\/>/.test(seg) && j < i + 6; j++) seg += "\n" + lines[j];
+    const rem = seg.match(/\{\{\s*Removed DRM\s*\|[^}]*\}\}/i);
+    if (rem && /denuvo/i.test(rem[0])) {
+      if (!removed) {
+        const url = seg.match(/\burl\s*=\s*(https?:\/\/[^|}\s<]+)/i);
+        removed = { hasRef: /<ref\b/.test(seg), dateMs: parseRemovalDate(seg), url: url ? url[1] : null };
       }
-    } catch {
-      // one chunk failing (network blip, malformed response) must not lose
-      // appids already resolved from earlier chunks in this same call
+      continue;
     }
+    if (/\{\{\s*DRM\s*\|[^}]*denuvo[^}]*\}\}/i.test(lines[i])) usesDenuvo = true;
   }
-  return out;
+  return { appids, usesDenuvo, removedDenuvo: removed };
+}
+
+export type PcgwReply = { ok: true; json: any } | { ok: false; status: number | null; reason: string };
+
+/* Classifies a raw HTTP reply. Anything that is not a clean API JSON answer
+   -- a non-200, a Cloudflare challenge page, unparseable text, or an API
+   `error` object such as permissiondenied -- is a FAILED lookup, which the
+   caller must never treat as "checked, nothing there". */
+export function interpretPcgwReply(status: number, text: string): PcgwReply {
+  if (status !== 200) return { ok: false, status, reason: `http_${status}` };
+  const head = text.trimStart().slice(0, 200).toLowerCase();
+  if (head.startsWith("<") || head.includes("just a moment")) return { ok: false, status, reason: "challenge" };
+  let json: any;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    return { ok: false, status, reason: "parse_error" };
+  }
+  if (json && json.error) return { ok: false, status, reason: `api_${json.error.code || "error"}` };
+  return { ok: true, json };
+}
+
+export interface PcgwHttp {
+  get(url: string): Promise<{ status: number; text: string }>;
+  sleep(ms: number): Promise<void>;
+}
+
+export const realHttp: PcgwHttp = {
+  async get(url) {
+    const r = await fetchWithRetry(url);
+    return { status: r.status, text: await r.text() };
+  },
+  sleep: (ms) => new Promise((res) => setTimeout(res, ms)),
+};
+
+// Gentle: small batches, a pause between requests, and stop at the first failure.
+const BATCH_TITLES = 8;
+const PAUSE_MS = 400;
+
+interface PageHit {
+  title: string;
+  wikitext: string;
+}
+
+/* Fetches wikitext for several titles in one request. Returns, per
+   requested title, the page it resolved to (following the API's own
+   normalization and redirects), or null when the page doesn't exist. */
+async function fetchPages(titles: string[], http: PcgwHttp): Promise<{ ok: true; hits: Map<string, PageHit | null> } | { ok: false; status: number | null; reason: string }> {
+  const url =
+    `${API}?action=query&prop=revisions&rvprop=content&rvslots=main&redirects=1&format=json&formatversion=2&titles=` +
+    encodeURIComponent(titles.join("|"));
+  const reply = interpretPcgwReply(...(await http.get(url).then((r) => [r.status, r.text] as const)));
+  if (!reply.ok) return reply;
+  const q = reply.json.query || {};
+  const norm = new Map<string, string>((q.normalized || []).map((n: any) => [n.from, n.to]));
+  const redir = new Map<string, string>((q.redirects || []).map((n: any) => [n.from, n.to]));
+  const byTitle = new Map<string, PageHit | null>();
+  for (const p of q.pages || []) {
+    const wt = p.revisions?.[0]?.slots?.main?.content;
+    byTitle.set(p.title, p.missing || typeof wt !== "string" ? null : { title: p.title, wikitext: wt });
+  }
+  const hits = new Map<string, PageHit | null>();
+  for (const t of titles) {
+    let cur = t;
+    if (norm.has(cur)) cur = norm.get(cur)!;
+    if (redir.has(cur)) cur = redir.get(cur)!;
+    hits.set(t, byTitle.get(cur) ?? null);
+  }
+  return { ok: true, hits };
+}
+
+async function searchTitles(query: string, http: PcgwHttp): Promise<{ ok: true; titles: string[] } | { ok: false; status: number | null; reason: string }> {
+  const url = `${API}?action=query&list=search&srnamespace=0&srlimit=4&format=json&formatversion=2&srsearch=${encodeURIComponent(query)}`;
+  const reply = interpretPcgwReply(...(await http.get(url).then((r) => [r.status, r.text] as const)));
+  if (!reply.ok) return reply;
+  return { ok: true, titles: ((reply.json.query?.search as any[]) || []).map((s) => String(s.title)) };
+}
+
+export interface PcgwGameInput {
+  id: string;
+  appid: number;
+  title: string;
+  /* Page title that matched our appid on an earlier cycle, if any. */
+  knownPage: string | null;
+}
+
+export type PcgwOutcome =
+  | { status: "match"; page: string; parsed: ParsedPcgw }
+  | { status: "nomatch"; reason: "no_page" | "appid_mismatch" | "ambiguous" }
+  | { status: "failed"; httpStatus: number | null; reason: string };
+
+export interface PcgwBatchResult {
+  outcomes: Map<string, PcgwOutcome>;
+  /* null when every request succeeded (or none was needed). */
+  failure: { status: number | null; reason: string } | null;
+}
+
+/* Resolves each game to a PCGamingWiki page whose own Steam appid equals
+   ours. First guess is the cached page (or Steam's title); only on a miss
+   does it search, and a search hit is accepted only when exactly one
+   candidate page carries our appid. The first failed request aborts the
+   whole batch -- the rest are reported as failed, not retried in a burst. */
+export async function resolvePcgwBatch(games: PcgwGameInput[], http: PcgwHttp = realHttp): Promise<PcgwBatchResult> {
+  const outcomes = new Map<string, PcgwOutcome>();
+  const st: { failure: PcgwBatchResult["failure"] } = { failure: null };
+  const fail = (f: { status: number | null; reason: string }) => {
+    st.failure = st.failure ?? f;
+  };
+
+  const guess = (g: PcgwGameInput) => g.knownPage || g.title;
+  const firstHits = new Map<string, PageHit | null>();
+  for (let i = 0; i < games.length && !st.failure; i += BATCH_TITLES) {
+    const chunk = games.slice(i, i + BATCH_TITLES);
+    const titles = [...new Set(chunk.map(guess).filter((t) => !t.includes("|")))];
+    if (i > 0) await http.sleep(PAUSE_MS);
+    const res = titles.length ? await fetchPages(titles, http) : ({ ok: true, hits: new Map() } as const);
+    if (!res.ok) {
+      fail({ status: res.status, reason: res.reason });
+      break;
+    }
+    for (const [t, h] of res.hits) firstHits.set(t, h);
+  }
+
+  for (const g of games) {
+    if (st.failure) {
+      outcomes.set(g.id, { status: "failed", httpStatus: st.failure.status, reason: st.failure.reason });
+      continue;
+    }
+    const first = firstHits.get(guess(g)) ?? null;
+    if (first) {
+      const parsed = parsePcgwPage(first.wikitext);
+      if (parsed.appids.includes(g.appid)) {
+        outcomes.set(g.id, { status: "match", page: first.title, parsed });
+        continue;
+      }
+    }
+    // Miss (no such page, or a page for a different appid): search by title.
+    await http.sleep(PAUSE_MS);
+    const found = await searchTitles(g.title, http);
+    if (!found.ok) {
+      fail({ status: found.status, reason: found.reason });
+      outcomes.set(g.id, { status: "failed", httpStatus: found.status, reason: found.reason });
+      continue;
+    }
+    const cands = found.titles.filter((t) => t !== first?.title).slice(0, 3);
+    if (!cands.length) {
+      outcomes.set(g.id, { status: "nomatch", reason: first ? "appid_mismatch" : "no_page" });
+      continue;
+    }
+    await http.sleep(PAUSE_MS);
+    const pages = await fetchPages(cands, http);
+    if (!pages.ok) {
+      fail({ status: pages.status, reason: pages.reason });
+      outcomes.set(g.id, { status: "failed", httpStatus: pages.status, reason: pages.reason });
+      continue;
+    }
+    const matching = [...pages.hits.values()]
+      .filter((h): h is PageHit => !!h)
+      .map((h) => ({ h, parsed: parsePcgwPage(h.wikitext) }))
+      .filter((x) => x.parsed.appids.includes(g.appid));
+    if (matching.length === 1) outcomes.set(g.id, { status: "match", page: matching[0].h.title, parsed: matching[0].parsed });
+    else outcomes.set(g.id, { status: "nomatch", reason: matching.length > 1 ? "ambiguous" : first ? "appid_mismatch" : "no_page" });
+  }
+  return { outcomes, failure: st.failure };
 }
