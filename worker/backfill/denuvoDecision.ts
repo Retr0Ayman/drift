@@ -13,9 +13,13 @@ export const DENUVO_TAG = "Denuvo Anti-Tamper";
                "detected"). Never guessed.
    CONFLICT  = PCGamingWiki says removed but Steam's page still lists
                Denuvo: shown as removed, flagged, and logged -- not hidden.
-   PRESENT   = a working source currently says so; Steam (fresher, fetched
-               directly) wins over PCGamingWiki when both answered and differ.
-   UNKNOWN   = no source gave a real answer: change nothing.
+   PRESENT   = Steam's notice lists Denuvo, or (Steam silent) the
+               appid-verified PCGamingWiki page lists it.
+   NO SIGNAL = an empty Steam notice is NOT evidence of absence unless we
+               previously stored that same notice listing Denuvo (that is a
+               removal transition). Fixed 2026-11-05 after DRAGON BALL
+               FighterZ fell out of "protected" on an empty notice alone.
+   UNKNOWN   = no source gave usable evidence: change nothing.
 
    Nothing is ever moved to "former" without one of the two removal
    evidences above. */
@@ -83,21 +87,27 @@ export function decideDenuvo(i: DecisionInput): Decision {
     return { state: "removed", conflict, removal: { at, kind, source, url }, note: conflict ? "pcgamingwiki says removed, steam notice still lists denuvo" : "removed" };
   }
 
-  // Not (newly) removed. Is it currently protected? Steam wins when it answered.
-  const present = steamInfo ? !!i.steam.lists : !!i.pcgw.usesDenuvo;
-  if (present) return { state: "present", conflict: false, note: steamInfo ? "steam notice lists denuvo" : "pcgamingwiki lists denuvo" };
-  const disagree = pcgwInfo && steamInfo && !!i.pcgw.usesDenuvo && !i.steam.lists;
-  return { state: "absent", conflict: false, note: disagree ? "pcgamingwiki lists denuvo but steam notice does not; preferring steam" : "no source lists denuvo" };
+  // Not removed. Steam listing Denuvo is direct evidence of protection.
+  if (steamInfo && i.steam.lists) return { state: "present", conflict: false, note: "steam notice lists denuvo" };
+
+  // An empty Steam notice with no earlier Denuvo listing is "no signal": the
+  // appid-verified PCGamingWiki page decides, if we have one.
+  if (pcgwInfo) {
+    return i.pcgw.usesDenuvo
+      ? { state: "present", conflict: false, note: "pcgamingwiki lists denuvo (steam notice is empty: no signal)" }
+      : { state: "absent", conflict: false, note: "verified pcgamingwiki page does not list denuvo and no source reports a removal" };
+  }
+  return { state: "unknown", conflict: false, note: "steam notice is empty (no signal) and no verified pcgamingwiki page" };
 }
 
 export function evidenceFromPcgw(o: PcgwOutcome | undefined): PcgwEvidence {
-  if (!o) return { status: "skipped" };
+  if (!o || o.status === "deferred") return { status: "skipped" };
   if (o.status === "match") return { status: "match", usesDenuvo: o.parsed.usesDenuvo, removed: o.parsed.removedDenuvo };
   return { status: o.status === "nomatch" ? "nomatch" : "failed" };
 }
 
 export function evidenceFromSteam(s: SteamNotice | undefined): SteamEvidence {
-  if (!s) return { status: "skipped" };
+  if (!s || s.status === "deferred") return { status: "skipped" };
   if (s.status === "ok") return { status: "ok", lists: noticeListsDenuvo(s.notice) };
   return { status: s.status === "unavailable" ? "unavailable" : "failed" };
 }
@@ -153,14 +163,29 @@ export function planRowUpdate(
 
   const tags = parseList(row.tags);
   const former = parseList(row.former_tags);
-  const without = (l: string[]) => l.filter((t) => t !== DENUVO_TAG);
+
+  // Non-Denuvo tags come from the same appid-verified wikitext (no extra
+  // request). A stored tag drops only when a COMPLETE page parse (Availability
+  // table + anticheat field both present) no longer lists it; otherwise the
+  // page can only add. A failed / unmatched / deferred lookup never touches them.
+  const storedOther = tags.filter((t) => t !== DENUVO_TAG);
+  let other = storedOther;
+  let formerOther = former.filter((t) => t !== DENUVO_TAG);
+  if (pcgw?.status === "match") {
+    const pageOther = pcgw.parsed.tags.filter((t) => t !== DENUVO_TAG);
+    other = pcgw.parsed.complete ? pageOther : [...new Set([...storedOther, ...pageOther])];
+    formerOther = [...new Set([...formerOther, ...pcgw.parsed.formerTags.filter((t) => t !== DENUVO_TAG)])];
+  }
+
+  let denuvoNow = tags.includes(DENUVO_TAG);
+  let denuvoFormer = former.includes(DENUVO_TAG);
   if (decision.state === "present") {
-    if (!tags.includes(DENUVO_TAG)) sets.tags = JSON.stringify([...tags, DENUVO_TAG]);
+    denuvoNow = true;
     sets.denuvo_watch = 1;
     sets.denuvo_conflict = 0;
   } else if (decision.state === "removed" && decision.removal) {
-    if (tags.includes(DENUVO_TAG)) sets.tags = JSON.stringify(without(tags));
-    if (!former.includes(DENUVO_TAG)) sets.former_tags = JSON.stringify([...former, DENUVO_TAG]);
+    denuvoNow = false;
+    denuvoFormer = true;
     sets.denuvo_watch = 1;
     sets.denuvo_conflict = decision.conflict ? 1 : 0;
     sets.denuvo_removed_at = decision.removal.at;
@@ -168,8 +193,14 @@ export function planRowUpdate(
     sets.denuvo_removed_source = decision.removal.source;
     sets.denuvo_removed_url = decision.removal.url;
   } else if (decision.state === "absent") {
-    if (tags.includes(DENUVO_TAG)) sets.tags = JSON.stringify(without(tags));
+    denuvoNow = false;
     sets.denuvo_conflict = 0;
   }
+
+  const newTags = [...(denuvoNow ? [DENUVO_TAG] : []), ...other];
+  const newFormer = [...(denuvoFormer ? [DENUVO_TAG] : []), ...formerOther];
+  const sameSet = (a: string[], b: string[]) => a.length === b.length && a.every((x) => b.includes(x));
+  if (!sameSet(newTags, tags)) sets.tags = JSON.stringify(newTags);
+  if (!sameSet(newFormer, former)) sets.former_tags = JSON.stringify(newFormer);
   return { sets, decision };
 }

@@ -1,4 +1,5 @@
 import { withUserAgent } from "./userAgent";
+import { isBudgetExceeded, spendSubrequest } from "./subrequestBudget";
 import { Vibrant } from "node-vibrant/node";
 
 /* Confirmed live in the real Workers runtime (workerd via wrangler dev, not
@@ -119,6 +120,7 @@ const SWATCH_PRIORITY = ["Vibrant", "LightVibrant", "DarkVibrant", "Muted", "Dar
    the enrichment it's attached to. */
 export async function extractAccentColors(imageUrl: string): Promise<AccentColors> {
   try {
+    spendSubrequest();
     const res = await fetch(imageUrl, withUserAgent());
     if (!res.ok) return { primary: FALLBACK_PRIMARY, secondary: FALLBACK_SECONDARY, extracted: false };
     const buf = await res.arrayBuffer();
@@ -134,7 +136,8 @@ export async function extractAccentColors(imageUrl: string): Promise<AccentColor
 
     if (!candidates.length) return { primary: FALLBACK_PRIMARY, secondary: FALLBACK_SECONDARY, extracted: false };
     return { primary: candidates[0], secondary: candidates[1] || candidates[0], extracted: true };
-  } catch {
+  } catch (e) {
+    if (isBudgetExceeded(e)) throw e; // let the caller defer the row rather than store degraded colors
     return { primary: FALLBACK_PRIMARY, secondary: FALLBACK_SECONDARY, extracted: false };
   }
 }

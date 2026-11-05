@@ -22,6 +22,7 @@
    match", never a guess. */
 
 import { fetchWithRetry } from "../shared/fetchRetry";
+import { isBudgetExceeded } from "../shared/subrequestBudget";
 
 const API = "https://www.pcgamingwiki.com/w/api.php";
 
@@ -31,6 +32,16 @@ export interface ParsedPcgw {
   usesDenuvo: boolean;
   /* An explicit {{Removed DRM|...Denuvo...}} entry. */
   removedDenuvo: { hasRef: boolean; dateMs: number | null; url: string | null } | null;
+  /* Every DRM / protection tag this page lists today, same classification the
+     old Cargo fields produced (see classifyDrm), including Denuvo when listed
+     -- the Denuvo decision itself is made in denuvoDecision.ts. */
+  tags: string[];
+  /* DRM this page says was removed (non-storefront names). */
+  formerTags: string[];
+  /* True only when the page has both an Availability table and an anticheat
+     field, i.e. we parsed the structures a tag list is derived from. Only
+     then may a stored tag be dropped for no longer being listed. */
+  complete: boolean;
 }
 
 const MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
@@ -50,6 +61,112 @@ export function parseRemovalDate(segment: string): number | null {
   if (dmy && monthIndex(dmy[2]) >= 0) return Date.UTC(Number(dmy[3]), monthIndex(dmy[2]), Number(dmy[1]));
   return null;
 }
+
+/* Storefront / launcher / non-blocking markers that PCGamingWiki's DRM column
+   mixes in with real protection schemes. Lower-cased for matching ("activation"
+   is the template's shorthand for "Online activation"). "Steam" is ambiguous in
+   the aggregate list (every Steam listing says "Steam") and is resolved
+   instead from the Steam row's own DRM cell, relabelled "Steam DRM".
+   Rockstar Games Launcher / Ubisoft Connect / Battle.net / EA app are NOT
+   noise: each is a single publisher's closed launcher, so listing one is a
+   real requirement (confirmed live on RDR2, AC Valhalla, Diablo IV, Jedi
+   Survivor). Bethesda.net stays noise (DOOM Eternal counter-example). */
+const STOREFRONT_NOISE = new Set(
+  [
+    "Steam", "GOG.com", "GOG Galaxy", "Epic Games Launcher", "Epic Games Store", "Epic Online Services",
+    "Microsoft Store", "Bethesda.net", "Discord", "Twitch", "Twitch Desktop App", "Meta Store", "Mac App Store",
+    "Games for Windows - LIVE", "Playfire Client", "Amazon", "Green Man Gaming", "Gamesplanet", "GamersGate",
+    "Zoom Platform", "Viveport", "Humble Store", "itch.io", "DRM-free", "Physical", "Unknown", "Account",
+    "CD key", "Online activation", "Activation", "Activation limit", "Disc check", "Floppy check", "Dongle",
+    "PCjr cartridge", "Retail", "Key",
+  ].map((v) => v.toLowerCase()),
+);
+const isNoise = (v: string) => STOREFRONT_NOISE.has(v.toLowerCase());
+
+/* Same classification the Cargo-era code applied to Uses_DRM / Removed_DRM /
+   Anticheat / Steam_DRM, now fed from the page wikitext. Anything in the
+   removed list is excluded from current tags. */
+export function classifyDrm(
+  usesDrm: string[],
+  removedDrm: string[],
+  anticheat: string[],
+  steamDrm: string[],
+): { tags: string[]; formerTags: string[] } {
+  const removed = new Set(removedDrm.map((v) => v.toLowerCase()));
+  const real = usesDrm.filter((v) => !isNoise(v) && !removed.has(v.toLowerCase()));
+  const steamReal = steamDrm
+    .filter((v) => !removed.has(v.toLowerCase()) && (v.toLowerCase() === "steam" || !isNoise(v)))
+    .map((v) => (v.toLowerCase() === "steam" ? "Steam DRM" : v));
+  const tags = [...new Set([...real, ...anticheat, ...steamReal])];
+  const formerTags = [...new Set(removedDrm.filter((v) => !isNoise(v) && !tags.includes(v)))];
+  return { tags, formerTags };
+}
+
+/* Splits on `sep` at template/link depth 0 ({{..}} and [[..]] nest). */
+export function splitTopLevel(str: string, sep = "|"): string[] {
+  const out: string[] = [];
+  let depth = 0;
+  let cur = "";
+  for (let i = 0; i < str.length; i++) {
+    const two = str.slice(i, i + 2);
+    if (two === "{{" || two === "[[") {
+      depth++;
+      cur += two;
+      i++;
+    } else if (two === "}}" || two === "]]") {
+      depth = Math.max(0, depth - 1);
+      cur += two;
+      i++;
+    } else if (str[i] === sep && depth === 0) {
+      out.push(cur);
+      cur = "";
+    } else cur += str[i];
+  }
+  out.push(cur);
+  return out;
+}
+
+/* Bodies of every balanced {{name|...}} template in the wikitext. */
+export function extractTemplates(wikitext: string, name: string): string[] {
+  const out: string[] = [];
+  const re = new RegExp("\\{\\{\\s*" + name.replace(/[/]/g, "\\/") + "\\s*\\|", "gi");
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(wikitext))) {
+    let depth = 1;
+    let i = m.index + 2;
+    const start = re.lastIndex;
+    while (i < wikitext.length && depth > 0) {
+      const two = wikitext.slice(i, i + 2);
+      if (two === "{{") {
+        depth++;
+        i += 2;
+      } else if (two === "}}") {
+        depth--;
+        i += 2;
+      } else i++;
+    }
+    if (depth === 0) out.push(wikitext.slice(start, i - 2));
+  }
+  return out;
+}
+
+const stripMarkup = (v: string) =>
+  v
+    .replace(/<ref[\s\S]*?(<\/ref>|\/>)/gi, "")
+    .replace(/\{\{[^}]*\}\}/g, "")
+    .replace(/\[\[(?:[^|\]]*\|)?([^\]]*)\]\]/g, "$1")
+    .replace(/<br\s*\/?>/gi, ",")
+    .trim();
+
+/* PCGamingWiki writes the anti-tamper product as "Denuvo", "Denuvo Anti-Tamper"
+   or "Denuvo Antitamper"; one canonical tag (Denuvo Anti-Cheat stays its own). */
+const canon = (v: string): string => (/^denuvo(\s+anti-?tamper)?$/i.test(v.trim()) ? "Denuvo Anti-Tamper" : v.trim());
+
+const namesIn = (v: string | undefined): string[] =>
+  stripMarkup(v || "")
+    .split(",")
+    .map((x) => canon(x))
+    .filter(Boolean);
 
 export function parsePcgwPage(wikitext: string): ParsedPcgw {
   const appidField = wikitext.match(/\|\s*steam appid\s*=\s*([^\n|]*)/i);
@@ -72,7 +189,27 @@ export function parsePcgwPage(wikitext: string): ParsedPcgw {
     }
     if (/\{\{\s*DRM\s*\|[^}]*denuvo[^}]*\}\}/i.test(lines[i])) usesDenuvo = true;
   }
-  return { appids, usesDenuvo, removedDenuvo: removed };
+
+  // Availability rows: {{Availability/row| store | id | DRM | notes | keys | os }}
+  const rows = extractTemplates(wikitext, "Availability/row").map((b) => splitTopLevel(b).map((x) => x.trim()));
+  // {{DRM|A||B}} templates in the prose list schemes the table doesn't (VMProtect,
+  // Denuvo, a closed launcher...); the Cargo-era Uses_DRM field included them.
+  const drmTemplateNames = extractTemplates(wikitext, "DRM").flatMap((b) => splitTopLevel(b).map((x) => canon(stripMarkup(x))).filter((x) => x && !/=/.test(x)));
+  const usesDrm = [...rows.flatMap((r) => namesIn(r[2])), ...drmTemplateNames];
+  const steamRow = rows.find((r) => /^steam$/i.test(stripMarkup(r[0] || "")));
+  const steamDrm = steamRow ? namesIn(steamRow[2]) : [];
+  const removedDrm = extractTemplates(wikitext, "Removed DRM").flatMap((b) => splitTopLevel(b).map((x) => canon(stripMarkup(x))).filter((x) => x && !/=/.test(x)));
+  const acField = wikitext.match(/\|\s*anticheat\s*=([^\n]*)/i);
+  const anticheat = acField ? namesIn(acField[1].replace(/\|.*$/, "")) : [];
+  const { tags, formerTags } = classifyDrm(usesDrm, removedDrm, anticheat, steamDrm);
+  return {
+    appids,
+    usesDenuvo,
+    removedDenuvo: removed,
+    tags,
+    formerTags,
+    complete: rows.length > 0 && !!acField,
+  };
 }
 
 export type PcgwReply = { ok: true; json: any } | { ok: false; status: number | null; reason: string };
@@ -112,6 +249,18 @@ export const realHttp: PcgwHttp = {
 const BATCH_TITLES = 8;
 const PAUSE_MS = 400;
 
+/* One HTTP GET, classified. A spent subrequest budget is reported as reason
+   "budget" -- deferral, not a source failure. */
+async function getReply(url: string, http: PcgwHttp): Promise<PcgwReply> {
+  try {
+    const r = await http.get(url);
+    return interpretPcgwReply(r.status, r.text);
+  } catch (e) {
+    if (isBudgetExceeded(e)) return { ok: false, status: null, reason: "budget" };
+    return { ok: false, status: null, reason: e instanceof Error ? e.message : "network_error" };
+  }
+}
+
 interface PageHit {
   title: string;
   wikitext: string;
@@ -124,7 +273,7 @@ async function fetchPages(titles: string[], http: PcgwHttp): Promise<{ ok: true;
   const url =
     `${API}?action=query&prop=revisions&rvprop=content&rvslots=main&redirects=1&format=json&formatversion=2&titles=` +
     encodeURIComponent(titles.join("|"));
-  const reply = interpretPcgwReply(...(await http.get(url).then((r) => [r.status, r.text] as const)));
+  const reply = await getReply(url, http);
   if (!reply.ok) return reply;
   const q = reply.json.query || {};
   const norm = new Map<string, string>((q.normalized || []).map((n: any) => [n.from, n.to]));
@@ -146,7 +295,7 @@ async function fetchPages(titles: string[], http: PcgwHttp): Promise<{ ok: true;
 
 async function searchTitles(query: string, http: PcgwHttp): Promise<{ ok: true; titles: string[] } | { ok: false; status: number | null; reason: string }> {
   const url = `${API}?action=query&list=search&srnamespace=0&srlimit=4&format=json&formatversion=2&srsearch=${encodeURIComponent(query)}`;
-  const reply = interpretPcgwReply(...(await http.get(url).then((r) => [r.status, r.text] as const)));
+  const reply = await getReply(url, http);
   if (!reply.ok) return reply;
   return { ok: true, titles: ((reply.json.query?.search as any[]) || []).map((s) => String(s.title)) };
 }
@@ -162,7 +311,11 @@ export interface PcgwGameInput {
 export type PcgwOutcome =
   | { status: "match"; page: string; parsed: ParsedPcgw }
   | { status: "nomatch"; reason: "no_page" | "appid_mismatch" | "ambiguous" }
-  | { status: "failed"; httpStatus: number | null; reason: string };
+  | { status: "failed"; httpStatus: number | null; reason: string }
+  /* The invocation's subrequest budget ran out before this game was reached:
+     not a source failure and not an answer -- the row simply isn't stamped
+     and is picked up on the next tick. */
+  | { status: "deferred" };
 
 export interface PcgwBatchResult {
   outcomes: Map<string, PcgwOutcome>;
@@ -177,14 +330,15 @@ export interface PcgwBatchResult {
    whole batch -- the rest are reported as failed, not retried in a burst. */
 export async function resolvePcgwBatch(games: PcgwGameInput[], http: PcgwHttp = realHttp): Promise<PcgwBatchResult> {
   const outcomes = new Map<string, PcgwOutcome>();
-  const st: { failure: PcgwBatchResult["failure"] } = { failure: null };
+  const st: { failure: PcgwBatchResult["failure"]; deferred: boolean } = { failure: null, deferred: false };
   const fail = (f: { status: number | null; reason: string }) => {
-    st.failure = st.failure ?? f;
+    if (f.reason === "budget") st.deferred = true;
+    else st.failure = st.failure ?? f;
   };
 
   const guess = (g: PcgwGameInput) => g.knownPage || g.title;
   const firstHits = new Map<string, PageHit | null>();
-  for (let i = 0; i < games.length && !st.failure; i += BATCH_TITLES) {
+  for (let i = 0; i < games.length && !st.failure && !st.deferred; i += BATCH_TITLES) {
     const chunk = games.slice(i, i + BATCH_TITLES);
     const titles = [...new Set(chunk.map(guess).filter((t) => !t.includes("|")))];
     if (i > 0) await http.sleep(PAUSE_MS);
@@ -197,6 +351,10 @@ export async function resolvePcgwBatch(games: PcgwGameInput[], http: PcgwHttp = 
   }
 
   for (const g of games) {
+    if (st.deferred) {
+      outcomes.set(g.id, { status: "deferred" });
+      continue;
+    }
     if (st.failure) {
       outcomes.set(g.id, { status: "failed", httpStatus: st.failure.status, reason: st.failure.reason });
       continue;
@@ -214,7 +372,7 @@ export async function resolvePcgwBatch(games: PcgwGameInput[], http: PcgwHttp = 
     const found = await searchTitles(g.title, http);
     if (!found.ok) {
       fail({ status: found.status, reason: found.reason });
-      outcomes.set(g.id, { status: "failed", httpStatus: found.status, reason: found.reason });
+      outcomes.set(g.id, found.reason === "budget" ? { status: "deferred" } : { status: "failed", httpStatus: found.status, reason: found.reason });
       continue;
     }
     const cands = found.titles.filter((t) => t !== first?.title).slice(0, 3);
@@ -226,7 +384,7 @@ export async function resolvePcgwBatch(games: PcgwGameInput[], http: PcgwHttp = 
     const pages = await fetchPages(cands, http);
     if (!pages.ok) {
       fail({ status: pages.status, reason: pages.reason });
-      outcomes.set(g.id, { status: "failed", httpStatus: pages.status, reason: pages.reason });
+      outcomes.set(g.id, pages.reason === "budget" ? { status: "deferred" } : { status: "failed", httpStatus: pages.status, reason: pages.reason });
       continue;
     }
     const matching = [...pages.hits.values()]

@@ -23,8 +23,14 @@ import { fetchSteamNotice, type SteamNotice } from "./steamDrm";
    evidence -- a dated PCGamingWiki ref, or our own observed Steam
    transition -- never guessed. */
 
-const WATCH_BATCH = 8;
-const SWEEP_BATCH = 4;
+/* Sized for the Workers Free 50-subrequest cap (see worker/index.ts's slot
+   table): this tick runs ALONE in its own cron slot under a 38-attempt
+   budget. Normal cost: 12 Steam fetches + 1 PCGamingWiki wikitext batch
+   (+ at most 2 per title needing a search fallback, only on the first
+   cycle for a title, since the matched page is cached). Anything the budget
+   cuts off is deferred, never stamped or counted as a failure. */
+const WATCH_BATCH = 6;
+const SWEEP_BATCH = 6;
 const STEAM_GAP_MS = 300;
 
 interface Row extends StoredRow {
@@ -52,11 +58,13 @@ export async function runDrmRecheckTick(env: Env): Promise<void> {
   // Steam notices for every row this tick (sequential, small gap).
   const steam = new Map<string, SteamNotice>();
   let steamFailure: { status: number | null; reason: string } | null = null;
-  let steamAttempted = 0;
+  let steamAttempted = 0; // real answers or failures (deferrals don't count)
   for (const r of [...watchRows, ...sweepRows]) {
     if (steamFailure) break; // first failure aborts the rest: no hammering
-    if (steamAttempted++) await new Promise((res) => setTimeout(res, STEAM_GAP_MS));
+    if (steamAttempted) await new Promise((res) => setTimeout(res, STEAM_GAP_MS));
     const n = await fetchSteamNotice(r.appid);
+    if (n.status === "deferred") break; // budget spent: leave the rest for the next tick
+    steamAttempted++;
     steam.set(r.id, n);
     if (n.status === "failed") steamFailure = { status: n.httpStatus, reason: n.reason };
   }
@@ -70,8 +78,9 @@ export async function runDrmRecheckTick(env: Env): Promise<void> {
   if (watchRows.length) {
     const res = await resolvePcgwBatch(watchRows.map((r) => ({ id: r.id, appid: r.appid, title: r.title, knownPage: r.pcgw_page })));
     pcgw = res.outcomes;
+    const answered = [...res.outcomes.values()].some((o) => o.status !== "deferred");
     if (res.failure) await recordSourceResult(db, "pcgamingwiki", false, { status: res.failure.status, error: res.failure.reason });
-    else await recordSourceResult(db, "pcgamingwiki", true);
+    else if (answered) await recordSourceResult(db, "pcgamingwiki", true);
   }
 
   const now = Date.now();

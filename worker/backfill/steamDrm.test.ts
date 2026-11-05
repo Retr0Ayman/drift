@@ -18,3 +18,12 @@ describe("interpretSteamReply", () => {
     expect(noticeListsDenuvo("")).toBe(false);
   });
 });
+
+describe("fetchSteamNotice under a spent budget", () => {
+  it("is deferred, not failed", async () => {
+    const { fetchSteamNotice } = await import("./steamDrm");
+    const { withSubrequestBudget } = await import("../shared/subrequestBudget");
+    const out = await withSubrequestBudget(0, () => fetchSteamNotice(1));
+    expect(out).toEqual({ status: "deferred" });
+  });
+});

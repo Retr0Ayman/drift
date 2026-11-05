@@ -1,0 +1,12 @@
+-- Second pass over every Denuvo-watched row (2026-11-05), for two reasons:
+--  1. The decision rule changed: an empty Steam drm_notice is now "no signal"
+--     unless we previously stored that notice listing Denuvo. DRAGON BALL
+--     FighterZ (and any other title) that had dropped out of "currently
+--     protected" on an empty notice alone gets re-decided from the verified
+--     PCGamingWiki page. Rows that fell into that limbo (no Denuvo tag, no
+--     former Denuvo tag, no removal date) are the ones affected.
+--  2. The recheck now also refreshes every other DRM tag from the same
+--     already-fetched wikitext, so every watched row needs one more visit.
+-- NULL drm_checked_at sorts first, so the next ticks take exactly these rows.
+-- No tags or dates are changed here.
+UPDATE games SET drm_checked_at = NULL WHERE denuvo_watch = 1;

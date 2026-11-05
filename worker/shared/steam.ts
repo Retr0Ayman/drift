@@ -1,5 +1,6 @@
 import { fetchWithRetry } from "./fetchRetry";
 import { USER_AGENT } from "./userAgent";
+import { isBudgetExceeded, spendSubrequest } from "./subrequestBudget";
 
 interface SteamCmdInfo {
   data?: Record<
@@ -81,13 +82,15 @@ export async function resolveHighResHeader(appid: number, fallbackHeader: string
   for (const variant of HIGH_RES_VARIANTS) {
     const url = `https://cdn.cloudflare.steamstatic.com/steam/apps/${appid}/${variant}`;
     try {
+      spendSubrequest();
       // HEAD, not GET -- this only needs the status code, and running
       // this per candidate per game during enrichment (not per pageview)
       // shouldn't also pay for downloading image bytes it might throw
       // away on a miss.
       const r = await fetch(url, { method: "HEAD", headers: { "User-Agent": USER_AGENT }, cf: { cacheTtlByStatus: { "200-299": 86400, "300-599": 60 } } } as RequestInit);
       if (r.ok) return url;
-    } catch {
+    } catch (e) {
+      if (isBudgetExceeded(e)) throw e;
       // network blip on this one candidate -- try the next, same
       // "one failure doesn't take down the whole enrichment" discipline
       // every other backfill tick in this codebase already follows

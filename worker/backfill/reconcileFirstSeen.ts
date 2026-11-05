@@ -48,7 +48,10 @@ import { getBackfillState, setBackfillState } from "./db";
    indefinitely rather than needing to "complete" -- same reasoning as
    steady-state sync, not the large one-time crawls. */
 
-const PAGE_SIZE = 20; // each row needs its own 1-2 external HTTP round trips
+// Each distinct group costs several xREL round trips (group search pages + the P2P history
+// pages). Sized for the 38-attempt budget it runs under (worker/index.ts); rows the budget
+// cuts off keep first_seen_verified = 0 and are picked up next hour.
+const PAGE_SIZE = 8;
 
 // D1 rows_read audit (2026-09-06): this query's WHERE clause (update_count,
 // first_seen_verified) has no index, so ORDER BY RANDOM() forced a full

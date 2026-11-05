@@ -7,13 +7,17 @@
    WARHAMMER (both list Denuvo) and Atomic Heart / 007 First Light (empty). */
 
 import { fetchWithRetry } from "../shared/fetchRetry";
+import { isBudgetExceeded } from "../shared/subrequestBudget";
 
 export type SteamNotice =
   | { status: "ok"; notice: string | null }
   /* Steam answered but has no data for this app (delisted / region-locked):
      a real answer, but says nothing about DRM. */
   | { status: "unavailable" }
-  | { status: "failed"; httpStatus: number | null; reason: string };
+  | { status: "failed"; httpStatus: number | null; reason: string }
+  /* The invocation's subrequest budget ran out before this fetch: neither an
+     answer nor a source failure; the row is simply retried next tick. */
+  | { status: "deferred" };
 
 export function interpretSteamReply(appid: number, status: number, text: string): SteamNotice {
   if (status !== 200) return { status: "failed", httpStatus: status, reason: `http_${status}` };
@@ -35,6 +39,7 @@ export async function fetchSteamNotice(appid: number): Promise<SteamNotice> {
     const r = await fetchWithRetry(`https://store.steampowered.com/api/appdetails?appids=${appid}&cc=us&l=en&filters=basic`);
     return interpretSteamReply(appid, r.status, await r.text());
   } catch (e) {
+    if (isBudgetExceeded(e)) return { status: "deferred" };
     return { status: "failed", httpStatus: null, reason: e instanceof Error ? e.message : "network_error" };
   }
 }

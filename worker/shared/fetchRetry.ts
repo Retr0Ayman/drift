@@ -11,6 +11,7 @@
    consistent: 429/5xx and a thrown network error are worth retrying, any
    other 4xx will just fail identically again and returns immediately
    instead of wasting a retry attempt on something retrying can't fix. */
+import { isBudgetExceeded, spendSubrequest } from "./subrequestBudget";
 import { withUserAgent } from "./userAgent";
 
 const MAX_ATTEMPTS = 3;
@@ -37,10 +38,12 @@ export async function fetchWithRetry(url: string, init?: RequestInit): Promise<R
   let lastResponse: Response | null = null;
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     try {
+      spendSubrequest(); // every attempt, retries included, is a subrequest
       const r = await fetch(url, withUserAgent(init));
       if (r.ok || !isRetryableStatus(r.status)) return r;
       lastResponse = r;
     } catch (e) {
+      if (isBudgetExceeded(e)) throw e; // never "retry" past the budget
       lastError = e;
       lastResponse = null;
     }

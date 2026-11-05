@@ -17,10 +17,10 @@ const row = (over: Partial<StoredRow> = {}): StoredRow => ({
   ...over,
 });
 
-const pcgwMatch = (o: { uses?: boolean; removed?: { hasRef: boolean; dateMs: number | null; url: string | null } | null }): PcgwOutcome => ({
+const pcgwMatch = (o: { uses?: boolean; removed?: { hasRef: boolean; dateMs: number | null; url: string | null } | null; tags?: string[]; complete?: boolean }): PcgwOutcome => ({
   status: "match",
   page: "P",
-  parsed: { appids: [1], usesDenuvo: !!o.uses, removedDenuvo: o.removed ?? null },
+  parsed: { appids: [1], usesDenuvo: !!o.uses, removedDenuvo: o.removed ?? null, tags: o.tags ?? [], formerTags: [], complete: !!o.complete },
 });
 const steamOk = (notice: string | null): SteamNotice => ({ status: "ok", notice });
 const failedPcgw: PcgwOutcome = { status: "failed", httpStatus: 200, reason: "api_permissiondenied" };
@@ -80,7 +80,7 @@ describe("removal rules", () => {
 
   it("an empty notice we have never seen listing Denuvo is NOT a removal (no previous observation)", () => {
     const p = planRowUpdate(row({ steam_drm_notice: null }), undefined, steamOk(null), NOW)!;
-    expect(p.decision.state).toBe("absent");
+    expect(p.decision.state).toBe("unknown"); // no signal either way: stored tags untouched
     expect(p.sets.denuvo_removed_at).toBeUndefined();
     expect(p.sets.former_tags).toBeUndefined();
   });
@@ -127,8 +127,29 @@ describe("currently protected", () => {
     expect(p.sets.denuvo_watch).toBe(1);
   });
 
-  it("when both answered and differ, the fresher Steam notice wins: leaves the list, but is NOT called removed", () => {
-    const p = planRowUpdate(row(), pcgwMatch({ uses: true }), steamOk(null), NOW)!;
+  it("DRAGON BALL FighterZ: empty Steam notice with no prior Denuvo is NO SIGNAL; PCGamingWiki says it uses Denuvo -> stays protected", () => {
+    const stored = row({ tags: JSON.stringify(["Easy Anti-Cheat", "Steam DRM"]), steam_drm_notice: null });
+    const p = planRowUpdate(stored, pcgwMatch({ uses: true, tags: ["Denuvo Anti-Tamper", "Easy Anti-Cheat", "Steam DRM"], complete: true }), steamOk(null), NOW)!;
+    expect(p.decision.state).toBe("present");
+    expect(JSON.parse(p.sets.tags as string)).toEqual([DENUVO_TAG, "Easy Anti-Cheat", "Steam DRM"]);
+    expect(p.sets.former_tags).toBeUndefined();
+    expect(p.sets.denuvo_removed_at).toBeUndefined();
+    expect(p.sets.steam_drm_notice).toBe(""); // stored as an observation, not as evidence
+  });
+
+  it("an empty notice we previously stored as EMPTY is still no signal (not a removal)", () => {
+    const p = planRowUpdate(row({ steam_drm_notice: "" }), pcgwMatch({ uses: true }), steamOk(null), NOW)!;
+    expect(p.decision.state).toBe("present");
+  });
+
+  it("empty Steam notice, no prior Denuvo, and no verified PCGamingWiki page -> unknown: nothing changes", () => {
+    const p = planRowUpdate(row(), { status: "nomatch", reason: "no_page" }, steamOk(null), NOW)!;
+    expect(p.decision.state).toBe("unknown");
+    expect(p.sets.tags).toBeUndefined();
+  });
+
+  it("a verified PCGamingWiki page that no longer mentions Denuvo (and no removal) drops the tag, without calling it a removal", () => {
+    const p = planRowUpdate(row(), pcgwMatch({ uses: false }), steamOk(null), NOW)!;
     expect(p.decision.state).toBe("absent");
     expect(JSON.parse(p.sets.tags as string)).toEqual(["Steam DRM"]);
     expect(p.sets.former_tags).toBeUndefined();
@@ -138,5 +159,34 @@ describe("currently protected", () => {
   it("PCGamingWiki alone (Steam failed) can keep a title protected", () => {
     const p = planRowUpdate(row(), pcgwMatch({ uses: true }), failedSteam, NOW)!;
     expect(p.decision.state).toBe("present");
+  });
+});
+
+describe("non-Denuvo tags from the same wikitext", () => {
+  const base = row({ tags: JSON.stringify(["Always online", "BattlEye", "Steam DRM"]), denuvo_watch: 0 });
+
+  it("a complete, matched page is authoritative: a tag it no longer lists drops, new ones are added", () => {
+    const p = planRowUpdate(base, pcgwMatch({ tags: ["Steam DRM", "Easy Anti-Cheat"], complete: true }), steamOk(null), NOW)!;
+    expect(JSON.parse(p.sets.tags as string).sort()).toEqual(["Easy Anti-Cheat", "Steam DRM"]);
+  });
+
+  it("an incomplete parse can only add, never drop", () => {
+    const p = planRowUpdate(base, pcgwMatch({ tags: ["Easy Anti-Cheat"], complete: false }), steamOk(null), NOW)!;
+    expect(JSON.parse(p.sets.tags as string).sort()).toEqual(["Always online", "BattlEye", "Easy Anti-Cheat", "Steam DRM"]);
+  });
+
+  it("a failed or unmatched lookup never overwrites tags", () => {
+    expect(planRowUpdate(base, failedPcgw, failedSteam, NOW)).toBeNull();
+    const p = planRowUpdate(base, { status: "nomatch", reason: "appid_mismatch" }, steamOk(null), NOW)!;
+    expect(p.sets.tags).toBeUndefined();
+  });
+
+  it("a deferred (budget) lookup writes nothing", () => {
+    expect(planRowUpdate(base, { status: "deferred" }, { status: "deferred" }, NOW)).toBeNull();
+  });
+
+  it("writes nothing when the page agrees with what is stored", () => {
+    const p = planRowUpdate(base, pcgwMatch({ tags: ["Steam DRM", "Always online", "BattlEye"], complete: true }), steamOk(null), NOW)!;
+    expect(p.sets.tags).toBeUndefined();
   });
 });

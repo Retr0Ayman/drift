@@ -29,7 +29,10 @@ import { refreshStaleGame, getBackfillState, setBackfillState } from "./db";
    forever. A row that gets fixed drops out of the WHERE clause on its own.
    ORDER BY RANDOM() so a handful of persistently-unfixable rows (a genuine
    Steam delist) can't monopolize every tick's small page. */
-const PAGE_SIZE = 12; // each row costs the same 3 external calls enrichFromSteam always does
+// enrichFromSteam is ~5 external attempts per row (appdetails, steamcmd build, cover image, up to 2 HEAD
+// probes; up to 9 with retries). Sized for the 34-attempt budget it runs under (worker/index.ts):
+// rows the budget cuts off stay eligible and are picked up next hour.
+const PAGE_SIZE = 4;
 
 // D1 rows_read audit (2026-09-06): the WHERE clause (developer IS NULL OR
 // '') has no supporting index, so ORDER BY RANDOM() forced a full `games`

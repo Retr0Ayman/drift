@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { interpretPcgwReply, parsePcgwPage, parseRemovalDate, resolvePcgwBatch, type PcgwHttp } from "./pcgamingwiki";
+import { classifyDrm, extractTemplates, interpretPcgwReply, parsePcgwPage, parseRemovalDate, resolvePcgwBatch, splitTopLevel, type PcgwHttp } from "./pcgamingwiki";
 
 // Real lines from PCGamingWiki wikitext, fetched 2026-11-05.
 const ATOMIC = `{{Infobox game
@@ -130,5 +130,91 @@ describe("resolvePcgwBatch", () => {
     expect(r.failure).toEqual({ status: 200, reason: "api_permissiondenied" });
     expect([...r.outcomes.values()].every((o) => o.status === "failed")).toBe(true);
     expect(http.calls).toHaveLength(1);
+  });
+});
+
+// Real excerpts (PCGamingWiki wikitext, 2026-11-05).
+const DBFZ = `|steam appid  = 678950
+|anticheat        = Easy Anti-Cheat
+|anticheat notes  = <ref>{{Refurl|url=https://steamdb.info/app/678950/info/|title=SteamDB|date=2025-11-25}}</ref>
+==Availability==
+{{Availability|
+{{Availability/row| Gamersgate | dragon-ball-fighterz | Steam | {{store link|Gamersgate|dragon-ball-fighterz-fighterz-edition|FighterZ Edition}} also available. | | Windows }}
+{{Availability/row| Microsoft Store | 9nztsfkr9m94 | Microsoft Store | {{store link|Microsoft Store|9N22XXKKV3XF|FighterZ Edition}} also available. | | Windows }}
+{{Availability/row| Steam | 678950 | Steam | {{store link|steam-sub|212600|FighterZ Edition}} also available. | | Windows }}
+}}
+{{ii}} The Steam version requires {{DRM|Denuvo Anti-Tamper}}.<ref>[https://store.steampowered.com//eula/678950_eula_0 EULA].</ref>`;
+
+const RDR2 = `|steam appid  = 1174180
+|anticheat        =
+==Availability==
+{{Availability|
+{{Availability/row| Epic Games Store | red-dead-redemption-2 | Epic Games Store, Rockstar Games Launcher | {{store link|Epic Games Store|a|Red Dead Online}} also available. | | Windows }}
+{{Availability/row| Steam | 1174180 | Steam, Rockstar Games Launcher | | | Windows }}
+}}`;
+
+const STARDEW = `|steam appid  = 413150
+|anticheat        =
+==Availability==
+{{Availability|
+{{Availability/row| Retail |  | DRM-free |  | Steam | Windows }}
+{{Availability/row| Steam | 413150 | DRM-free | DRM-free on Linux when Steam is not installed.<ref>{{Refcheck|user=x|date=2017-07-09}}</ref> | | Windows }}
+}}`;
+
+describe("other DRM tags from wikitext (same fetch, no extra requests)", () => {
+  it("DBFZ: Steam DRM + Easy Anti-Cheat + Denuvo, storefront names filtered, nested templates in notes handled", () => {
+    const p = parsePcgwPage(DBFZ);
+    expect(p.tags.sort()).toEqual(["Denuvo Anti-Tamper", "Easy Anti-Cheat", "Steam DRM"]);
+    // Denuvo itself is decided in denuvoDecision.ts, not from this list
+    expect(p.usesDenuvo).toBe(true);
+    expect(p.complete).toBe(true);
+  });
+  it("RDR2: a publisher's closed launcher is a real requirement, relabelled Steam DRM alongside it", () => {
+    expect(parsePcgwPage(RDR2).tags.sort()).toEqual(["Rockstar Games Launcher", "Steam DRM"]);
+  });
+  it("prose {{DRM|..}} templates count (Hi-Fi Rush: VMProtect current, Denuvo removed -> former only)", () => {
+    const p = parsePcgwPage(HIFI);
+    expect(p.tags).toEqual(["VMProtect"]);
+    expect(p.formerTags).toEqual(["Denuvo Anti-Tamper"]); // "Denuvo" canonicalised
+  });
+  it("a DRM-free game gets no tags, and the page still counts as a complete parse", () => {
+    const p = parsePcgwPage(STARDEW);
+    expect(p.tags).toEqual([]);
+    expect(p.complete).toBe(true);
+  });
+  it("a page without an Availability table is not a complete parse (cannot be used to drop tags)", () => {
+    expect(parsePcgwPage("|steam appid = 5\n").complete).toBe(false);
+  });
+  it("classifyDrm keeps removed names out of current tags, in former", () => {
+    expect(classifyDrm(["Denuvo Anti-Tamper", "VMProtect"], ["Denuvo Anti-Tamper"], [], ["Steam"])).toEqual({ tags: ["VMProtect", "Steam DRM"], formerTags: ["Denuvo Anti-Tamper"] });
+  });
+  it("splitTopLevel / extractTemplates respect nesting", () => {
+    expect(splitTopLevel("a|{{x|y}}|[[p|q]]|b")).toEqual(["a", "{{x|y}}", "[[p|q]]", "b"]);
+    expect(extractTemplates("{{Availability/row| A | {{n|1|2}} }}\n{{Availability/row| B }}", "Availability/row")).toHaveLength(2);
+  });
+});
+
+describe("subrequest budget: deferral is neither an answer nor a failure", () => {
+  it("a spent budget marks the remaining games deferred and reports no source failure", async () => {
+    const { SubrequestBudgetExceeded } = await import("../shared/subrequestBudget");
+    let n = 0;
+    const http: PcgwHttp = {
+      sleep: async () => {},
+      async get() {
+        n++;
+        if (n > 1) throw new SubrequestBudgetExceeded();
+        return { status: 200, text: JSON.stringify({ query: { pages: [{ title: "Known", missing: true }] } }) };
+      },
+    };
+    const r = await resolvePcgwBatch(
+      [
+        { id: "a", appid: 1, title: "Known", knownPage: null }, // exact-title miss -> needs a search -> budget spent
+        { id: "b", appid: 2, title: "Other", knownPage: null },
+      ],
+      http,
+    );
+    expect(r.failure).toBeNull();
+    expect(r.outcomes.get("a")).toEqual({ status: "deferred" });
+    expect(r.outcomes.get("b")).toEqual({ status: "deferred" });
   });
 });

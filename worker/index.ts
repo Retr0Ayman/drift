@@ -31,7 +31,8 @@ import { runScheduledAlert, runSteadyStateSync } from "./scheduled";
 import { runBackfillTick } from "./backfill/run";
 import { runDeepBackfillTick } from "./backfill/deepRun";
 import { runArchiveBackfillTick } from "./backfill/archiveRun";
-import { runDrmBackfillTick } from "./backfill/drmBackfillRun";
+import { runDrmRecheckTick } from "./backfill/drmBackfillRun";
+import { withSubrequestBudget } from "./shared/subrequestBudget";
 import { runFirstSeenReconcileTick } from "./backfill/reconcileFirstSeen";
 import { runStaleRefreshTick } from "./backfill/refreshStale";
 import { runEnrichmentRepairTick } from "./backfill/repairEnrichment";
@@ -61,8 +62,31 @@ import { handleAdminSeedTitle } from "./routes/adminSeedTitle";
 // combines two unrelated tasks below.
 const BACKFILL_CRON = "*/2 * * * *";
 const DEEP_BACKFILL_CRON = "*/3 * * * *";
-const ARCHIVE_BACKFILL_CRON = "*/4 * * * *";
-const DRM_BACKFILL_CRON = "*/5 * * * *";
+const DRM_RECHECK_CRON = "*/4 * * * *";
+const HOUSEKEEPING_CRON = "*/5 * * * *";
+
+// SUBREQUEST BUDGETS (Workers Free: 50 per invocation, retries and redirect
+// hops included; D1/KV calls are also subrequests per Cloudflare's docs
+// (separate 1,000 internal cap), so each budget leaves room for the task's own
+// D1 calls and even the conservative reading stays under 50). Every cron slot
+// is ONE invocation, so the budgets of whatever runs in it must sum well
+// under 50. Enforced, not hoped for: see worker/shared/subrequestBudget.ts.
+//
+//   every 2 min   backfill (phase = done: no external calls)     unbudgeted
+//   every 3 min   deep backfill + archive crawl (both done)      20 + 20
+//   every 4 min   DRM recheck, ALONE in its invocation           38 (+~7 D1 = 45)
+//   every 5 min   housekeeping, ONE task per invocation,         repair 34, reconcile 38,
+//                 staggered by minute: :10 enrichment repair,    header 30 (each + a few
+//                 :25 first-seen reconcile, :40 header upgrade;  D1 calls, <= 45)
+//                 other minutes idle
+//   every 15 min  alert + sync + stale refresh + aggregates      NOT budgeted here: its
+//                 stale-refresh batch (150 rows) alone exceeds 50.
+const BUDGET_DRM = 38;
+const BUDGET_REPAIR = 34;
+const BUDGET_RECONCILE = 38;
+const BUDGET_HEADER = 30;
+const BUDGET_DEEP = 20;
+const BUDGET_ARCHIVE = 20;
 
 const ROUTES: Record<string, Handler> = {
   "/api/appdetails": handleAppdetails,
@@ -180,17 +204,26 @@ export default {
       return;
     }
     if (event.cron === DEEP_BACKFILL_CRON) {
-      ctx.waitUntil(runDeepBackfillTick(env));
-      return;
-    }
-    if (event.cron === ARCHIVE_BACKFILL_CRON) {
-      ctx.waitUntil(runArchiveBackfillTick(env));
-      return;
-    }
-    if (event.cron === DRM_BACKFILL_CRON) {
+      // Both of these have finished (phase = done) and cost nothing; they share
+      // a slot so the */4 slot can be dedicated to the DRM recheck.
       ctx.waitUntil(
-        Promise.all([runDrmBackfillTick(env), runFirstSeenReconcileTick(env), runEnrichmentRepairTick(env), runHeaderUpgradeTick(env)]),
+        Promise.all([withSubrequestBudget(BUDGET_DEEP, () => runDeepBackfillTick(env)), withSubrequestBudget(BUDGET_ARCHIVE, () => runArchiveBackfillTick(env))]),
       );
+      return;
+    }
+    if (event.cron === DRM_RECHECK_CRON) {
+      // Alone in its invocation: nothing else can be starved by it.
+      ctx.waitUntil(withSubrequestBudget(BUDGET_DRM, () => runDrmRecheckTick(env)));
+      return;
+    }
+    if (event.cron === HOUSEKEEPING_CRON) {
+      // Hourly tasks, one per invocation (staggered by minute) so they never
+      // share a 50-subrequest cap. `force` bypasses their own hourly throttle
+      // because the minute gate already makes them hourly.
+      const minute = new Date(event.scheduledTime).getUTCMinutes();
+      if (minute === 10) ctx.waitUntil(withSubrequestBudget(BUDGET_REPAIR, () => runEnrichmentRepairTick(env, true)));
+      else if (minute === 25) ctx.waitUntil(withSubrequestBudget(BUDGET_RECONCILE, () => runFirstSeenReconcileTick(env, true)));
+      else if (minute === 40) ctx.waitUntil(withSubrequestBudget(BUDGET_HEADER, () => runHeaderUpgradeTick(env, true)));
       return;
     }
     ctx.waitUntil(
