@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 import { Routes, Route, Outlet } from "react-router-dom";
 import Navbar from "./components/layout/Navbar";
 import Footer from "./components/layout/Footer";
@@ -34,6 +34,13 @@ function Layout() {
   // and clicking the navbar's SearchBar pill -- drive the same overlay
   // instead of two separate search UIs.
   const [searchOpen, setSearchOpen] = useState(false);
+  const latestTs = useMemo(() => {
+    // Newest real release timestamp only (not gTimestamp's release-date/year
+    // fallbacks, which can point at the future) -- seconds in the data.
+    let t = 0;
+    for (const g of catalog.games) for (const r of g.releases || []) if ((r.ts || 0) > t) t = r.ts!;
+    return t ? t * 1000 : null;
+  }, [catalog.games]);
   const context: CatalogContextValue = {
     games: catalog.games,
     status: catalog.status,
@@ -49,7 +56,7 @@ function Layout() {
   return (
     <>
       <IntroAnimation onDone={() => setIntroDone(true)} />
-      <Navbar status={catalog.status} onOpenSearch={() => setSearchOpen(true)} revealBrandMark={introDone} />
+      <Navbar status={catalog.status} latestTs={latestTs} onOpenSearch={() => setSearchOpen(true)} revealBrandMark={introDone} />
       <CommandPalette
         games={catalog.games}
         catalogStatus={catalog.status}

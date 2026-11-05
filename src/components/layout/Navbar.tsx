@@ -3,31 +3,14 @@ import { Link, NavLink } from "react-router-dom";
 import { motion, useScroll, useTransform } from "motion/react";
 import SearchBar from "../search/SearchBar";
 import OrlazWordmark from "../ui/illustrations/OrlazWordmark";
-import Pill, { type PillTone } from "../ui/Pill";
+import SyncStatus from "./SyncStatus";
 import type { CatalogStatus } from "../../hooks/useLiveCatalog";
 import { useTheme } from "../../hooks/useTheme";
 import "./Navbar.css";
 
-const STATUS_LABEL: Record<CatalogStatus, string> = {
-  seeded: "SEEDED",
-  syncing: "SYNCING",
-  live: "LIVE",
-};
-
-// Reuses the same status-pill tones item 2 already gave a bolder, more
-// confident treatment (rounded-square, bold weight) -- "live" maps to the
-// same green "Current" tone a release in good standing gets, "syncing" to
-// the warm in-progress "out" tone, "seeded" to the neutral "unv" tone. Not
-// a new badge style: this IS the FLAG_TONE system, just applied to a
-// different status vocabulary than release freshness.
-const STATUS_TONE: Record<CatalogStatus, PillTone> = {
-  seeded: "unv",
-  syncing: "out",
-  live: "dead",
-};
-
 interface NavbarProps {
   status: CatalogStatus;
+  latestTs: number | null;
   onOpenSearch: () => void;
   revealBrandMark: boolean;
 }
@@ -43,7 +26,7 @@ interface NavbarProps {
    not a 0->solid alpha ramp -- a floating element that's invisible at
    rest reads as broken, not restrained, the way a flush edge-to-edge bar
    could get away with. */
-export default function Navbar({ status, onOpenSearch, revealBrandMark }: NavbarProps) {
+export default function Navbar({ status, latestTs, onOpenSearch, revealBrandMark }: NavbarProps) {
   const { scrollY } = useScroll();
   const scrollProgress = useTransform(scrollY, [0, 120], [0, 1]);
   const scale = useTransform(scrollProgress, [0, 1], [1, 0.985]);
@@ -59,7 +42,7 @@ export default function Navbar({ status, onOpenSearch, revealBrandMark }: Navbar
   // just lose to this inline style regardless of specificity.
   const boxShadow = useTransform(
     shadowAlpha,
-    (a) => `var(--glass-highlight), 0 8px 24px -8px rgba(23, 21, 15, ${a}), 0 4px 32px -14px color-mix(in srgb, var(--cosmic-b) 40%, transparent)`,
+    (a) => `var(--glass-highlight), 0 8px 24px -8px rgba(23, 21, 15, ${a})`,
   );
 
   const [menuOpen, setMenuOpen] = useState(false);
@@ -137,13 +120,10 @@ export default function Navbar({ status, onOpenSearch, revealBrandMark }: Navbar
             </div>
 
             <div className="navbar-status-group">
-              <Pill tone="neutral" className="navbar-beta" title="orlaz is in active development -- data and visuals are still evolving">
-                BETA
-              </Pill>
-              <Pill tone={STATUS_TONE[status]} className="navbar-live">
-                {status === "live" ? <span className="navbar-live-dot" /> : null}
-                {STATUS_LABEL[status]}
-              </Pill>
+              <span className="navbar-beta" title="orlaz is in active development -- data and visuals are still evolving">
+                Beta
+              </span>
+              <SyncStatus status={status} latestTs={latestTs} />
             </div>
           </div>
         </motion.nav>

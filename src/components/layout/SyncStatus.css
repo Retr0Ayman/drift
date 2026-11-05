@@ -1,0 +1,59 @@
+.sync-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: none;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.sync-status-glyph {
+  width: 18px;
+  height: 18px;
+  overflow: visible;
+}
+
+.sync-status-ghost {
+  opacity: 0.45;
+  transform: translateX(0);
+  transition: transform 600ms var(--ease);
+}
+
+/* live: concentric, static. seeded: offset and quiet. */
+.sync-status--seeded {
+  color: var(--ink-3);
+}
+.sync-status--seeded .sync-status-ghost {
+  transform: translateX(-4px);
+}
+
+/* syncing: the ghost ring drifts off-centre and eases back, only while
+   actually syncing. */
+.sync-status--syncing .sync-status-ghost {
+  animation: sync-drift 2.8s var(--ease) infinite;
+}
+
+@keyframes sync-drift {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  45% {
+    transform: translateX(-4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sync-status--syncing .sync-status-ghost {
+    animation: none;
+    transform: translateX(-3px);
+  }
+}
+
+@media (max-width: 1599px) {
+  .sync-status-time {
+    display: none;
+  }
+}

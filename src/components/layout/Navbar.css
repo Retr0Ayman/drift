@@ -276,51 +276,14 @@
   }
 }
 
-/* Sizing/positioning only -- the tinted background, color, border-radius,
-   and font-weight all come from Pill's own tone styling (see Navbar.tsx's
-   STATUS_TONE map), same treatment the release-status pills use, just
-   dialed down a step to fit the navbar's compact height. */
-.navbar-live,
 .navbar-beta {
   flex: none;
   font-size: var(--text-xs);
-  letter-spacing: 0.5px;
-  padding: 6px 11px;
-}
-
-.navbar-live {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-}
-
-/* Telemetry-style pulsing dot, "live" tone only -- a real status light
-   instead of just a colored word, the same "this is a real-time readout"
-   cue the rest of this pass leans on. Plain opacity keyframe (no size/
-   position change, no filter), so this stays cheap even though it's
-   always animating while status is live. */
-.navbar-live-dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: currentColor;
-  animation: navbar-live-pulse 1.6s ease-in-out infinite;
-}
-
-@keyframes navbar-live-pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.35;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .navbar-live-dot {
-    animation: none;
-  }
+  font-weight: 500;
+  color: var(--ink-2);
+  border: 1px solid var(--hairline);
+  border-radius: var(--pill);
+  padding: 2px 9px;
 }
 
 /* Tier 2: the link row alone is 655px wide, so below ~1140px it can't share the
