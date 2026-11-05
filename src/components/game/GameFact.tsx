@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import type { Game } from "../../types/game";
 import { fetchFact } from "../../lib/fact";
 import { franchiseFor } from "../../lib/companies";
+import GeneratedLabel from "../ui/GeneratedLabel";
+import "../ui/AiSummary.css";
 import GlassPanel from "../ui/GlassPanel";
 
 // Prefers a real, hand-curated seed fact when one exists (see
@@ -42,9 +44,10 @@ export default function GameFact({ game }: { game: Game }) {
   if (!fact) return null;
 
   return (
-    <GlassPanel className={`detail-factbox${aiGenerated ? " ai-glow" : ""}`} frost>
+    <GlassPanel className="detail-factbox" frost>
       <div className="detail-factbox-h">Did you know</div>
       <p>{fact}</p>
+      {aiGenerated ? <GeneratedLabel /> : null}
     </GlassPanel>
   );
 }

@@ -5,6 +5,7 @@ import { buildDigestFacts } from "../../lib/digest";
 import { fetchDigest } from "../../lib/fetchDigest";
 import { slugify } from "../../lib/format";
 import GlassPanel from "../ui/GlassPanel";
+import GeneratedLabel from "../ui/GeneratedLabel";
 import Reveal from "../ui/Reveal";
 import { usePageMeta } from "../../hooks/usePageMeta";
 import "./Digest.css";
@@ -67,7 +68,10 @@ export default function Digest() {
               Reading the catalogue…
             </div>
           ) : text ? (
-            <p className="digest-text">{text}</p>
+            <>
+              <p className="digest-text">{text}</p>
+              <GeneratedLabel />
+            </>
           ) : (
             <div className="digest-status">{error || "Digest unavailable right now."}</div>
           )}

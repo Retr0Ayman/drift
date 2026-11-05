@@ -2,6 +2,8 @@ import { useEffect, useState, type ReactNode } from "react";
 import * as RadixAccordion from "@radix-ui/react-accordion";
 import type { Game } from "../../types/game";
 import { fetchFaq } from "../../lib/faq";
+import GeneratedLabel from "../ui/GeneratedLabel";
+import "../ui/AiSummary.css";
 import GlassPanel from "../ui/GlassPanel";
 import "./FaqSection.css";
 
@@ -61,12 +63,11 @@ export default function FaqSection({ game }: { game: Game }) {
   }, [game]);
 
   const pairs = faq ? parseQaPairs(faq) : [];
-  const ready = !loading && !error && pairs.length > 0;
 
   return (
     <div className="detail-faq">
       <h4>FAQ</h4>
-      <GlassPanel className={`faq-panel${ready ? " ai-glow" : ""}`}>
+      <GlassPanel className="faq-panel">
         {loading ? (
           <p className="faq-status">Generating…</p>
         ) : error || !pairs.length ? (
@@ -74,6 +75,7 @@ export default function FaqSection({ game }: { game: Game }) {
             FAQ generation is unavailable right now{error ? ` (${error})` : ""}.
           </p>
         ) : (
+          <>
           <RadixAccordion.Root type="single" collapsible defaultValue="q-0" className="faq-accordion">
             {pairs.map((pair, i) => (
               <RadixAccordion.Item key={i} value={`q-${i}`} className="faq-item">
@@ -89,6 +91,8 @@ export default function FaqSection({ game }: { game: Game }) {
               </RadixAccordion.Item>
             ))}
           </RadixAccordion.Root>
+          <GeneratedLabel text="Generated FAQ" />
+          </>
         )}
       </GlassPanel>
     </div>

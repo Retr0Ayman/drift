@@ -1,120 +1,24 @@
-/* One-universal-theme pass: this used to be a flat, fully opaque
-   var(--bg-1) fill -- the plain (no frost/frostStrong prop) variant, which
-   turned out to be what most of the site's actual panels used (Digest's
-   hero + 4 stat tiles, GameDetail's carousel wrapper/DLC list, the
-   FAQ panel, Groups/Publishers signal panels, the wishlist import panel --
-   confirmed via a full grep of every <GlassPanel> call site). Every one of
-   those opaquely covered the lava-lamp background wherever it sat,
-   regardless of AmbientBackground being mounted globally (main.tsx) --
-   the background was never actually hidden site-wide, it was just being
-   painted over locally by this component's own default fill on most of
-   the pages that use it. Now the default IS real liquid glass (the same
-   translucent --panel-bg fill + blur+saturate backdrop-filter
-   .glass-panel--frost already used) instead of a separate opaque variant
-   callers had to opt out of -- "every card/tile/panel" reads as glass by
-   default now, frost/frostStrong stay as intentional stronger-blur/more-
-   see-through variants for surfaces that need to visibly float more, not
-   as the only way to get glass at all. */
+/* Content surfaces: a subtle fill with a neutral hairline and a soft shadow.
+   No backdrop blur, no specular streak, no glow -- frosted glass is reserved
+   for the floating navbar and overlays (command palette), so cards never
+   stack glass on glass. frost / frost-strong are kept as prop names for
+   existing call sites; they only change how much of the background shows
+   through. */
 .glass-panel {
   border-radius: var(--r-lg);
-  background: var(--panel-bg);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.25);
-  backdrop-filter: blur(var(--glass-blur)) saturate(1.25);
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--glass-highlight), var(--glass-shadow), var(--glass-ambient);
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  box-shadow: var(--surface-shadow);
 }
 
 .glass-panel--strong {
-  border-color: var(--glass-border-strong);
-  box-shadow: var(--glass-highlight), var(--glass-shadow-lg), var(--glass-ambient);
+  background: var(--surface-strong);
 }
 
-/* Static counterpart to the spinning conic-gradient aura ring (reserved for
-   the search bar alone now -- SearchBar.tsx builds that directly off the
-   the search bar; the hero "Live
-   signal" panel was the other reserved spot until a spinning rainbow
-   border there got cut for reading as generic AI-dashboard decoration, see
-   Hero.tsx's own history). Same translucent fill + blur, saturate() added
-   per the Stage 3 brief, and a thin border blended from the same two aura
-   hues instead of a spinning ring. Reuses the exact --aura-* tokens, no new
-   ones invented. */
 .glass-panel--frost {
-  background: color-mix(in srgb, var(--panel-bg) 80%, transparent);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.25);
-  backdrop-filter: blur(var(--glass-blur)) saturate(1.25);
-  border: 1px solid var(--hairline);
-  box-shadow: var(--glass-highlight), var(--glass-shadow-lg), var(--glass-ambient), var(--ethereal-glow);
+  background: var(--surface);
 }
 
-/* Stronger version of the same frost treatment, for tile surfaces that
-   sit directly over the full-screen metaball background (GameCard and the
-   other grid tiles, release-card) and need to visibly float rather than
-   read as a plain card with a faint tint. Same tokens as .glass-panel--
-   frost, just pushed further: more blur, more saturate, and the fill
-   itself blended down toward transparent (via color-mix on the existing
-   --panel-bg, not a new hardcoded rgba) so real background color
-   shows through instead of mostly opaque white/near-black with a hint of
-   blur at the edges.
-
-   FIX (measurement methodology, confirmed live): first measured this in
-   headless Chromium the same way every other perf check this session
-   used, and saw a real-looking ~25-38fps regression on grid pages with
-   even ~9 simultaneously-visible tiles -- present at ANY backdrop-filter
-   value tested, including blur(0px) and saturate()-only with no blur
-   function at all, which meant it wasn't the blur radius, it was
-   backdrop-filter's mere presence. That pointed at headless's software
-   rendering fallback (no real GPU compositor) rather than a real cost:
-   re-ran the identical test in a real headed browser on this same
-   machine's actual GPU and measured zero meaningful difference (100.0fps
-   -> 100.3fps) at the SAME tile count and the full 2.2x blur radius,
-   vsync-capped at the monitor's real refresh rate with no dropped frames
-   either way. Headless is the right tool for the compositor-only
-   transform/opacity work the rest of this codebase's perf checks cover,
-   but is not trustworthy for backdrop-filter specifically -- it lacks the
-   GPU backdrop-capture path real browsers use, so it measures a
-   software-rendering worst case that doesn't reflect actual users. Re-
-   verify any future change here in a real headed browser, not headless,
-   if the numbers look alarming. */
-/* Perf pass: saturate pulled back from 1.4 to 1.25 -- this is the variant
-   that ends up on screen the MOST times at once (every GameCard/release-
-   card tile on a catalog grid), so it's the highest-leverage place to
-   trim backdrop-filter cost for anyone on weaker/integrated graphics,
-   even though the comment above already found this fine on a real
-   discrete-GPU desktop specifically. blur radius itself now comes from
-   --glass-blur (tokens.css), already pulled back from 20px to 15px for
-   the same reason -- 33px here instead of the old 44px. */
 .glass-panel--frost-strong {
-  background: color-mix(in srgb, var(--panel-bg) 45%, transparent);
-  -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 2.2)) saturate(1.25);
-  backdrop-filter: blur(calc(var(--glass-blur) * 2.2)) saturate(1.25);
-  border: 1px solid var(--hairline);
-  box-shadow: var(--glass-highlight), var(--glass-shadow-lg), var(--glass-ambient), var(--ethereal-glow);
-}
-
-/* "Apple Intelligence" glow modifier -- an optional extra class, additive
-   on top of whichever glass-panel variant a caller already uses, for
-   panels that host actual AI-generated content (GameFact's factbox,
-   CrackOutlook, FaqSection -- see tokens.css's own --ai-glow-shadow
-   comment for the full reasoning, including why this is a plain static
-   box-shadow rather than an animated one). Each caller gates this class
-   on the exact same "is this really AI content, right now" boolean it
-   already uses to decide whether to render <AiTag/> at all -- never
-   applied unconditionally to a panel that might be showing a real,
-   non-AI value instead (GameFact falls back to a hand-curated seed fact
-   with no AI tag; this must not glow then either).
-   .glass-panel alone uses --glass-shadow, every other variant uses
-   --glass-shadow-lg -- two rules, not one, to combine correctly with
-   whichever box-shadow the base variant already set rather than
-   guessing a single shared value. */
-.ai-glow.glass-panel {
-  box-shadow: var(--glass-highlight), var(--glass-shadow), var(--glass-ambient), var(--ai-glow-shadow);
-}
-
-.ai-glow.glass-panel--strong {
-  box-shadow: var(--glass-highlight), var(--glass-shadow-lg), var(--glass-ambient), var(--ai-glow-shadow);
-}
-
-.ai-glow.glass-panel--frost,
-.ai-glow.glass-panel--frost-strong {
-  box-shadow: var(--glass-highlight), var(--glass-shadow-lg), var(--glass-ambient), var(--ethereal-glow), var(--ai-glow-shadow);
+  background: var(--surface);
 }

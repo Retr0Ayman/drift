@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import type { Game } from "../../types/game";
 import { fetchOutlook } from "../../lib/outlook";
+import GeneratedLabel from "../ui/GeneratedLabel";
+import "../ui/AiSummary.css";
 import GlassPanel from "../ui/GlassPanel";
 import "./CrackOutlook.css";
 
@@ -32,17 +34,18 @@ export default function CrackOutlook({ game }: { game: Game }) {
     };
   }, [game]);
 
-  const ready = !loading && !error && !!outlook;
-
   return (
-    <GlassPanel className={`crack-outlook${ready ? " ai-glow" : ""}`} frost>
+    <GlassPanel className="crack-outlook" frost>
       <div className="crack-outlook-h">Crack outlook</div>
       {loading ? (
         <p className="crack-outlook-status">Generating…</p>
       ) : error || !outlook ? (
         <p className="crack-outlook-status">Outlook generation is unavailable right now{error ? ` (${error})` : ""}.</p>
       ) : (
-        <p>{outlook}</p>
+        <>
+          <p>{outlook}</p>
+          <GeneratedLabel />
+        </>
       )}
     </GlassPanel>
   );

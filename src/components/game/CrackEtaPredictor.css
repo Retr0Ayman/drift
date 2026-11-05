@@ -5,8 +5,8 @@
 
 .crack-eta-h {
   font-size: var(--text-xs);
-  font-weight: 800;
-  color: var(--hv);
+  font-weight: 600;
+  color: var(--ink-2);
 }
 
 .crack-eta-lead {

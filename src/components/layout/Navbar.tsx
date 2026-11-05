@@ -52,7 +52,6 @@ export default function Navbar({ status, latestTs, onOpenSearch, revealBrandMark
     <div className="navbar-float">
       <div className="navbar-row">
         <motion.div className="navbar-brand liquid-sheen" style={{ scale, boxShadow }}>
-          <span className="navbar-topglow" />
           <Link to="/" className="navbar-logo" onClick={() => setMenuOpen(false)}>
             <span className="navbar-word">
               <OrlazWordmark layoutId={revealBrandMark ? "brand-mark" : undefined} className="navbar-title" />
@@ -62,7 +61,6 @@ export default function Navbar({ status, latestTs, onOpenSearch, revealBrandMark
         </motion.div>
 
         <motion.nav className="navbar-main liquid-sheen" style={{ scale, boxShadow }}>
-          <span className="navbar-topglow" />
           <div className="navbar-inner">
             {/* FIX (confirmed live): .navbar-search-slot below is fully
                 display:none under the 860px breakpoint, and Cmd/Ctrl+K has no

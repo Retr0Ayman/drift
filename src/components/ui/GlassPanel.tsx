@@ -4,9 +4,8 @@ import "./GlassPanel.css";
 interface GlassPanelProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode;
   strong?: boolean;
-  /* Frosted glass: backdrop blur + saturate over the translucent --panel-bg
-     fill, with a neutral --hairline edge. Reserved for surfaces that float
-     over the ambient background. */
+  /* Simple content surface (fill + hairline); real frosted glass lives only
+     on the navbar and overlays. */
   frost?: boolean;
   /* Stronger version of the same frost treatment -- more blur, more
      saturate, more see-through -- for surfaces that need to visibly float
@@ -20,7 +19,7 @@ interface GlassPanelProps extends HTMLAttributes<HTMLDivElement> {
 export default function GlassPanel({ children, className = "", strong, frost, frostStrong, ...rest }: GlassPanelProps) {
   return (
     <div
-      className={`glass-panel${strong ? " glass-panel--strong" : ""}${frostStrong ? " glass-panel--frost-strong liquid-sheen" : frost ? " glass-panel--frost liquid-sheen" : ""}${className ? ` ${className}` : ""}`}
+      className={`glass-panel${strong ? " glass-panel--strong" : ""}${frostStrong ? " glass-panel--frost-strong" : frost ? " glass-panel--frost" : ""}${className ? ` ${className}` : ""}`}
       {...rest}
     >
       {children}

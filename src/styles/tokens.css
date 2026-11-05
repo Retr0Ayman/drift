@@ -28,8 +28,8 @@
   --bg-2: #221f1b;
 
   --ink: #f5f3ee;
-  --ink-2: rgba(245, 243, 238, 0.68);
-  --ink-3: rgba(245, 243, 238, 0.45);
+  --ink-2: rgba(245, 243, 238, 0.74);
+  --ink-3: rgba(245, 243, 238, 0.62);
   --ink-4: rgba(245, 243, 238, 0.14);
 
   --accent: #f5f3ee;
@@ -72,7 +72,6 @@
   --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.14);
   --glass-ambient: 0 20px 40px -14px rgba(0, 0, 0, 0.55);
 
-  --ethereal-glow: 0 0 70px -14px rgba(166, 139, 219, 0.4);
 
   /* Vignette -- deepening toward the edges of the ambient background,
      like looking into a liquid-filled vessel. */
@@ -122,11 +121,15 @@
      intent, and collapsing the name wouldn't change any rendered pixel,
      only churn every one of those call sites for nothing. */
   --canvas-ink: #f5f3ee;
-  --canvas-ink-2: rgba(245, 243, 238, 0.68);
-  --canvas-ink-3: rgba(245, 243, 238, 0.45);
+  --canvas-ink-2: rgba(245, 243, 238, 0.74);
+  --canvas-ink-3: rgba(245, 243, 238, 0.62);
 
   /* One neutral hairline for every frosted edge (navbar, panels, search). */
   --hairline: rgba(255, 255, 255, 0.16);
+  --overlay-bg: rgba(24, 22, 20, 0.94);
+  --surface: rgba(24, 22, 20, 0.62);
+  --surface-strong: rgba(24, 22, 20, 0.74);
+  --surface-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
   /* Perf pass: pulled back from 20px -- backdrop-filter blur is one of the
      single most expensive things a browser can do per-frame, and every
      glass surface (now the default GlassPanel variant too, not just
@@ -134,18 +137,6 @@
      own continuously-animating layers. 15px keeps a clearly-frosted look
      at meaningfully lower GPU cost than 20px. */
   --glass-blur: 15px;
-
-  /* "Apple Intelligence" glow palette -- reserved for AI-generated-content
-     markers and the search bar only, see AiTag.tsx/GlassPanel.css. Same
-     values regardless of theme even before this consolidation -- these
-     were always saturated enough to hold up against both a near-white and
-     a near-black background, so nothing changes here. */
-  --ai-1: #ff6482;
-  --ai-2: #c65fff;
-  --ai-3: #5b8dff;
-  --ai-4: #ffa53e;
-  --ai-glow-shadow: 0 0 0 1px color-mix(in srgb, var(--ai-2) 35%, transparent), 0 0 28px -8px var(--ai-1),
-    0 0 40px -10px var(--ai-3);
 
   /* Type: system stack first so Apple devices render SF via the visitor's
      own OS font (no font file shipped); self-hosted Inter is the fallback
@@ -223,8 +214,8 @@
   --bg-2: #efe9df;
 
   --ink: #1c1a17;
-  --ink-2: rgba(28, 26, 23, 0.68);
-  --ink-3: rgba(28, 26, 23, 0.46);
+  --ink-2: rgba(28, 26, 23, 0.76);
+  --ink-3: rgba(28, 26, 23, 0.66);
   --ink-4: rgba(28, 26, 23, 0.14);
 
   --accent: #1c1a17;
@@ -250,7 +241,6 @@
   --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.75);
   --glass-ambient: 0 20px 40px -14px rgba(90, 70, 50, 0.16);
 
-  --ethereal-glow: 0 0 70px -14px rgba(109, 79, 181, 0.25);
 
   --ambient-vignette: rgba(150, 130, 160, 0.22);
   --ambient-bg-0: #fdfbf7;
@@ -281,10 +271,14 @@
   --ambient-core: rgba(251, 249, 245, 0.75);
 
   --canvas-ink: #1c1a17;
-  --canvas-ink-2: rgba(28, 26, 23, 0.68);
-  --canvas-ink-3: rgba(28, 26, 23, 0.46);
+  --canvas-ink-2: rgba(28, 26, 23, 0.76);
+  --canvas-ink-3: rgba(28, 26, 23, 0.66);
 
   --hairline: rgba(0, 0, 0, 0.1);
+  --overlay-bg: rgba(255, 255, 255, 0.94);
+  --surface: rgba(255, 255, 255, 0.66);
+  --surface-strong: rgba(255, 255, 255, 0.78);
+  --surface-shadow: 0 1px 2px rgba(23, 21, 15, 0.06);
 
   --panel-bg: rgba(255, 255, 255, 0.42);
 }
@@ -306,8 +300,8 @@
     --bg-2: #efe9df;
 
     --ink: #1c1a17;
-    --ink-2: rgba(28, 26, 23, 0.68);
-    --ink-3: rgba(28, 26, 23, 0.46);
+    --ink-2: rgba(28, 26, 23, 0.76);
+    --ink-3: rgba(28, 26, 23, 0.66);
     --ink-4: rgba(28, 26, 23, 0.14);
 
     --accent: #1c1a17;
@@ -333,8 +327,7 @@
     --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.75);
     --glass-ambient: 0 20px 40px -14px rgba(90, 70, 50, 0.16);
 
-    --ethereal-glow: 0 0 70px -14px rgba(109, 79, 181, 0.25);
-
+  
     --ambient-vignette: rgba(150, 130, 160, 0.22);
     --ambient-bg-0: #fdfbf7;
     --ambient-bg-1: #f3ede2;
@@ -346,10 +339,14 @@
     --ambient-core: rgba(251, 249, 245, 0.75);
 
     --canvas-ink: #1c1a17;
-    --canvas-ink-2: rgba(28, 26, 23, 0.68);
-    --canvas-ink-3: rgba(28, 26, 23, 0.46);
+    --canvas-ink-2: rgba(28, 26, 23, 0.76);
+    --canvas-ink-3: rgba(28, 26, 23, 0.66);
 
     --hairline: rgba(0, 0, 0, 0.1);
+  --overlay-bg: rgba(255, 255, 255, 0.94);
+  --surface: rgba(255, 255, 255, 0.66);
+  --surface-strong: rgba(255, 255, 255, 0.78);
+  --surface-shadow: 0 1px 2px rgba(23, 21, 15, 0.06);
 
     --panel-bg: rgba(255, 255, 255, 0.42);
   }

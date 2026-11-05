@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { fetchSummary, type SummaryFacts } from "../../lib/summary";
+import GeneratedLabel from "./GeneratedLabel";
 import "./AiSummary.css";
 
 interface AiSummaryProps {
@@ -47,5 +48,10 @@ export default function AiSummary({ kind, cacheKey, name, facts, ready = true }:
 
   if (loading || (!summary && error)) return null; // quiet no-op, not a placeholder block
 
-  return summary ? <p className="ai-summary">{summary}</p> : null;
+  return summary ? (
+    <>
+      <p className="ai-summary">{summary}</p>
+      <GeneratedLabel />
+    </>
+  ) : null;
 }

@@ -6,3 +6,11 @@
   font-weight: 450;
   max-width: 68ch;
 }
+
+.generated-label {
+  display: block;
+  margin-top: 8px;
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--ink-3);
+}

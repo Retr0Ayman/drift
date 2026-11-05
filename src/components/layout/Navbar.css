@@ -75,22 +75,6 @@
    render outside this capsule's own box -- overflow: hidden here would
    silently clip that dropdown along with the intended glow-bar corners,
    which is exactly what happened before this fix. */
-.navbar-topglow {
-  position: absolute;
-  top: 0;
-  left: 34px;
-  right: 34px;
-  height: 1.5px;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    color-mix(in srgb, var(--cosmic-a) 70%, transparent) 25%,
-    color-mix(in srgb, var(--cosmic-b) 70%, transparent) 75%,
-    transparent 100%
-  );
-  pointer-events: none;
-}
-
 .navbar-inner {
   display: flex;
   align-items: center;
@@ -103,17 +87,6 @@
   align-items: center;
   cursor: pointer;
   padding: 10px 20px;
-}
-
-/* Soft cosmic glow on the O ring itself -- same restraint as --ai-glow-
-   shadow elsewhere (static, no animation) so the one piece of chrome
-   that's always on screen still carries a touch of the same magenta/blue
-   the wallpaper and every other glass surface has, now that the mark is
-   the O character itself rather than a separate badge with its own
-   background to hang a box-shadow off. drop-shadow (not box-shadow, no box
-   to shadow anymore) follows the ring's own stroked shape. */
-.navbar-title .orlaz-o {
-  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--cosmic-a) 55%, transparent));
 }
 
 .navbar-word {
@@ -220,7 +193,7 @@
 
 .navbar-links a:hover {
   color: var(--ink);
-  background: color-mix(in srgb, var(--glass-bg-strong) 75%, var(--cosmic-b) 12%);
+  background: var(--accent-dim);
 }
 
 /* Active-page indicator -- there was no way to tell which page you were on
@@ -240,8 +213,7 @@
   bottom: 4px;
   height: 2px;
   border-radius: var(--pill);
-  background: linear-gradient(90deg, var(--cosmic-a), var(--cosmic-b));
-  box-shadow: 0 0 8px -1px color-mix(in srgb, var(--cosmic-b) 60%, transparent);
+  background: var(--ink);
 }
 
 /* The search box is the one element here that can give way. The links are

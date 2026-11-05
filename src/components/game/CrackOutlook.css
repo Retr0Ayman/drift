@@ -5,8 +5,8 @@
 
 .crack-outlook-h {
   font-size: var(--text-xs);
-  font-weight: 800;
-  color: var(--out);
+  font-weight: 600;
+  color: var(--ink-2);
 }
 
 .crack-outlook p {
