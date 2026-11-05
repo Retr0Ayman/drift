@@ -1,3 +1,4 @@
+import { withUserAgent } from "./userAgent";
 import { Vibrant } from "node-vibrant/node";
 
 /* Confirmed live in the real Workers runtime (workerd via wrangler dev, not
