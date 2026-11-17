@@ -99,11 +99,12 @@ async function mark(db: D1Database, appid: number, title: string, outcome: strin
 
 /* Returns "added" | "no-xrel" | "no-match", or null when it could not decide
    (upstream failure) -- null is never recorded, so it is retried later. */
-async function tryAdd(env: Env, c: { appid: number; title: string }): Promise<"added" | "no-xrel" | "no-match" | null> {
+async function tryAdd(env: Env, c: { appid: number; title: string }): Promise<"added" | "no-xrel" | "no-match" | "limited" | null> {
   const res = await handleXrelSearch({
     request: new Request(`https://internal.invalid/api/xrel?q=${encodeURIComponent(c.title.replace(/[™®©]/g, ""))}`),
     env,
   });
+  if (res.status === 429) return "limited"; // xREL's rate limit: back off, never hammer
   if (!res.ok) return null;
   const rows = ((await res.json()) as { list?: RawXrelRelease[] }).list || [];
   if (!rows.length) return "no-xrel";
@@ -118,10 +119,16 @@ async function tryAdd(env: Env, c: { appid: number; title: string }): Promise<"a
 }
 
 const MAX_PAGES_PER_TICK = 8;
+// xREL answers 429 when searches arrive back to back (confirmed live), so the
+// sweep spaces them out and caps how many it makes per tick.
+const XREL_SPACING_MS = 1100;
+const MAX_SEARCHES_PER_TICK = 16;
+const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
 export async function runDiscographySweepTick(env: Env): Promise<{ pages: number; added: number; checked: number }> {
   const db = env.orlaz_catalog;
   const out = { pages: 0, added: 0, checked: 0 };
+  let searches = 0;
   const doneAt = Number((await getBackfillState(db, "disco_cycle_done_at")) || "0");
   if (doneAt && Date.now() - doneAt < CYCLE_PAUSE_MS) return out;
 
@@ -163,8 +170,18 @@ export async function runDiscographySweepTick(env: Env): Promise<{ pages: number
         finishedPage = false;
         break;
       }
+      if (searches >= MAX_SEARCHES_PER_TICK) {
+        finishedPage = false;
+        break;
+      }
       try {
+        if (searches > 0) await sleep(XREL_SPACING_MS);
+        searches++;
         const outcome = await tryAdd(env, c);
+        if (outcome === "limited") {
+          finishedPage = false;
+          break;
+        }
         if (outcome) {
           await mark(db, c.appid, c.title, outcome);
           out.checked++;
