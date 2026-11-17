@@ -1,0 +1,52 @@
+.notify-toggle {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.notify-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  border-radius: var(--pill);
+  border: 1px solid var(--ink-4);
+  background: transparent;
+  color: var(--canvas-ink-2, var(--ink-2));
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 550;
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+.notify-toggle-btn:hover:not(:disabled) {
+  border-color: var(--canvas-ink-2, var(--ink-2));
+}
+.notify-toggle-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.notify-toggle-btn--on {
+  color: var(--canvas-ink, var(--ink));
+}
+.notify-toggle-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ink-4);
+}
+.notify-toggle-btn--on .notify-toggle-dot {
+  background: currentColor;
+}
+.notify-toggle-hint,
+.notify-toggle-error {
+  font-size: var(--text-xs);
+  color: var(--canvas-ink-2, var(--ink-3));
+}
+.notify-toggle-error {
+  flex-basis: 100%;
+}
+.notify-toggle-btn:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}

@@ -17,6 +17,7 @@ import Pill from "../ui/Pill";
 import DrmTag from "../ui/DrmTag";
 import Reveal from "../ui/Reveal";
 import WatchToggle from "../ui/WatchToggle";
+import NotifyToggle from "../ui/NotifyToggle";
 import Tabs, { type TabDef } from "../ui/Tabs";
 import SegmentedControl from "../ui/SegmentedControl";
 import { usePageMeta } from "../../hooks/usePageMeta";
@@ -335,6 +336,7 @@ export default function GameDetail() {
                 <h1>{mergedGame.title}</h1>
                 <WatchToggle gameId={mergedGame.id} size="lg" />
               </div>
+              <NotifyToggle gameId={mergedGame.id} className="detail-notify" />
               <div className="detail-metarow">
                 <div className="detail-meta">
                   <span className="k">Developer</span>

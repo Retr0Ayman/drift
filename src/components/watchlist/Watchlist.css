@@ -135,3 +135,19 @@
   border: 1px solid var(--glass-border);
   border-radius: var(--r-lg);
 }
+
+.watchlist-feed-note {
+  margin-top: 12px;
+  font-size: var(--text-sm);
+  color: var(--canvas-ink-2);
+}
+.watchlist-feed-note a {
+  color: inherit;
+  text-decoration: underline;
+}
+.watchlist-share-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}

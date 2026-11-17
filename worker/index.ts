@@ -44,6 +44,9 @@ import { handleCrackEta, handleCrackEtaRecompute } from "./routes/crackEta";
 import { handleDenuvoStatus } from "./routes/denuvoStatus";
 import { handleAdminRefreshGame } from "./routes/adminRefreshGame";
 import { handleAdminSeedTitle } from "./routes/adminSeedTitle";
+import { handlePushKey, handlePushSubscribe, handlePushUnsubscribe, handlePushInbox, handleAdminPushTest } from "./routes/push";
+import { handleWatchlistFeed } from "./routes/watchlistFeed";
+import { runWatchEventsTick } from "./backfill/watchEvents";
 
 /* This is a Worker with static assets (wrangler.jsonc `main` + `assets`), not
    classic Cloudflare Pages -- confirmed live: the workers.dev domain and
@@ -79,14 +82,15 @@ const HOUSEKEEPING_CRON = "*/5 * * * *";
 //                 other minutes idle
 //   every 15 min  collect (12) -> alert -> sync (22) -> aggregates  sequential, see
 //                 runFifteenMinuteSlot; alert/sync run first so nothing starves them
-//   5-min slot's  Steam build-freshness sweep (34 games, 1 batched  38
-//   idle minutes  D1 write), ~300 games/hour
+//   5-min slot's  push alerts (10) + discography sweep (36) at :05/:20/:35/:50,
+//   idle minutes  or push + Steam build sweep (22 games, 26) otherwise
 const BUDGET_DRM = 38;
 const BUDGET_REPAIR = 34;
 const BUDGET_RECONCILE = 38;
 const BUDGET_HEADER = 30;
-const BUDGET_STALE = 38;
-const BUDGET_DISCO = 40;
+const BUDGET_STALE = 26;
+const BUDGET_DISCO = 36;
+const BUDGET_PUSH = 10;
 const BUDGET_DEEP = 20;
 const BUDGET_ARCHIVE = 20;
 
@@ -125,6 +129,11 @@ const ROUTES: Record<string, Handler> = {
   "/api/watchlist/track": handleWatchlistTrack,
   "/api/trending": handleTrending,
   "/api/watchlist/sync": handleWatchlistSync,
+  "/api/push/key": handlePushKey,
+  "/api/push/subscribe": handlePushSubscribe,
+  "/api/push/unsubscribe": handlePushUnsubscribe,
+  "/api/push/inbox": handlePushInbox,
+  "/api/admin/push-test": handleAdminPushTest,
 };
 
 export default {
@@ -134,6 +143,7 @@ export default {
 
     if (path.startsWith("/api/")) {
       if (request.method === "OPTIONS") return new Response(null, { headers: CORS });
+      if (/^\/api\/watchlist\/[A-Za-z0-9]{4,16}\/feed\.xml$/.test(path)) return handleWatchlistFeed({ request, env });
       const handler = ROUTES[path];
       if (handler) return handler({ request, env });
       return new Response(JSON.stringify({ error: "not found" }), {
@@ -226,12 +236,23 @@ export default {
       if (minute === 10) ctx.waitUntil(withSubrequestBudget(BUDGET_REPAIR, () => runEnrichmentRepairTick(env, true)));
       else if (minute === 25) ctx.waitUntil(withSubrequestBudget(BUDGET_RECONCILE, () => runFirstSeenReconcileTick(env, true)));
       else if (minute === 40) ctx.waitUntil(withSubrequestBudget(BUDGET_HEADER, () => runHeaderUpgradeTick(env, true)));
-      // Minutes 5/20/35/50: publisher-discography sweep (older titles the
-      // crawls never reached), alone in its invocation.
-      else if (minute % 15 === 5) ctx.waitUntil(withSubrequestBudget(BUDGET_DISCO, () => runDiscographySweepTick(env)));
-      // The remaining idle minutes: the Steam build-freshness sweep gets the
-      // whole invocation (it no longer shares the starved 15-minute slot).
-      else ctx.waitUntil(withSubrequestBudget(BUDGET_STALE, () => runStaleRefreshTick(env)));
+      // Every other minute: watchlist alerts first (cheap, user-facing; a
+      // D1-only no-op when nothing happened), then ONE sweep -- minutes
+      // 5/20/35/50 the publisher-discography sweep (older titles the crawls
+      // never reached), the rest the Steam build-freshness sweep. Budgets:
+      // push 10 + sweep <= 36, comfortably under 50.
+      else
+        ctx.waitUntil(
+          (async () => {
+            try {
+              await withSubrequestBudget(BUDGET_PUSH, () => runWatchEventsTick(env));
+            } catch (e) {
+              console.error("watchEvents failed:", e instanceof Error ? e.message : String(e));
+            }
+            if (minute % 15 === 5) await withSubrequestBudget(BUDGET_DISCO, () => runDiscographySweepTick(env));
+            else await withSubrequestBudget(BUDGET_STALE, () => runStaleRefreshTick(env));
+          })(),
+        );
       return;
     }
     ctx.waitUntil(runFifteenMinuteSlot(env));

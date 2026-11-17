@@ -3,13 +3,13 @@ import { fetchBuildInfo } from "../shared/steam";
 import { getStaleGames, refreshBuildsBatch } from "./db";
 
 // Budget: this runs ALONE in a housekeeping-slot invocation (see
-// worker/index.ts), BUDGET_STALE = 38 subrequests: 1 select + one steamcmd
-// fetch per game + 1 batched D1 write. 34 games leaves margin for a retry or
-// two. It runs on the 9 of 12 hourly housekeeping minutes that are otherwise
-// idle, i.e. ~300 games/hour -- the ~2000-game catalog cycles in well under a
+// worker/index.ts), BUDGET_STALE = 26 subrequests (after the 12-subrequest push tick that shares its invocation): 1 select + one steamcmd
+// fetch per game + 1 batched D1 write. 22 games leaves margin for a retry or
+// two. It runs on 5 of the 12 hourly housekeeping minutes (the rest go to the
+// discography sweep / other tasks), i.e. ~110 games/hour -- the ~2000-game catalog cycles in well under a
 // day, faster than the old 150-per-15-min tick that could never actually fit
 // under the 50-subrequest cap alongside its neighbours.
-export const REFRESH_BATCH_SIZE = 34;
+export const REFRESH_BATCH_SIZE = 22;
 
 /* CONFIRMED (design gap, not a specific game caught wrong): every other
    mechanism that keeps a game's Steam metadata (current_build above all)

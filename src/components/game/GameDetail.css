@@ -361,3 +361,7 @@
   border: 1.5px solid var(--glass-border-strong);
   color: var(--ink-2);
 }
+
+.detail-notify {
+  margin-top: 10px;
+}

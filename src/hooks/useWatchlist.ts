@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { getClientId } from "../lib/clientId";
+import { syncPushWatch } from "../lib/push";
 
 const STORAGE_KEY = "drift.watchlist";
 const SYNC_CODE_KEY = "drift.watchlist.syncCode";
@@ -57,6 +58,7 @@ function write(next: string[]) {
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
   listeners.forEach((l) => l());
   schedulePush();
+  syncPushWatch(next);
 }
 
 function setSyncCode(code: string | null) {

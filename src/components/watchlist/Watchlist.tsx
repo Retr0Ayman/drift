@@ -6,6 +6,7 @@ import Reveal from "../ui/Reveal";
 import WishlistImport from "./WishlistImport";
 import ShareWatchlistButton from "./ShareWatchlistButton";
 import WatchlistSync from "./WatchlistSync";
+import NotifyToggle from "../ui/NotifyToggle";
 import { usePageMeta } from "../../hooks/usePageMeta";
 import { anyOutdated, driftDelta, outdatedDays } from "../../lib/format";
 import "./Watchlist.css";
@@ -13,7 +14,7 @@ import "./Watchlist.css";
 export default function Watchlist() {
   const navigate = useNavigate();
   const { games } = useCatalog();
-  const { watched, toggle } = useWatchlist();
+  const { watched, toggle, syncCode } = useWatchlist();
   const [searchParams, setSearchParams] = useSearchParams();
 
   // A shared link never silently merges into the visitor's own list --
@@ -64,7 +65,14 @@ export default function Watchlist() {
           </p>
           <div className="watchlist-share-row">
             <ShareWatchlistButton watched={watched} />
+            <NotifyToggle />
           </div>
+          {syncCode ? (
+            <p className="watchlist-feed-note">
+              Prefer no permissions? Follow this watchlist in any feed reader:{" "}
+              <a href={`/api/watchlist/${syncCode}/feed.xml`}>Atom feed</a>.
+            </p>
+          ) : null}
         </div>
       </Reveal>
 

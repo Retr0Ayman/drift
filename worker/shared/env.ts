@@ -44,4 +44,7 @@ export interface Env {
   // route added under /api/admin/*) without changing default behavior for
   // whoever hasn't set it.
   ADMIN_TOKEN?: string;
+  // Web Push (VAPID). Both set via `wrangler secret put`; unset = pushes are never sent.
+  VAPID_PRIVATE_JWK?: string;
+  VAPID_PUBLIC_KEY?: string;
 }
