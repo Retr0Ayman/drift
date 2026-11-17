@@ -16,7 +16,7 @@ CREATE INDEX IF NOT EXISTS idx_push_watch_game ON push_watch(game_id);
 --   cracked          the game's first genuine (non-repack, non-anonymous) release
 --   denuvo_removed   games.denuvo_removed_at got stamped
 -- UNIQUE(game_id, kind): each fires at most once per game, ever.
-CREATE TABLE IF NOT EXISTS watch_events (
+CREATE TABLE IF NOT EXISTS alert_events (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   game_id TEXT NOT NULL,
   kind TEXT NOT NULL,
@@ -25,8 +25,8 @@ CREATE TABLE IF NOT EXISTS watch_events (
   fanned_out INTEGER NOT NULL DEFAULT 0,
   UNIQUE (game_id, kind)
 );
-CREATE INDEX IF NOT EXISTS idx_watch_events_unfanned ON watch_events(fanned_out) WHERE fanned_out = 0;
-CREATE INDEX IF NOT EXISTS idx_watch_events_created ON watch_events(created_at);
+CREATE INDEX IF NOT EXISTS idx_alert_events_unfanned ON alert_events(fanned_out) WHERE fanned_out = 0;
+CREATE INDEX IF NOT EXISTS idx_alert_events_created ON alert_events(created_at);
 
 -- Per-endpoint delivery queue. sent_at = push ping accepted by the push
 -- service; delivered_at = the service worker fetched the inbox.

@@ -14,19 +14,19 @@ const MAX_FAN_EVENTS = 20;
 const MAX_SENDS = 10;
 
 async function baseline(db: D1Database): Promise<void> {
-  if (await getBackfillState(db, "watch_events_baseline")) return;
+  if (await getBackfillState(db, "alert_events_baseline")) return;
   const now = Date.now();
   await db.batch([
     db.prepare(
-      `INSERT OR IGNORE INTO watch_events (game_id, kind, event_ts, created_at, fanned_out)
+      `INSERT OR IGNORE INTO alert_events (game_id, kind, event_ts, created_at, fanned_out)
        SELECT game_id, 'cracked', MIN(ts) * 1000, ?, 1 FROM releases WHERE is_repack = 0 AND is_anonymous = 0 GROUP BY game_id`,
     ).bind(now),
     db.prepare(
-      `INSERT OR IGNORE INTO watch_events (game_id, kind, event_ts, created_at, fanned_out)
+      `INSERT OR IGNORE INTO alert_events (game_id, kind, event_ts, created_at, fanned_out)
        SELECT id, 'denuvo_removed', denuvo_removed_at, ?, 1 FROM games WHERE denuvo_removed_at IS NOT NULL`,
     ).bind(now),
   ]);
-  await setBackfillState(db, "watch_events_baseline", String(now));
+  await setBackfillState(db, "alert_events_baseline", String(now));
 }
 
 export async function detectWatchEvents(db: D1Database): Promise<number> {
@@ -34,7 +34,7 @@ export async function detectWatchEvents(db: D1Database): Promise<number> {
   // Only games whose releases moved recently (last_release_ts is indexed).
   const cracked = await db
     .prepare(
-      `INSERT OR IGNORE INTO watch_events (game_id, kind, event_ts, created_at)
+      `INSERT OR IGNORE INTO alert_events (game_id, kind, event_ts, created_at)
        SELECT g.id, 'cracked', MIN(r.ts) * 1000, ?
        FROM games g JOIN releases r ON r.game_id = g.id AND r.is_repack = 0 AND r.is_anonymous = 0
        WHERE g.last_release_ts > ? GROUP BY g.id`,
@@ -43,7 +43,7 @@ export async function detectWatchEvents(db: D1Database): Promise<number> {
     .run();
   const denuvo = await db
     .prepare(
-      `INSERT OR IGNORE INTO watch_events (game_id, kind, event_ts, created_at)
+      `INSERT OR IGNORE INTO alert_events (game_id, kind, event_ts, created_at)
        SELECT id, 'denuvo_removed', denuvo_removed_at, ? FROM games WHERE denuvo_removed_at IS NOT NULL`,
     )
     .bind(now)
@@ -52,13 +52,13 @@ export async function detectWatchEvents(db: D1Database): Promise<number> {
 }
 
 async function fanOut(db: D1Database): Promise<void> {
-  const pending = await db.prepare("SELECT id, game_id FROM watch_events WHERE fanned_out = 0 ORDER BY id LIMIT ?").bind(MAX_FAN_EVENTS).all<{ id: number; game_id: string }>();
+  const pending = await db.prepare("SELECT id, game_id FROM alert_events WHERE fanned_out = 0 ORDER BY id LIMIT ?").bind(MAX_FAN_EVENTS).all<{ id: number; game_id: string }>();
   const rows = pending.results || [];
   if (!rows.length) return;
   await db.batch(
     rows.flatMap((e) => [
       db.prepare("INSERT OR IGNORE INTO push_outbox (event_id, endpoint) SELECT ?, endpoint FROM push_watch WHERE game_id = ?").bind(e.id, e.game_id),
-      db.prepare("UPDATE watch_events SET fanned_out = 1 WHERE id = ?").bind(e.id),
+      db.prepare("UPDATE alert_events SET fanned_out = 1 WHERE id = ?").bind(e.id),
     ]),
   );
 }
@@ -103,8 +103,8 @@ export async function runWatchEventsTick(env: Env): Promise<{ detected: number; 
    notification for a real event row, or for a game the admin names. */
 export async function armTestEvent(db: D1Database, gameId: string, kind: "cracked" | "denuvo_removed"): Promise<void> {
   await db.batch([
-    db.prepare("INSERT OR IGNORE INTO watch_events (game_id, kind, event_ts, created_at, fanned_out) VALUES (?, ?, ?, ?, 1)").bind(gameId, kind, Date.now(), Date.now()),
-    db.prepare("DELETE FROM push_outbox WHERE event_id = (SELECT id FROM watch_events WHERE game_id = ? AND kind = ?)").bind(gameId, kind),
-    db.prepare("UPDATE watch_events SET fanned_out = 0, created_at = ? WHERE game_id = ? AND kind = ?").bind(Date.now(), gameId, kind),
+    db.prepare("INSERT OR IGNORE INTO alert_events (game_id, kind, event_ts, created_at, fanned_out) VALUES (?, ?, ?, ?, 1)").bind(gameId, kind, Date.now(), Date.now()),
+    db.prepare("DELETE FROM push_outbox WHERE event_id = (SELECT id FROM alert_events WHERE game_id = ? AND kind = ?)").bind(gameId, kind),
+    db.prepare("UPDATE alert_events SET fanned_out = 0, created_at = ? WHERE game_id = ? AND kind = ?").bind(Date.now(), gameId, kind),
   ]);
 }

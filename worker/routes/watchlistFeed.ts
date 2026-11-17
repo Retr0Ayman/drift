@@ -7,7 +7,7 @@ const TEXT: Record<string, string> = { cracked: "has been cracked", denuvo_remov
 /* /api/watchlist/<SYNC CODE>/feed.xml -- zero-permission fallback to push:
    an Atom feed of "cracked" / "lost Denuvo" events for the games on that
    watchlist sync code. Same unguessable-code model as watchlist sync. Only
-   events that happened after the feed existed (watch_events is baselined,
+   events that happened after the feed existed (alert_events is baselined,
    so history never floods it). */
 export const handleWatchlistFeed: Handler = async ({ request, env }) => {
   const code = new URL(request.url).pathname.split("/")[3] || "";
@@ -28,7 +28,7 @@ export const handleWatchlistFeed: Handler = async ({ request, env }) => {
     for (let i = 0; i < ids.length; i += 50) {
       const chunk = ids.slice(i, i + 50);
       const r = await db
-        .prepare(`SELECT e.id, e.kind, e.game_id, g.title, e.created_at FROM watch_events e JOIN games g ON g.id = e.game_id WHERE e.game_id IN (${chunk.map(() => "?").join(",")}) AND e.fanned_out = 1 AND e.created_at > (SELECT CAST(value AS INTEGER) FROM backfill_state WHERE key = 'watch_events_baseline') ORDER BY e.created_at DESC LIMIT 50`)
+        .prepare(`SELECT e.id, e.kind, e.game_id, g.title, e.created_at FROM alert_events e JOIN games g ON g.id = e.game_id WHERE e.game_id IN (${chunk.map(() => "?").join(",")}) AND e.fanned_out = 1 AND e.created_at > (SELECT CAST(value AS INTEGER) FROM backfill_state WHERE key = 'alert_events_baseline') ORDER BY e.created_at DESC LIMIT 50`)
         .bind(...chunk)
         .all<{ id: number; kind: string; game_id: string; title: string; created_at: number }>();
       events.push(...(r.results || []));

@@ -70,7 +70,7 @@ export const handlePushInbox: Handler = async ({ request, env }) => {
   const rows = await db
     .prepare(
       `SELECT e.id, e.kind, e.game_id, g.title FROM push_outbox o
-       JOIN watch_events e ON e.id = o.event_id JOIN games g ON g.id = e.game_id
+       JOIN alert_events e ON e.id = o.event_id JOIN games g ON g.id = e.game_id
        WHERE o.endpoint = ? AND o.sent_at IS NOT NULL AND o.delivered_at IS NULL ORDER BY e.id LIMIT 20`,
     )
     .bind(endpoint)
