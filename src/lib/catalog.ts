@@ -51,7 +51,11 @@ function parseVersionFromDirname(dn?: string): string {
   const versionMatch = dn.match(/\bv\d+(?:\.\d+)+\b/i);
   if (versionMatch) return versionMatch[0].replace(/^\w/, (c) => c.toUpperCase());
   const m = dn.match(/\b(update\.?\d+(?:\.\d+)*|build\.?\d+(?:\.\d+)*|hotfix\.?\d+(?:\.\d+)*|patch\.?\d+(?:\.\d+)*)\b/i);
-  return m ? m[0].replace(/\./g, " ").replace(/^\w/, (c) => c.toUpperCase()) : "";
+  // Keyword, one space, then the number with its dots intact: "Build.1436.28"
+  // -> "Build 1436.28", "Update.1.0.1491" -> "Update 1.0.1491". The dots in the
+  // number are the real separators (same reasoning as the v\d branch above);
+  // only the dot joining the keyword to the number becomes a space.
+  return m ? m[0].replace(/^([a-z]+)\.?/i, "$1 ").replace(/^\w/, (c) => c.toUpperCase()).trim() : "";
 }
 
 /* Real Steam build id, when a group's dirname convention embeds one --

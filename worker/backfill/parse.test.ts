@@ -6,19 +6,24 @@ describe("parseVersionFromDirname", () => {
     expect(parseVersionFromDirname("Grand.Theft.Auto.V.v2675.1.0.0-RUNE")).toBe("V2675.1.0.0");
   });
 
-  // Intentional display style for these four, per the comment in parse.ts:
-  // "Build.1436.28" -> "Build 1436 28". Pinned so nobody "fixes" it into dots.
+  // Keyword + space + the number with its real dots ("Build.1436.28" ->
+  // "Build 1436.28"); the old all-dots-to-spaces style ("1436 28") was a bug.
   it.each([
-    ["Game.Update.1.0.3-GRP", "Update 1 0 3"],
-    ["Game.Build.1436.28-GRP", "Build 1436 28"],
+    ["Game.Update.1.0.3-GRP", "Update 1.0.3"],
+    ["Game.Build.1436.28-GRP", "Build 1436.28"],
     ["Game.Hotfix.2-GRP", "Hotfix 2"],
-    ["Game.Patch.1.17-GRP", "Patch 1 17"],
+    ["Game.Patch.1.17-GRP", "Patch 1.17"],
   ])("renders %s as %s", (dirname, expected) => {
     expect(parseVersionFromDirname(dirname)).toBe(expected);
   });
 
+  it("handles the keyword with no separator and long dotted numbers", () => {
+    expect(parseVersionFromDirname("Red.Dead.Redemption.2.Update1311.23-ElAmigos")).toBe("Update 1311.23");
+    expect(parseVersionFromDirname("Game.Update.1.0.1491-GRP")).toBe("Update 1.0.1491");
+  });
+
   it("does not drop the trailing part of a multi-part update number", () => {
-    expect(parseVersionFromDirname("Game.UPDATE.1.17-CPY")).toBe("UPDATE 1 17");
+    expect(parseVersionFromDirname("Game.UPDATE.1.17-CPY")).toBe("UPDATE 1.17");
   });
 
   it("returns empty for a dirname with no version, or no dirname", () => {

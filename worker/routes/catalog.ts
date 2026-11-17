@@ -1,6 +1,7 @@
 import type { Handler } from "../shared/types";
 import { json } from "../shared/http";
 import { methodForGroup } from "../shared/constants";
+import { parseVersionFromDirname } from "../backfill/parse";
 
 interface JoinedRow {
   id: string;
@@ -170,7 +171,9 @@ export const handleCatalog: Handler = async ({ request, env }) => {
           label: r.rel_method === "hv" ? "Hypervisor" : "Traditional",
           group: r.rel_group_name as string,
           build: r.rel_build,
-          version: r.rel_version || "",
+          // Re-derived from the stored dirname so rows written under the old
+          // dots-to-spaces rule ("Build 1436 28") read correctly with no migration.
+          version: (r.rel_note ? parseVersionFromDirname(r.rel_note) : "") || r.rel_version || "",
           date: r.rel_date || "",
           ts: r.rel_ts || 0,
           note: r.rel_note || "",

@@ -43,6 +43,9 @@ export default function GameCard({ game, priority }: GameCardProps) {
   const genuineReleases = allReleases.filter((r) => !r.isRepack && !r.isAnonymous);
   const releases = genuineReleases.length ? genuineReleases : allReleases;
   const topRelease = releases[0];
+  // Repacks hidden by the crack-first rule above stay discoverable: a quiet
+  // count instead of silently reading as if the game had fewer releases.
+  const hiddenRepacks = genuineReleases.length ? allReleases.length - genuineReleases.length : 0;
 
   // Drives the cursor-glint highlight (.liquid-sheen::after, globals.css) --
   // plain style.setProperty on the element directly, not React state, so
@@ -108,6 +111,11 @@ export default function GameCard({ game, priority }: GameCardProps) {
             ) : (
               <Pill tone="neutral">{status === "unreleased" ? "Unreleased" : "Uncracked"}</Pill>
             )}
+            {hiddenRepacks > 0 ? (
+              <span className="game-card-repacks" title="Repack / anonymous releases, hidden here — open the game for the full list">
+                +{hiddenRepacks} repack{hiddenRepacks === 1 ? "" : "s"}
+              </span>
+            ) : null}
           </div>
           {topRelease ? (
             <div className="game-card-crack">

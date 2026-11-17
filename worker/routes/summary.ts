@@ -1,6 +1,7 @@
 import type { Handler } from "../shared/types";
 import { json } from "../shared/http";
 import { callGroq } from "../shared/groq";
+import { hasRepetition, dropRepeatedSentences } from "../shared/repetition";
 
 interface SummaryRequest {
   kind: "group" | "publisher";
@@ -90,6 +91,10 @@ const SYSTEM_PROMPT: Record<SummaryRequest["kind"], string> = {
     "more specific than a bare title count on its own -- prefer that angle when it's available rather than " +
     "defaulting to just the count. A given Protection fact is a genuinely distinctive, site-specific angle -- " +
     "prefer leading with it or the franchise names over generic filler when either is available.\n\n" +
+    "LENGTH AND REPETITION: at most 3 sentences, and every sentence must add a NEW fact the earlier ones did " +
+    "not state. If there are only two or three facts to give, write two or three short sentences and stop -- a " +
+    "short accurate paragraph is better than a padded one. Never name the same title, franchise or statistic " +
+    "twice, and never close with a sentence that summarises or restates the paragraph.\n\n" +
     "Avoid opening every summary with \"[Name] is a ...\" -- vary the lead from publisher to publisher: " +
     "sometimes start with the tracked title count, sometimes with the HQ region, sometimes with a specific " +
     "franchise or title name, sometimes with the protection stat. Use the actual numbers, franchise names, and " +
@@ -168,6 +173,26 @@ export const handleSummary: Handler = async ({ request, env }) => {
     if (text && violatesGrounding(body, text)) {
       return json({ error: "summary generation could not stay grounded for this group" }, 30, 502);
     }
+  }
+  // Repetition backstop (both kinds): one retry showing the model its own
+  // padded draft; if the retry still repeats, drop the repeated sentences
+  // rather than serve them. Grounding checks above/below still apply to
+  // whatever text is finally served.
+  if (text && hasRepetition(text)) {
+    const draft = text;
+    const retry = await callGroq(
+      env,
+      [
+        ...messages,
+        {
+          role: "user" as const,
+          content: `You wrote: "${draft}"\nSeveral sentences repeat the same facts. Rewrite it shorter: every sentence must state a different fact from the given data, nothing restated, no closing summary sentence.`,
+        },
+      ],
+      { maxTokens: 450 },
+    );
+    const next = retry.text && !violatesGrounding(body, retry.text) ? retry.text : draft;
+    text = hasRepetition(next) ? dropRepeatedSentences(next) : next;
   }
   if (!text) return json({ error: error || "summary generation unavailable" }, 30, 502);
   return json({ summary: text }, 3600);

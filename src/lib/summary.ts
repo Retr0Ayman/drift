@@ -28,7 +28,10 @@
 // blind spot as v5's own note -- factsSignature won't catch this on its
 // own, so every existing cached publisher summary needs this bump to
 // actually regenerate instead of serving the padded-out version forever.
-const CACHE_PREFIX = "drift.summary.v6.";
+// v7: bumped -- worker/routes/summary.ts now rejects/retries repetitive
+// paragraphs and the publisher prompt asks for no restated facts, so every
+// cached (possibly padded) v6 summary needs to regenerate once.
+const CACHE_PREFIX = "drift.summary.v7.";
 
 export interface SummaryResult {
   summary: string | null;
