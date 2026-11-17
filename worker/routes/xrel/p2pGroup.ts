@@ -41,11 +41,17 @@ export const handleXrelP2PGroup: Handler = async ({ request }) => {
   const groupId = url.searchParams.get("group_id");
   if (!groupId) return json({ error: "pass ?group_id=<hash>" }, 60, 400);
 
+  // Optional cap for steady-state callers that only need the newest rows
+  // (the 15-minute slot): page 1 is the 100 most recent, so a full-history
+  // walk (up to MAX_PAGES subrequests) per group per tick is pure waste.
+  const capParam = Number(url.searchParams.get("max_pages"));
+  const pageCap = Number.isInteger(capParam) && capParam >= 1 ? Math.min(capParam, MAX_PAGES) : MAX_PAGES;
+
   const list: RawXrelRelease[] = [];
   let totalPages = 1;
   let upstreamFailed = false;
 
-  for (let page = 1; page <= Math.min(totalPages, MAX_PAGES); page++) {
+  for (let page = 1; page <= Math.min(totalPages, pageCap); page++) {
     const api =
       "https://api.xrel.to/v2/p2p/releases.json?group_id=" +
       encodeURIComponent(groupId) +

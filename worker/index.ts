@@ -27,7 +27,7 @@ import { handleCatalogGame } from "./routes/catalogGame";
 import { handleWatchlistTrack } from "./routes/watchlistTrack";
 import { handleTrending } from "./routes/trending";
 import { handleWatchlistSync } from "./routes/watchlistSync";
-import { runScheduledAlert, runSteadyStateSync } from "./scheduled";
+import { runFifteenMinuteSlot } from "./scheduled";
 import { runBackfillTick } from "./backfill/run";
 import { runDeepBackfillTick } from "./backfill/deepRun";
 import { runArchiveBackfillTick } from "./backfill/archiveRun";
@@ -37,11 +37,8 @@ import { runFirstSeenReconcileTick } from "./backfill/reconcileFirstSeen";
 import { runStaleRefreshTick } from "./backfill/refreshStale";
 import { runEnrichmentRepairTick } from "./backfill/repairEnrichment";
 import { runHeaderUpgradeTick } from "./backfill/headerUpgrade";
-import { runGroupReliabilityTick } from "./backfill/groupReliability";
 import { handleGroupReliability, handleGroupReliabilityRecompute } from "./routes/groupReliability";
-import { runDenuvoRemovalStatsTick } from "./backfill/denuvoRemoval";
 import { handleDenuvoRemoval, handleDenuvoRemovalRecompute } from "./routes/denuvoRemoval";
-import { runCrackEtaStatsTick } from "./backfill/crackEta";
 import { handleCrackEta, handleCrackEtaRecompute } from "./routes/crackEta";
 import { handleDenuvoStatus } from "./routes/denuvoStatus";
 import { handleAdminRefreshGame } from "./routes/adminRefreshGame";
@@ -79,12 +76,15 @@ const HOUSEKEEPING_CRON = "*/5 * * * *";
 //                 staggered by minute: :10 enrichment repair,    header 30 (each + a few
 //                 :25 first-seen reconcile, :40 header upgrade;  D1 calls, <= 45)
 //                 other minutes idle
-//   every 15 min  alert + sync + stale refresh + aggregates      NOT budgeted here: its
-//                 stale-refresh batch (150 rows) alone exceeds 50.
+//   every 15 min  collect (12) -> alert -> sync (22) -> aggregates  sequential, see
+//                 runFifteenMinuteSlot; alert/sync run first so nothing starves them
+//   5-min slot's  Steam build-freshness sweep (34 games, 1 batched  38
+//   idle minutes  D1 write), ~300 games/hour
 const BUDGET_DRM = 38;
 const BUDGET_REPAIR = 34;
 const BUDGET_RECONCILE = 38;
 const BUDGET_HEADER = 30;
+const BUDGET_STALE = 38;
 const BUDGET_DEEP = 20;
 const BUDGET_ARCHIVE = 20;
 
@@ -224,17 +224,11 @@ export default {
       if (minute === 10) ctx.waitUntil(withSubrequestBudget(BUDGET_REPAIR, () => runEnrichmentRepairTick(env, true)));
       else if (minute === 25) ctx.waitUntil(withSubrequestBudget(BUDGET_RECONCILE, () => runFirstSeenReconcileTick(env, true)));
       else if (minute === 40) ctx.waitUntil(withSubrequestBudget(BUDGET_HEADER, () => runHeaderUpgradeTick(env, true)));
+      // Every other minute is idle: the Steam build-freshness sweep gets the
+      // whole invocation (it no longer shares the starved 15-minute slot).
+      else ctx.waitUntil(withSubrequestBudget(BUDGET_STALE, () => runStaleRefreshTick(env)));
       return;
     }
-    ctx.waitUntil(
-      Promise.all([
-        runScheduledAlert(env),
-        runSteadyStateSync(env),
-        runStaleRefreshTick(env),
-        runGroupReliabilityTick(env),
-        runDenuvoRemovalStatsTick(env),
-        runCrackEtaStatsTick(env),
-      ]),
-    );
+    ctx.waitUntil(runFifteenMinuteSlot(env));
   },
 };

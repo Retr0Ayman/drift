@@ -150,6 +150,18 @@ export async function refreshBuildOnly(db: D1Database, id: string, buildId: numb
     .run();
 }
 
+/* One D1 subrequest for a whole batch of build refreshes (db.batch is a
+   single round trip), instead of one UPDATE per game. */
+export async function refreshBuildsBatch(db: D1Database, rows: Array<{ id: string; buildId: number; buildUpdatedAt: number | null }>): Promise<void> {
+  if (!rows.length) return;
+  const now = Date.now();
+  await db.batch(
+    rows.map((r) =>
+      db.prepare("UPDATE games SET current_build = ?, current_build_updated_at = ?, updated_at = ? WHERE id = ?").bind(r.buildId, r.buildUpdatedAt, now, r.id),
+    ),
+  );
+}
+
 export async function refreshHeaderOnly(db: D1Database, id: string, header: string): Promise<void> {
   await db.prepare("UPDATE games SET header = ? WHERE id = ?").bind(header, id).run();
 }
@@ -159,7 +171,7 @@ export async function refreshHeaderOnly(db: D1Database, id: string, header: stri
 // existence check never risks hitting that limit even on a large tick.
 const EXISTS_CHUNK = 50;
 
-async function existingGameIds(db: D1Database, ids: string[]): Promise<Set<string>> {
+export async function existingGameIds(db: D1Database, ids: string[]): Promise<Set<string>> {
   const found = new Set<string>();
   for (let i = 0; i < ids.length; i += EXISTS_CHUNK) {
     const chunk = ids.slice(i, i + EXISTS_CHUNK);

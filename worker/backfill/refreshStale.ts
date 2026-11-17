@@ -1,19 +1,15 @@
 import type { Env } from "../shared/env";
 import { fetchBuildInfo } from "../shared/steam";
-import { getStaleGames, refreshBuildOnly } from "./db";
+import { getStaleGames, refreshBuildsBatch } from "./db";
 
-// FIX (confirmed live, real complaint: stale/wrong current-build numbers):
-// 12/tick meant a full sweep of this catalog's ~2000 games took roughly a
-// day and a half (12 * 4 ticks/hour = 48/hour) -- any game with no recent
-// crack activity to otherwise trigger a recheck could show a current
-// build number well over a day out of date. Bumped an order of magnitude:
-// safe now that this tick only ever does ONE cheap fetchBuildInfo call per
-// game (see refreshBuildOnly's own comment for why this stopped using the
-// heavy full-enrichment path), parallelized below so the wall-clock cost
-// of a bigger batch stays close to the slowest single call, not the sum
-// of all of them. 150/tick cycles the whole catalog in a few hours
-// instead of days.
-const REFRESH_BATCH_SIZE = 150;
+// Budget: this runs ALONE in a housekeeping-slot invocation (see
+// worker/index.ts), BUDGET_STALE = 38 subrequests: 1 select + one steamcmd
+// fetch per game + 1 batched D1 write. 34 games leaves margin for a retry or
+// two. It runs on the 9 of 12 hourly housekeeping minutes that are otherwise
+// idle, i.e. ~300 games/hour -- the ~2000-game catalog cycles in well under a
+// day, faster than the old 150-per-15-min tick that could never actually fit
+// under the 50-subrequest cap alongside its neighbours.
+export const REFRESH_BATCH_SIZE = 34;
 
 /* CONFIRMED (design gap, not a specific game caught wrong): every other
    mechanism that keeps a game's Steam metadata (current_build above all)
@@ -41,13 +37,13 @@ export async function runStaleRefreshTick(env: Env): Promise<{ refreshed: number
     rows.map(async (row) => {
       try {
         const { buildId, buildUpdatedAt } = await fetchBuildInfo(String(row.appid));
-        if (buildId == null) return false;
-        await refreshBuildOnly(db, row.id, buildId, buildUpdatedAt);
-        return true;
+        return buildId == null ? null : { id: row.id, buildId, buildUpdatedAt };
       } catch {
-        return false;
+        return null;
       }
     }),
   );
-  return { refreshed: results.filter(Boolean).length };
+  const ok = results.filter((r): r is { id: string; buildId: number; buildUpdatedAt: number | null } => r !== null);
+  await refreshBuildsBatch(db, ok);
+  return { refreshed: ok.length };
 }

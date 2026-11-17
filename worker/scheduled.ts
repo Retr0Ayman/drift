@@ -6,7 +6,11 @@ import type { RawXrelRelease } from "./shared/xrel";
 import { STARRED_GROUPS, methodForGroup, isRepackGroup, isAnonymousUpload, isWindowsRelease } from "./shared/constants";
 import { groupRowsByTitle } from "./backfill/parse";
 import { resolveAndEnrichBatch } from "./backfill/resolve";
-import { upsertGames } from "./backfill/db";
+import { upsertGames, existingGameIds } from "./backfill/db";
+import { withSubrequestBudget } from "./shared/subrequestBudget";
+import { runGroupReliabilityTick } from "./backfill/groupReliability";
+import { runDenuvoRemovalStatsTick } from "./backfill/denuvoRemoval";
+import { runCrackEtaStatsTick } from "./backfill/crackEta";
 
 interface ListResponse {
   list?: RawXrelRelease[];
@@ -72,7 +76,7 @@ export async function collectCandidates(env: Env): Promise<RawXrelRelease[]> {
       if (groupId) {
         try {
           const deepRes = await handleXrelP2PGroup({
-            request: new Request(`https://internal.invalid/api/xrel/p2p-group?group_id=${encodeURIComponent(groupId)}`),
+            request: new Request(`https://internal.invalid/api/xrel/p2p-group?max_pages=1&group_id=${encodeURIComponent(groupId)}`),
             env,
           });
           if (deepRes.ok) {
@@ -145,10 +149,10 @@ async function postDiscordAlert(webhookUrl: string, rels: RawXrelRelease[]): Pro
    created and the webhook secret is set (both require manual, non-scriptable
    Cloudflare/Discord dashboard steps -- see DEPLOY.md), and this should
    silently no-op until then rather than error every 15 minutes. */
-export async function runScheduledAlert(env: Env): Promise<void> {
+export async function runScheduledAlert(env: Env, candidates?: RawXrelRelease[]): Promise<void> {
   if (!env.DISCORD_WEBHOOK_URL || !env.SEEN_RELEASES) return;
 
-  const releases = (await collectCandidates(env)).filter(isAlertable);
+  const releases = (candidates ?? (await collectCandidates(env))).filter(isAlertable);
 
   const alreadySeeded = await env.SEEN_RELEASES.get(SEEDED_MARKER_KEY);
   if (!alreadySeeded) {
@@ -187,10 +191,61 @@ export async function runScheduledAlert(env: Env): Promise<void> {
    depend on the Discord webhook/KV being configured -- D1 is already
    provisioned (see shared/env.ts), so this can run from the very first
    deploy. */
-export async function runSteadyStateSync(env: Env): Promise<void> {
-  const candidates = await collectCandidates(env);
-  const grouped = groupRowsByTitle(candidates);
-  const titles = [...grouped.values()].map((g) => g.title);
-  const enrichments = await resolveAndEnrichBatch(env, titles);
-  await upsertGames(env.orlaz_catalog, [...grouped.values()], enrichments);
+/* Max NEW (not yet in D1) titles resolved+enriched per tick. Each costs
+   roughly 4-6 subrequests (resolve, appdetails, colour sample, hi-res header
+   probe), so this is what keeps the sync inside its budget. Titles D1
+   already has need no enrichment at all -- upsertGames writes their release
+   rows without it -- so previously re-resolving EVERY title in the three
+   starred groups' histories each tick was what blew past 50 subrequests and
+   silently dropped most of the work. Overflow titles are simply picked up on
+   the next tick (they are still absent from D1). */
+export const SYNC_NEW_TITLE_CAP = 3;
+
+export async function runSteadyStateSync(env: Env, candidates?: RawXrelRelease[]): Promise<void> {
+  const grouped = groupRowsByTitle(candidates ?? (await collectCandidates(env)));
+  const games = [...grouped.values()];
+  const known = await existingGameIds(env.orlaz_catalog, games.map((g) => g.id));
+  const fresh = games.filter((g) => !known.has(g.id)).slice(0, SYNC_NEW_TITLE_CAP);
+  const enrichments = await resolveAndEnrichBatch(env, fresh.map((g) => g.title));
+  await upsertGames(env.orlaz_catalog, games, enrichments);
+}
+
+// Per-task subrequest budgets for the 15-minute slot (Workers Free: 50 per
+// invocation). Collect 7 typical (1 browse + 3 groups x (search + 1 p2p
+// page)), sync <= 3 new titles x ~6, leaving room for D1 and the aggregates.
+const BUDGET_COLLECT = 12;
+const BUDGET_SYNC = 22;
+
+async function guarded(name: string, task: () => Promise<unknown>): Promise<boolean> {
+  try {
+    await task();
+    return true;
+  } catch (e) {
+    console.error(`slot15 ${name} failed:`, e instanceof Error ? `${e.name}: ${e.message}` : String(e));
+    return false;
+  }
+}
+
+/* The whole 15-minute invocation, run SEQUENTIALLY so the cheap, important
+   work (Discord alert, steady-state sync) goes first and can never be
+   starved by whatever follows, and so each task has its own enforced
+   subrequest budget (worker/shared/subrequestBudget.ts). Candidates are
+   collected ONCE and shared -- the alert and the sync each used to collect
+   their own copy, doubling the xREL traffic. The pure-D1 aggregates run last
+   and need no external fetches. The Steam stale-refresh sweep no longer
+   lives here: see worker/index.ts (it runs in the housekeeping slot's idle
+   minutes, where it has a whole invocation to itself). */
+export async function runFifteenMinuteSlot(env: Env): Promise<void> {
+  let candidates: RawXrelRelease[] = [];
+  await guarded("collect", async () => {
+    candidates = await withSubrequestBudget(BUDGET_COLLECT, () => collectCandidates(env));
+  });
+  const alert = await guarded("alert", () => runScheduledAlert(env, candidates));
+  const sync = candidates.length ? await guarded("sync", () => withSubrequestBudget(BUDGET_SYNC, () => runSteadyStateSync(env, candidates))) : false;
+  await Promise.all([
+    guarded("groupReliability", () => runGroupReliabilityTick(env)),
+    guarded("denuvoRemoval", () => runDenuvoRemovalStatsTick(env)),
+    guarded("crackEta", () => runCrackEtaStatsTick(env)),
+  ]);
+  console.log(`slot15 done candidates=${candidates.length} alert=${alert} sync=${sync}`);
 }
