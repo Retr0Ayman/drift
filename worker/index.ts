@@ -35,6 +35,7 @@ import { runDrmRecheckTick } from "./backfill/drmBackfillRun";
 import { withSubrequestBudget } from "./shared/subrequestBudget";
 import { runFirstSeenReconcileTick } from "./backfill/reconcileFirstSeen";
 import { runStaleRefreshTick } from "./backfill/refreshStale";
+import { runDiscographySweepTick } from "./backfill/discographySweep";
 import { runEnrichmentRepairTick } from "./backfill/repairEnrichment";
 import { runHeaderUpgradeTick } from "./backfill/headerUpgrade";
 import { handleGroupReliability, handleGroupReliabilityRecompute } from "./routes/groupReliability";
@@ -85,6 +86,7 @@ const BUDGET_REPAIR = 34;
 const BUDGET_RECONCILE = 38;
 const BUDGET_HEADER = 30;
 const BUDGET_STALE = 38;
+const BUDGET_DISCO = 40;
 const BUDGET_DEEP = 20;
 const BUDGET_ARCHIVE = 20;
 
@@ -224,7 +226,10 @@ export default {
       if (minute === 10) ctx.waitUntil(withSubrequestBudget(BUDGET_REPAIR, () => runEnrichmentRepairTick(env, true)));
       else if (minute === 25) ctx.waitUntil(withSubrequestBudget(BUDGET_RECONCILE, () => runFirstSeenReconcileTick(env, true)));
       else if (minute === 40) ctx.waitUntil(withSubrequestBudget(BUDGET_HEADER, () => runHeaderUpgradeTick(env, true)));
-      // Every other minute is idle: the Steam build-freshness sweep gets the
+      // Minutes 5/20/35/50: publisher-discography sweep (older titles the
+      // crawls never reached), alone in its invocation.
+      else if (minute % 15 === 5) ctx.waitUntil(withSubrequestBudget(BUDGET_DISCO, () => runDiscographySweepTick(env)));
+      // The remaining idle minutes: the Steam build-freshness sweep gets the
       // whole invocation (it no longer shares the starved 15-minute slot).
       else ctx.waitUntil(withSubrequestBudget(BUDGET_STALE, () => runStaleRefreshTick(env)));
       return;
