@@ -7,6 +7,8 @@ describe("isAllowedPushEndpoint", () => {
     expect(isAllowedPushEndpoint("https://updates.push.services.mozilla.com/wpush/v2/abc")).toBe(true);
     expect(isAllowedPushEndpoint("https://wns2-par02p.notify.windows.com/w/?token=x")).toBe(true);
     expect(isAllowedPushEndpoint("https://web.push.apple.com/abc")).toBe(true);
+    expect(isAllowedPushEndpoint("https://jmt17.google.com/fcm/send/abc")).toBe(true);
+    expect(isAllowedPushEndpoint("https://www.google.com/search?q=x")).toBe(false);
     expect(isAllowedPushEndpoint("http://fcm.googleapis.com/x")).toBe(false);
     expect(isAllowedPushEndpoint("https://evil.example/fcm.googleapis.com")).toBe(false);
     expect(isAllowedPushEndpoint("https://fcm.googleapis.com.evil.example/x")).toBe(false);

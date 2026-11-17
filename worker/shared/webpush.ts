@@ -13,7 +13,10 @@ const PUSH_HOSTS = [/(^|\.)fcm\.googleapis\.com$/, /(^|\.)push\.services\.mozill
 export function isAllowedPushEndpoint(endpoint: string): boolean {
   try {
     const u = new URL(endpoint);
-    return u.protocol === "https:" && endpoint.length < 1000 && PUSH_HOSTS.some((re) => re.test(u.hostname));
+    if (u.protocol !== "https:" || endpoint.length >= 1000) return false;
+    // Chromium also hands out legacy FCM endpoints like https://jmt17.google.com/fcm/send/...
+    if (/(^|\.)google\.com$/.test(u.hostname)) return u.pathname.startsWith("/fcm/");
+    return PUSH_HOSTS.some((re) => re.test(u.hostname));
   } catch {
     return false;
   }
