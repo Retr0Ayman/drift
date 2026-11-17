@@ -39,3 +39,9 @@ export function removalPatternFor(game: Game, stats: Record<string, DenuvoRemova
   if (day == null) return null;
   return { stat, dayOfWindow: day, proximity: Math.abs(day - stat.median_days) };
 }
+
+/* Single definition of "removals tracked" so Home's strip and the tracker's
+   headline can never disagree: dated removals plus recorded-but-undated ones. */
+export function countDenuvoRemovals(games: Game[]): number {
+  return games.filter((g) => g.denuvoRemovedAt || ((g.formerTags || []).includes(DENUVO_TAG) && !hasDenuvoNow(g))).length;
+}

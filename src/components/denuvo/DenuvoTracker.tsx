@@ -1,10 +1,10 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCatalog } from "../../hooks/useCatalog";
 import { useDenuvoRemovalStats, type DenuvoRemovalStat } from "../../hooks/useDenuvoRemovalStats";
 import { useDenuvoStatus } from "../../hooks/useDenuvoStatus";
 import { describeSources } from "../../lib/denuvoStatus";
-import { hasDenuvoNow, daysSinceRelease, DENUVO_TAG } from "../../lib/denuvoRemoval";
+import { hasDenuvoNow, daysSinceRelease, countDenuvoRemovals, DENUVO_TAG } from "../../lib/denuvoRemoval";
 import { slugify, coverImg } from "../../lib/format";
 import GlassPanel from "../ui/GlassPanel";
 import Reveal from "../ui/Reveal";
@@ -27,6 +27,11 @@ interface TrackerRow {
    denuvoRemoval.ts), not a guess. Games from a publisher with no confident
    median yet sort to the bottom, honestly labeled "not enough data" rather
    than omitted or given a fabricated placeholder number. */
+const TIMELINE_LIMIT = 15;
+const fmtDate = (ts: number): string => new Date(ts).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+const fmtDay = (ts: number): string => new Date(ts).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+const monthLabel = (ts: number): string => new Date(ts).toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
+
 export default function DenuvoTracker() {
   const navigate = useNavigate();
   const { games } = useCatalog();
@@ -61,6 +66,10 @@ export default function DenuvoTracker() {
   );
 
   const confidentCount = rows.filter((r) => r.confident).length;
+  const [showAll, setShowAll] = useState(false);
+  const patternPublishers = publisherStats.filter((s) => s.sample_count >= 2 && s.median_days != null);
+  const singlePublishers = publisherStats.filter((s) => !(s.sample_count >= 2 && s.median_days != null));
+  const maxDays = Math.max(1, ...patternPublishers.map((s) => s.max_days ?? 0));
 
   // Removals with a real date (sourced from PCGamingWiki's dated ref, or the
   // moment this site detected it), newest first.
@@ -74,6 +83,20 @@ export default function DenuvoTracker() {
     [games],
   );
 
+  const totalRemovals = countDenuvoRemovals(games);
+  const latestRemoval = removed[0]?.denuvoRemovedAt ?? null;
+  const timeline = useMemo(() => {
+    const shown = showAll ? removed : removed.slice(0, TIMELINE_LIMIT);
+    const groups: Array<{ label: string; items: Game[] }> = [];
+    for (const g of shown) {
+      const label = monthLabel(g.denuvoRemovedAt!);
+      const last = groups[groups.length - 1];
+      if (last && last.label === label) last.items.push(g);
+      else groups.push({ label, items: [g] });
+    }
+    return groups;
+  }, [removed, showAll]);
+
   return (
     <div className="wrap denuvo-tracker">
       <button className="back-link" onClick={() => navigate(-1)}>
@@ -82,60 +105,74 @@ export default function DenuvoTracker() {
 
       <Reveal>
         <div className="denuvo-tracker-hero">
-          <span className="denuvo-tracker-eyebrow">Denuvo removal tracker</span>
-          <h1>Which Denuvo'd titles are closest to their publisher's own removal window</h1>
+          <span className="denuvo-tracker-eyebrow">Denuvo tracker</span>
+          <h1>
+            <span className="denuvo-tracker-hero-num">{rows.length}</span> games still on Denuvo
+            <span className="denuvo-tracker-hero-dot"> · </span>
+            <span className="denuvo-tracker-hero-num">{totalRemovals}</span> removals tracked
+          </h1>
           <p className="denuvo-tracker-lede">
-            Publishers routinely remove Denuvo months after launch once the early-sales window has passed. This is
-            computed entirely from confirmed removals — dated by a primary-source reference (PCGamingWiki, with its
-            cited patch note) or, when there isn't one, by when this site's own recheck first detected it and
-            labelled as such. Never a guess. A publisher needs at least 2 confirmed removals before a median is
-            shown; below that, it's marked as not enough data instead of a fabricated number.
+            Every figure here is counted from this catalogue. Removals are dated by a cited source (PCGamingWiki's
+            patch-note reference) or, when there isn't one, by when this site's own recheck first caught it, and
+            labelled that way. Nothing is estimated.
           </p>
+          <dl className="denuvo-tracker-stats">
+            <div>
+              <dt>Still protected</dt>
+              <dd>{rows.length}</dd>
+            </div>
+            <div>
+              <dt>Removals tracked</dt>
+              <dd>{totalRemovals}</dd>
+            </div>
+            <div>
+              <dt>Latest dated removal</dt>
+              <dd>{latestRemoval ? fmtDate(latestRemoval) : "—"}</dd>
+            </div>
+            <div>
+              <dt>Publishers with a pattern</dt>
+              <dd>{patternPublishers.length}</dd>
+            </div>
+          </dl>
+          {statusLine ? (
+            <p className={`denuvo-tracker-source-status${statusLine.allFailing ? " denuvo-tracker-source-status--bad" : ""}`} role="status">
+              {statusLine.text}
+            </p>
+          ) : null}
         </div>
       </Reveal>
 
-      {statusLine ? (
-        <p className={`denuvo-tracker-source-status${statusLine.allFailing ? " denuvo-tracker-source-status--bad" : ""}`} role="status">
-          {statusLine.text}
-        </p>
-      ) : null}
-
       <GlassPanel className="denuvo-tracker-methodology" frost>
-        <div className="denuvo-tracker-methodology-h">Publisher removal patterns ({publisherStats.length || 0})</div>
+        <div className="denuvo-tracker-methodology-h">Per-publisher removal patterns</div>
+        <p className="denuvo-tracker-status denuvo-tracker-pattern-note">
+          Days from release to removal. A publisher needs at least 2 confirmed removals before a median is shown.
+        </p>
         {loading ? (
           <p className="denuvo-tracker-status">Loading…</p>
-        ) : publisherStats.length ? (
-          <div className="denuvo-tracker-table-wrap">
-            <table className="denuvo-tracker-table">
-              <thead>
-                <tr>
-                  <th>Publisher</th>
-                  <th>Median days</th>
-                  <th>Range</th>
-                  <th>Samples</th>
-                </tr>
-              </thead>
-              <tbody>
-                {publisherStats.map((s) => (
-                  <tr key={s.publisher_name}>
-                    <td>{s.publisher_name}</td>
-                    <td>{s.median_days ?? "—"}</td>
-                    <td>{s.median_days != null ? `${s.min_days}–${s.max_days}` : "—"}</td>
-                    <td>
-                      {s.sample_count}
-                      {s.median_days == null ? " (not enough data)" : ""}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        ) : patternPublishers.length ? (
+          <ul className="denuvo-tracker-bars">
+            {patternPublishers.map((s) => (
+              <li key={s.publisher_name} className="denuvo-tracker-bar-row">
+                <span className="denuvo-tracker-bar-name">{s.publisher_name}</span>
+                <span className="denuvo-tracker-bar-track" aria-hidden="true">
+                  <span className="denuvo-tracker-bar-range" style={{ left: `${(s.min_days! / maxDays) * 100}%`, width: `${Math.max(((s.max_days! - s.min_days!) / maxDays) * 100, 0.8)}%` }} />
+                  <span className="denuvo-tracker-bar-median" style={{ left: `${(s.median_days! / maxDays) * 100}%` }} />
+                </span>
+                <span className="denuvo-tracker-bar-val">
+                  {s.median_days}d <small>median · {s.min_days}–{s.max_days} · {s.sample_count} removals</small>
+                </span>
+              </li>
+            ))}
+          </ul>
         ) : (
-          <p className="denuvo-tracker-status">
-            No confirmed Denuvo removals detected yet — this table builds up automatically as this site's own DRM
-            recheck cycle catches real removals going forward (see the methodology note above).
-          </p>
+          <p className="denuvo-tracker-status">No publisher has two confirmed removals yet.</p>
         )}
+        {singlePublishers.length ? (
+          <details className="denuvo-tracker-single">
+            <summary>{singlePublishers.length} publishers with one removal (not enough for a pattern)</summary>
+            <p className="denuvo-tracker-status">{singlePublishers.map((s) => s.publisher_name).join(" · ")}</p>
+          </details>
+        ) : null}
       </GlassPanel>
 
       <div className="denuvo-tracker-list-head">
@@ -168,29 +205,36 @@ export default function DenuvoTracker() {
       </div>
 
       <div className="denuvo-tracker-list-head">
-        <span>Denuvo removed ({removed.length})</span>
-        <span className="denuvo-tracker-list-sub">dated by a cited source, or by when this site detected it</span>
+        <span>Removal timeline ({removed.length})</span>
+        <span className="denuvo-tracker-list-sub">newest first · sourced = cited by PCGamingWiki, detected = caught by this site</span>
       </div>
-      <div className="denuvo-tracker-list">
-        {removed.map((g) => (
-          <Link key={g.id} to={`/game/${g.id}`} className="denuvo-tracker-row">
-            {coverImg(g) ? <img className="denuvo-tracker-row-img" src={coverImg(g)!} alt="" loading="lazy" /> : <div className="denuvo-tracker-row-img denuvo-tracker-row-img--empty" />}
-            <div className="denuvo-tracker-row-main">
-              <div className="denuvo-tracker-row-title">{g.title}</div>
-              <div className="denuvo-tracker-row-sub">
-                {g.publisher || "Unknown publisher"}
-                {g.denuvoConflict ? " · Steam store page still lists Denuvo" : ""}
-              </div>
-            </div>
-            <div className="denuvo-tracker-row-stat">
-              {g.denuvoRemovedKind === "sourced" ? "Removed " : "Detected "}
-              {new Date(g.denuvoRemovedAt!).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })}
-              {g.denuvoRemovedKind === "sourced" ? " (sourced)" : ""}
-            </div>
-          </Link>
+      <ol className="denuvo-timeline">
+        {timeline.map((grp) => (
+          <li key={grp.label} className="denuvo-timeline-group">
+            <div className="denuvo-timeline-month">{grp.label}</div>
+            <ul>
+              {grp.items.map((g) => (
+                <li key={g.id}>
+                  <Link to={`/game/${g.id}`} className="denuvo-timeline-item">
+                    <span className="denuvo-timeline-date">{fmtDay(g.denuvoRemovedAt!)}</span>
+                    <span className="denuvo-timeline-title">{g.title}</span>
+                    <span className="denuvo-timeline-meta">
+                      {g.publisher || "Unknown publisher"} · {g.denuvoRemovedKind === "sourced" ? "sourced" : "detected"}
+                      {g.denuvoConflict ? " · Steam page still lists Denuvo" : ""}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </li>
         ))}
-        {!removed.length ? <GlassPanel className="denuvo-tracker-empty">No dated removals yet.</GlassPanel> : null}
-      </div>
+      </ol>
+      {!removed.length ? <GlassPanel className="denuvo-tracker-empty">No dated removals yet.</GlassPanel> : null}
+      {removed.length > TIMELINE_LIMIT ? (
+        <button type="button" className="denuvo-tracker-more" onClick={() => setShowAll((v) => !v)}>
+          {showAll ? "Show fewer" : `Show all ${removed.length} removals`}
+        </button>
+      ) : null}
 
       {removedUndated.length ? (
         <details className="denuvo-tracker-undated">

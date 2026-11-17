@@ -211,3 +211,193 @@
 .denuvo-tracker-undated a:hover {
   text-decoration: underline;
 }
+
+/* Flagship presentation: one headline stat, quiet supporting figures, a dated
+   timeline, restrained pattern bars. */
+.denuvo-tracker-hero h1 {
+  font-size: clamp(1.9rem, 1.3rem + 2.6vw, 3.1rem);
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+  font-weight: 800;
+}
+.denuvo-tracker-hero-num {
+  font-variant-numeric: tabular-nums;
+}
+.denuvo-tracker-hero-dot {
+  color: var(--canvas-ink-2);
+  font-weight: 400;
+}
+.denuvo-tracker-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px 24px;
+  margin: 28px 0 18px;
+  padding: 18px 0 0;
+  border-top: 1px solid var(--ink-4);
+}
+.denuvo-tracker-stats dt {
+  font-size: var(--text-xs);
+  color: var(--canvas-ink-2);
+  font-weight: 600;
+}
+.denuvo-tracker-stats dd {
+  margin: 4px 0 0;
+  font-size: var(--text-lg);
+  font-weight: 750;
+  color: var(--canvas-ink);
+  font-variant-numeric: tabular-nums;
+}
+.denuvo-tracker-pattern-note {
+  margin: 0 0 16px;
+  font-size: var(--text-sm);
+}
+.denuvo-tracker-bars {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+}
+.denuvo-tracker-bar-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 190px) 1fr minmax(120px, auto);
+  align-items: center;
+  gap: 8px 16px;
+  font-size: var(--text-sm);
+}
+.denuvo-tracker-bar-name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.denuvo-tracker-bar-track {
+  position: relative;
+  height: 6px;
+  border-radius: 99px;
+  background: var(--ink-4);
+}
+.denuvo-tracker-bar-range {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 99px;
+  background: var(--ink-3);
+  opacity: 0.45;
+}
+.denuvo-tracker-bar-median {
+  position: absolute;
+  top: -4px;
+  width: 3px;
+  height: 14px;
+  margin-left: -1px;
+  border-radius: 2px;
+  background: var(--ink);
+}
+.denuvo-tracker-bar-val {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.denuvo-tracker-bar-val small {
+  display: block;
+  font-weight: 450;
+  font-size: var(--text-xs);
+  color: var(--ink-3);
+}
+.denuvo-tracker-single {
+  margin-top: 18px;
+  font-size: var(--text-sm);
+  color: var(--ink-3);
+}
+.denuvo-tracker-single summary {
+  cursor: pointer;
+}
+@media (max-width: 640px) {
+  .denuvo-tracker-bar-row {
+    grid-template-columns: 1fr;
+  }
+  .denuvo-tracker-bar-val {
+    text-align: left;
+  }
+}
+
+.denuvo-timeline {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0 0 0 18px;
+  border-left: 1px solid var(--ink-4);
+}
+.denuvo-timeline-group {
+  position: relative;
+  margin-bottom: 22px;
+}
+.denuvo-timeline-group::before {
+  content: "";
+  position: absolute;
+  left: -23px;
+  top: 6px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--canvas-ink);
+}
+.denuvo-timeline-month {
+  font-size: var(--text-sm);
+  font-weight: 750;
+  color: var(--canvas-ink);
+  margin-bottom: 8px;
+}
+.denuvo-timeline-group ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+.denuvo-timeline-item {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: 2px 14px;
+  padding: 9px 12px;
+  margin: 0 -12px;
+  border-radius: 12px;
+  text-decoration: none;
+  color: inherit;
+  transition: background-color 160ms ease;
+}
+.denuvo-timeline-item:hover {
+  background: var(--ink-4);
+}
+.denuvo-timeline-date {
+  grid-row: span 2;
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--canvas-ink-2);
+  padding-top: 1px;
+}
+.denuvo-timeline-title {
+  font-weight: 650;
+}
+.denuvo-timeline-meta {
+  font-size: var(--text-xs);
+  color: var(--canvas-ink-2);
+}
+.denuvo-tracker-more {
+  margin: 4px 0 28px;
+  padding: 8px 16px;
+  border-radius: var(--pill);
+  border: 1px solid var(--ink-4);
+  background: transparent;
+  color: var(--canvas-ink);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 550;
+  cursor: pointer;
+}
+.denuvo-tracker-more:hover {
+  border-color: var(--canvas-ink-2);
+}
+@media (prefers-reduced-motion: reduce) {
+  .denuvo-timeline-item {
+    transition: none;
+  }
+}

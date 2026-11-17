@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import GameGrid from "./GameGrid";
 import FilterBar from "./FilterBar";
 import Pagination from "../ui/Pagination";
@@ -8,6 +8,7 @@ import { usePageSize } from "../../hooks/usePageSize";
 import { usePageMeta } from "../../hooks/usePageMeta";
 import { availableGenres, availableYears, passesFilters, sortGames, type SortKey, type StatusFilter } from "../../lib/filters";
 import { gTimestamp } from "../../lib/catalog";
+import { hasDenuvoNow, countDenuvoRemovals } from "../../lib/denuvoRemoval";
 
 const VALID_STATUS: StatusFilter[] = ["all", "outdated", "hv", "trad", "uncracked", "unreleased"];
 
@@ -69,6 +70,13 @@ export default function Home() {
     return parts.join(" · ");
   }, [games]);
 
+  // Same counts the tracker page headlines, from the same loaded catalogue.
+  const denuvoLine = useMemo(() => {
+    const on = games.filter(hasDenuvoNow).length;
+    const removals = countDenuvoRemovals(games);
+    return on || removals ? { on, removals } : null;
+  }, [games]);
+
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const clampedPage = Math.min(page, totalPages);
   const pageItems = filtered.slice((clampedPage - 1) * pageSize, clampedPage * pageSize);
@@ -105,6 +113,19 @@ export default function Home() {
 
   return (
     <>
+      {denuvoLine ? (
+        <div className="wrap">
+          <Link to="/denuvo-tracker" className="home-denuvo-strip">
+            <span className="home-denuvo-strip-label">Denuvo tracker</span>
+            <span className="home-denuvo-strip-stat">
+              <b>{denuvoLine.on}</b> games still on Denuvo · <b>{denuvoLine.removals}</b> removals tracked
+            </span>
+            <span className="home-denuvo-strip-go" aria-hidden="true">
+              →
+            </span>
+          </Link>
+        </div>
+      ) : null}
       <GameGrid
         games={pageItems}
         initialLoading={loading && games.length === 0}
